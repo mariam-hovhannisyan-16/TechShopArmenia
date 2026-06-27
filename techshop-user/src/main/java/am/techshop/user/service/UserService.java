@@ -36,26 +36,27 @@ public class UserService {
             throw new TechShopException("Email already in use", 409);
         }
 
-        User user = new User();
-        user.setName(request.name());
-        user.setEmail(request.email());
-        user.setPassword(passwordEncoder.encode(request.password()));
-        user.setRole(UserRole.USER);
+        User user = User.builder()
+                .name(request.name())
+                .email(request.email())
+                .password(passwordEncoder.encode(request.password()))
+                .role(UserRole.USER)
+                .build();
 
-        User saved = userRepository.save(user);
-        String token = jwtService.generateToken(saved.getId(), saved.getEmail(), saved.getRole().name());
+        User savedUser = userRepository.save(user);
+        String token = jwtService.generateToken(savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name());
 
         userEventProducer.sendUserRegisteredEvent(
-                new UserRegisteredEvent(saved.getId(), saved.getEmail(), saved.getName())
+                new UserRegisteredEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getName())
         );
 
-        return new AuthResponse(token, userMapper.toResponse(saved));
+        return new AuthResponse(token, userMapper.toResponse(savedUser));
     }
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new TechShopException("Invalid email or password", 401));
+                .orElseThrow(() -> UserNotFoundException.byEmail(request.email()));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new TechShopException("Invalid email or password", 401);

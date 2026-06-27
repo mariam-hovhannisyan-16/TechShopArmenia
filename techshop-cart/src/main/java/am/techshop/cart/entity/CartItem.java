@@ -1,6 +1,5 @@
 package am.techshop.cart.entity;
 
-import am.techshop.common.util.PriceCalculator;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -32,8 +31,4 @@ public class CartItem {
     private String productName;
     private BigDecimal productPrice;
     private int quantity;
-
-    public BigDecimal getTotalPrice() {
-        return PriceCalculator.calculateTotal(productPrice, quantity);
-    }
 }

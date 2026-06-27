@@ -14,12 +14,12 @@ public class EmailService {
     public void sendOrderCreated(String to, String userName, Long orderId, String totalPrice) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
-        message.setSubject("Ձեր պատվերը ստացվել է — TechShopArmenia");
+        message.setSubject("Your order has been received — TechShopArmenia");
         message.setText(
-                "Բարև " + userName + ",\n\n" +
-                        "Ձեր #" + orderId + " պատվերը հաջողությամբ ստացվել է։\n" +
-                        "Ընդհանուր գումար՝ " + totalPrice + " AMD\n\n" +
-                        "Շնորհակալություն TechShopArmenia-ում գնումների համար։"
+                "Hello " + userName + ",\n\n" +
+                        "Your order #" + orderId + " has been successfully received.\n" +
+                        "Total amount: " + totalPrice + " AMD\n\n" +
+                        "Thank you for shopping at TechShopArmenia!"
         );
         mailSender.send(message);
     }
@@ -27,11 +27,11 @@ public class EmailService {
     public void sendWelcome(String to, String userName) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
-        message.setSubject("Բարի գալուստ TechShopArmenia");
+        message.setSubject("Welcome to TechShopArmenia");
         message.setText(
-                "Բարև " + userName + ",\n\n" +
-                        "Դուք հաջողությամբ գրանցվել եք TechShopArmenia-ում։\n" +
-                        "Հաճելի գնումներ։"
+                "Hello " + userName + ",\n\n" +
+                        "You have successfully registered at TechShopArmenia.\n" +
+                        "Happy shopping!"
         );
         mailSender.send(message);
     }

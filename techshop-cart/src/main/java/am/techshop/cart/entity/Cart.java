@@ -10,7 +10,6 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,11 +43,5 @@ public class Cart {
 
     public void removeItem(Long productId) {
         items.removeIf(i -> i.getProductId().equals(productId));
-    }
-
-    public BigDecimal getTotalPrice() {
-        return items.stream()
-                .map(CartItem::getTotalPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

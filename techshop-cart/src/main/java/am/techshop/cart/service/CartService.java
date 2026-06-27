@@ -31,9 +31,8 @@ public class CartService {
 
     public CartResponse addItem(Long userId, AddItemRequest request) {
         ProductResponse product = productClient.getProduct(request.productId());
-
-        if (product.quantity() < request.quantity()) {
-            throw new TechShopException("Not enough stock", 400);
+        if (product == null) {
+            throw new TechShopException("Product not found", 404);
         }
 
         Cart cart = getOrCreate(userId);
@@ -56,10 +55,9 @@ public class CartService {
     }
 
     public void clearCart(Long userId) {
-        cartRepository.findByUserId(userId).ifPresent(cart -> {
-            cart.getItems().clear();
-            cartRepository.save(cart);
-        });
+        cartRepository.findByUserId(userId).ifPresent(cart ->
+                cart.getItems().clear()
+        );
     }
 
     private Cart getOrCreate(Long userId) {

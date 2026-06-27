@@ -16,35 +16,24 @@ public class NotificationEventConsumer {
     private final NotificationRepository notificationRepository;
     private final EmailService emailService;
 
-    @KafkaListener(
-            topics = "order-created",
-            groupId = "notification-group",
-            properties = {"spring.json.value.default.type=am.techshop.common.event.OrderCreatedEvent"}
-    )
+    @KafkaListener(topics = "order-created", groupId = "notification-group",
+            properties = {"spring.json.value.default.type=am.techshop.common.event.OrderCreatedEvent"})
     public void handleOrderCreated(OrderCreatedEvent event) {
-        Notification notification = new Notification();
-        notification.setUserId(event.userId());
-        notification.setMessage("Your order #" + event.orderId() + " has been created. Total: " + event.totalPrice() + " AMD");
-        notificationRepository.save(notification);
+        notificationRepository.save(Notification.builder()
+                .userId(event.userId())
+                .message("Your order #" + event.orderId() + " has been created. Total: " + event.totalPrice() + " AMD")
+                .build());
 
-        emailService.sendOrderCreated(
-                event.userEmail(),
-                event.userName(),
-                event.orderId(),
-                event.totalPrice().toString()
-        );
+        emailService.sendOrderCreated(event.userEmail(), event.userName(), event.orderId(), event.totalPrice().toString());
     }
 
-    @KafkaListener(
-            topics = "user-registered",
-            groupId = "notification-group",
-            properties = {"spring.json.value.default.type=am.techshop.common.event.UserRegisteredEvent"}
-    )
+    @KafkaListener(topics = "user-registered", groupId = "notification-group",
+            properties = {"spring.json.value.default.type=am.techshop.common.event.UserRegisteredEvent"})
     public void handleUserRegistered(UserRegisteredEvent event) {
-        Notification notification = new Notification();
-        notification.setUserId(event.userId());
-        notification.setMessage("Welcome to TechShopArmenia, " + event.name() + "!");
-        notificationRepository.save(notification);
+        notificationRepository.save(Notification.builder()
+                .userId(event.userId())
+                .message("Welcome to TechShopArmenia, " + event.name() + "!")
+                .build());
 
         emailService.sendWelcome(event.email(), event.name());
     }

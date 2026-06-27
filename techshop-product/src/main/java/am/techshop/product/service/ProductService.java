@@ -21,11 +21,12 @@ public class ProductService {
     private final ProductMapper productMapper;
 
     public ProductResponse addProduct(ProductRequest request) {
-        Product product = new Product();
-        product.setName(request.name());
-        product.setDescription(request.description());
-        product.setPrice(request.price());
-        product.setQuantity(request.quantity());
+        Product product = Product.builder()
+                .name(request.name())
+                .description(request.description())
+                .price(request.price())
+                .quantity(request.quantity())
+                .build();
         return productMapper.toResponse(productRepository.save(product));
     }
 
@@ -40,12 +41,12 @@ public class ProductService {
     public ProductResponse getProductById(Long id) {
         return productRepository.findById(id)
                 .map(productMapper::toResponse)
-                .orElseThrow(() -> new ProductNotFoundException(id));
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
     }
 
     public void deleteProduct(Long id) {
         if (!productRepository.existsById(id)) {
-            throw new ProductNotFoundException(id);
+            throw new ProductNotFoundException("Product not found with id: " + id);
         }
         productRepository.deleteById(id);
     }

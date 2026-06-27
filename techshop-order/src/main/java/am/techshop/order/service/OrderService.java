@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -39,18 +40,21 @@ public class OrderService {
 
         UserResponse user = userClient.getUser(userId);
 
-        Order order = new Order();
-        order.setUserId(userId);
-        order.setTotalPrice(cart.totalPrice());
-        order.setStatus(OrderStatus.NEW);
+        Order order = Order.builder()
+                .userId(userId)
+                .totalPrice(cart.totalPrice())
+                .status(OrderStatus.NEW)
+                .items(new ArrayList<>())
+                .build();
 
         cart.items().forEach(cartItem -> {
-            OrderItem item = new OrderItem();
-            item.setOrder(order);
-            item.setProductId(cartItem.productId());
-            item.setProductName(cartItem.productName());
-            item.setProductPrice(cartItem.productPrice());
-            item.setQuantity(cartItem.quantity());
+            OrderItem item = OrderItem.builder()
+                    .order(order)
+                    .productId(cartItem.productId())
+                    .productName(cartItem.productName())
+                    .productPrice(cartItem.productPrice())
+                    .quantity(cartItem.quantity())
+                    .build();
             order.getItems().add(item);
         });
 
@@ -100,4 +104,5 @@ public class OrderService {
         order.setStatus(OrderStatus.CANCELLED);
         return orderMapper.toResponse(orderRepository.save(order));
     }
+
 }
