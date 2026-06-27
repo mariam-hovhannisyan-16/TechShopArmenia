@@ -37,11 +37,12 @@ public class CartService {
 
         Cart cart = getOrCreate(userId);
 
-        CartItem item = new CartItem();
-        item.setProductId(product.id());
-        item.setProductName(product.name());
-        item.setProductPrice(product.price());
-        item.setQuantity(request.quantity());
+        CartItem item = CartItem.builder()
+                .productId(product.id())
+                .productName(product.name())
+                .productPrice(product.price())
+                .quantity(request.quantity())
+                .build();
 
         cart.addOrUpdateItem(item);
         return cartMapper.toResponse(cartRepository.save(cart));
