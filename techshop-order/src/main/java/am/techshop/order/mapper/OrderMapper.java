@@ -16,6 +16,10 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring", imports = {PriceCalculator.class})
 public interface OrderMapper {
 
+    // paymentRedirectUrl isn't persisted on Order (it's only known at the moment
+    // checkout initiates payment), so this overload always leaves it null; the
+    // two-arg overload below is used specifically to populate it on that response.
+    @Mapping(target = "paymentRedirectUrl", ignore = true)
     OrderResponse toResponse(Order order);
 
     @Mapping(target = "paymentRedirectUrl", source = "redirectUrl")

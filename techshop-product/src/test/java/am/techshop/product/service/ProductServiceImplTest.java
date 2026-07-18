@@ -12,6 +12,7 @@ import am.techshop.product.repository.ProductRepository;
 import am.techshop.product.service.impl.ProductServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -87,7 +88,7 @@ class ProductServiceImplTest {
         ProductResponse response = new ProductResponse(1L, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false);
         Page<Product> page = new PageImpl<>(List.of(product));
 
-        when(productRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        when(productRepository.findAll(ArgumentMatchers.<Specification<Product>>any(), any(Pageable.class))).thenReturn(page);
         when(productMapper.toResponse(product)).thenReturn(response);
 
         PageResponse<ProductResponse> result = productService.getAllProducts("Phones", "phone", 0, 20);

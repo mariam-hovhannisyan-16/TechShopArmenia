@@ -65,8 +65,7 @@ public class EmailService {
     // delivery must never take down the caller (a Kafka listener here).
     private void send(SimpleMailMessage message) {
         if (isDevMode()) {
-            log.info("[EmailService] (dev mode, no SMTP configured) Not sending email — printing instead:\n" +
-                    "  To:      {}\n  Subject: {}\n  ---\n{}\n  ---", message.getTo(), message.getSubject(), message.getText());
+            logDevModeSend(String.join(", ", message.getTo()), message.getSubject(), message.getText());
             return;
         }
 
@@ -83,8 +82,7 @@ public class EmailService {
     // just logging the plain-text fallback instead of the HTML.
     private void sendHtml(String to, String subject, String html, String textFallback) {
         if (isDevMode()) {
-            log.info("[EmailService] (dev mode, no SMTP configured) Not sending email — printing instead:\n" +
-                    "  To:      {}\n  Subject: {}\n  ---\n{}\n  ---", to, subject, textFallback);
+            logDevModeSend(to, subject, textFallback);
             return;
         }
 
@@ -98,6 +96,11 @@ public class EmailService {
         } catch (MessagingException | MailException ex) {
             log.error("Failed to send email to {}: {}", to, ex.getMessage(), ex);
         }
+    }
+
+    private void logDevModeSend(String to, String subject, String body) {
+        log.info("[EmailService] (dev mode, no SMTP configured) Not sending email — printing instead:\n" +
+                "  To:      {}\n  Subject: {}\n  ---\n{}\n  ---", to, subject, body);
     }
 
     private boolean isDevMode() {

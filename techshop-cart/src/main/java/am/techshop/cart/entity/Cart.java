@@ -30,6 +30,7 @@ public class Cart {
     private Long userId;
 
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<CartItem> items = new ArrayList<>();
 
     public void addOrUpdateItem(CartItem newItem) {

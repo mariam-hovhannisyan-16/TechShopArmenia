@@ -2,7 +2,9 @@ package am.techshop.common.exception;
 
 public class ProductNotFoundException extends TechShopException {
 
-        public ProductNotFoundException(String message) {
-            super(message, 404);
-        }
+    private static final long serialVersionUID = 1L;
+
+    public ProductNotFoundException(String message) {
+        super(message, 404);
     }
+}
