@@ -1,6 +1,7 @@
 package am.techshop.user.kafka;
 
 import am.techshop.common.event.UserRegisteredEvent;
+import am.techshop.common.event.UserVerifiedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -9,9 +10,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class UserEventProducer {
 
-    private final KafkaTemplate<String, UserRegisteredEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void sendUserRegisteredEvent(UserRegisteredEvent event) {
         kafkaTemplate.send("user-registered", event);
+    }
+
+    public void sendUserVerifiedEvent(UserVerifiedEvent event) {
+        kafkaTemplate.send("user-verified", event);
     }
 }

@@ -1,6 +1,8 @@
 package am.techshop.common.dto.response;
 
 import am.techshop.common.enums.OrderStatus;
+import am.techshop.common.enums.PaymentMethod;
+import am.techshop.common.enums.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,5 +14,14 @@ public record OrderResponse(
         List<OrderItemResponse> items,
         BigDecimal totalPrice,
         OrderStatus status,
-        LocalDateTime createdAt
+        AddressResponse shippingAddress,
+        AddressResponse billingAddress,
+        String notes,
+        List<OrderStatusHistoryResponse> statusHistory,
+        PaymentMethod paymentMethod,
+        String paymentReference,
+        PaymentStatus paymentStatus,
+        String paymentRedirectUrl,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
 ) {}

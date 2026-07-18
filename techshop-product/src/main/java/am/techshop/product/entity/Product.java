@@ -32,7 +32,12 @@ public class Product {
     private String name;
     private String description;
     private BigDecimal price;
-    private int quantity;
+    private int stock;
+    private String category;
+    private String imageUrl;
+
+    @Builder.Default
+    private boolean isNew = false;
 
     @CreatedDate
     private LocalDateTime createdAt;

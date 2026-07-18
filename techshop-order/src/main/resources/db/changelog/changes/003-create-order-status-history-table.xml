@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="003-create-order-status-history-table" author="techshop">
+        <createTable tableName="order_status_history">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="order_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="note" type="VARCHAR(500)"/>
+            <column name="changed_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="order_status_history" baseColumnNames="order_id"
+                                  constraintName="fk_order_status_history_order"
+                                  referencedTableName="orders" referencedColumnNames="id"
+                                  onDelete="CASCADE"/>
+
+        <createIndex tableName="order_status_history" indexName="idx_order_status_history_order_id">
+            <column name="order_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

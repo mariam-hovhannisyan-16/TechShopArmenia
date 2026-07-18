@@ -1,72 +1,11 @@
 package am.techshop.cart.service;
 
-import am.techshop.cart.entity.Cart;
-import am.techshop.cart.entity.CartItem;
-import am.techshop.cart.mapper.CartMapper;
-import am.techshop.cart.repository.CartRepository;
 import am.techshop.common.dto.request.AddItemRequest;
 import am.techshop.common.dto.response.CartResponse;
-import am.techshop.common.dto.response.ProductResponse;
-import am.techshop.common.exception.TechShopException;
-import am.techshop.cart.client.ProductClient;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-@Service
-@RequiredArgsConstructor
-@Transactional
-public class CartService {
-
-    private final CartRepository cartRepository;
-    private final CartMapper cartMapper;
-    private final ProductClient productClient;
-
-    @Transactional(readOnly = true)
-    public CartResponse getCart(Long userId) {
-        Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new TechShopException("Cart not found", 404));
-        return cartMapper.toResponse(cart);
-    }
-
-    public CartResponse addItem(Long userId, AddItemRequest request) {
-        ProductResponse product = productClient.getProduct(request.productId());
-        if (product == null) {
-            throw new TechShopException("Product not found", 404);
-        }
-
-        Cart cart = getOrCreate(userId);
-
-        CartItem item = CartItem.builder()
-                .productId(product.id())
-                .productName(product.name())
-                .productPrice(product.price())
-                .quantity(request.quantity())
-                .build();
-
-        cart.addOrUpdateItem(item);
-        return cartMapper.toResponse(cartRepository.save(cart));
-    }
-
-    public CartResponse removeItem(Long userId, Long productId) {
-        Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new TechShopException("Cart not found", 404));
-        cart.removeItem(productId);
-        return cartMapper.toResponse(cartRepository.save(cart));
-    }
-
-    public void clearCart(Long userId) {
-        cartRepository.findByUserId(userId).ifPresent(cart ->
-                cart.getItems().clear()
-        );
-    }
-
-    private Cart getOrCreate(Long userId) {
-        return cartRepository.findByUserId(userId)
-                .orElseGet(() -> {
-                    Cart cart = new Cart();
-                    cart.setUserId(userId);
-                    return cartRepository.save(cart);
-                });
-    }
+public interface CartService {
+    CartResponse getCart(Long userId);
+    CartResponse addItem(Long userId, AddItemRequest request);
+    CartResponse removeItem(Long userId, Long productId);
+    void clearCart(Long userId);
 }

@@ -7,5 +7,8 @@ public record ProductResponse(
         String name,
         String description,
         BigDecimal price,
-        int quantity
+        int stock,
+        String category,
+        String imageUrl,
+        boolean isNew
 ) {}

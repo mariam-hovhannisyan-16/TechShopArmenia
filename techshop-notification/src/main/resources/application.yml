@@ -30,16 +30,19 @@ spring:
         spring.json.trusted.packages: "am.techshop.common.event"
 
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: mh0504774@gmail.com
-    password: nquvpuqwlwrwyzif
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:4200}
 
 server:
   port: ${SERVER_PORT:8085}

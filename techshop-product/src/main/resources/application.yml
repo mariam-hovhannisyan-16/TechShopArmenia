@@ -19,6 +19,9 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+internal:
+  api-key: ${INTERNAL_API_KEY:local-dev-internal-key-change-in-production}
+
 server:
   port: ${SERVER_PORT:8084}
 

@@ -42,6 +42,13 @@ public class User {
     @Enumerated(EnumType.STRING)
     private UserRole role;
 
+    @Builder.Default
+    private boolean emailVerified = false;
+
+    private String verificationToken;
+
+    private LocalDateTime verificationTokenExpiresAt;
+
     @CreatedDate
     private LocalDateTime createdAt;
 

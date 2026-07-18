@@ -1,6 +1,5 @@
 package am.techshop.order.entity;
 
-import am.techshop.common.util.PriceCalculator;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -12,7 +11,9 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 
@@ -28,6 +29,8 @@ public class OrderItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
     private Order order;
@@ -36,9 +39,4 @@ public class OrderItem {
     private String productName;
     private BigDecimal productPrice;
     private int quantity;
-
-    @SuppressWarnings("unused")
-    public BigDecimal getTotalPrice() {
-        return PriceCalculator.calculateTotal(productPrice, quantity);
-    }
 }

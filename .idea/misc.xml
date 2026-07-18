@@ -9,6 +9,7 @@
     </option>
     <option name="ignoredFiles">
       <set>
+        <option value="$PROJECT_DIR$/techshop-rest-api/pom.xml" />
         <option value="$PROJECT_DIR$/techshop-web/pom.xml" />
       </set>
     </option>

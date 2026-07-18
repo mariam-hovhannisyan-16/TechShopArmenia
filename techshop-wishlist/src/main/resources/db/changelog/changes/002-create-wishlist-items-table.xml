@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="002-create-wishlist-items-table" author="techshop">
+        <createTable tableName="wishlist_items">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="wishlist_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="product_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="added_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="wishlist_items" baseColumnNames="wishlist_id"
+                                  constraintName="fk_wishlist_item_wishlist"
+                                  referencedTableName="wishlists" referencedColumnNames="id"
+                                  onDelete="CASCADE"/>
+
+        <addUniqueConstraint tableName="wishlist_items"
+                              columnNames="wishlist_id, product_id"
+                              constraintName="uk_wishlist_item_product"/>
+    </changeSet>
+
+</databaseChangeLog>

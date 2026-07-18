@@ -24,10 +24,151 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
 
+  postgres:
+    image: postgres:16
+    container_name: techshop-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  techshop-user:
+    build:
+      context: ./techshop-user
+      dockerfile: Dockerfile
+    container_name: techshop-user
+    ports:
+      - "8081:8081"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
+    depends_on:
+      - postgres
+      - kafka
+
+  techshop-product:
+    build:
+      context: ./techshop-product
+      dockerfile: Dockerfile
+    container_name: techshop-product
+    ports:
+      - "8084:8084"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    depends_on:
+      - postgres
+
+  techshop-cart:
+    build:
+      context: ./techshop-cart
+      dockerfile: Dockerfile
+    container_name: techshop-cart
+    ports:
+      - "8082:8082"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      PRODUCT_SERVICE_URL: http://techshop-product:8084
+    depends_on:
+      - postgres
+      - techshop-product
+
+  techshop-order:
+    build:
+      context: ./techshop-order
+      dockerfile: Dockerfile
+    container_name: techshop-order
+    ports:
+      - "8083:8083"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      CART_SERVICE_URL: http://techshop-cart:8082
+      USER_SERVICE_URL: http://techshop-user:8081
+      PRODUCT_SERVICE_URL: http://techshop-product:8084
+      IDRAM_SANDBOX_MODE: "true"
+      IDRAM_SANDBOX_URL: https://sandbox.idram.am/payment
+      IDRAM_MERCHANT_ID: sandbox-merchant
+      IDRAM_SECRET_KEY: sandbox-secret
+      TELCELL_SANDBOX_MODE: "true"
+      TELCELL_SANDBOX_URL: https://sandbox.telcellwallet.am/payment
+      TELCELL_MERCHANT_ID: sandbox-merchant
+      TELCELL_SECRET_KEY: sandbox-secret
+    depends_on:
+      - postgres
+      - kafka
+      - techshop-cart
+      - techshop-user
+      - techshop-product
+
+  techshop-notification:
+    build:
+      context: ./techshop-notification
+      dockerfile: Dockerfile
+    container_name: techshop-notification
+    ports:
+      - "8085:8085"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
+    depends_on:
+      - postgres
+      - kafka
+
+  techshop-wishlist:
+    build:
+      context: ./techshop-wishlist
+      dockerfile: Dockerfile
+    container_name: techshop-wishlist
+    ports:
+      - "8086:8086"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      PRODUCT_SERVICE_URL: http://techshop-product:8084
+    depends_on:
+      - postgres
+      - techshop-product
+
+  techshop-chat:
+    build:
+      context: ./techshop-chat
+      dockerfile: Dockerfile
+    container_name: techshop-chat
+    ports:
+      - "8087:8087"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    depends_on:
+      - postgres
+
 volumes:
   postgres_data:
-
-    sig e sax cragrit compuse? ha
-  servisnert inchx run kexnin? dzerow? ha eli
-  kkrnanas ydonqel sorow run enes mekic?kpordzem
-

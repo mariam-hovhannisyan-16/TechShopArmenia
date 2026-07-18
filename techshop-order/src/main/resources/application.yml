@@ -12,18 +12,40 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: ${DDL_AUTO:update}
+      ddl-auto: ${DDL_AUTO:validate}
     show-sql: ${SHOW_SQL:false}
     open-in-view: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:local-dev-secret-change-in-production}
+
+internal:
+  api-key: ${INTERNAL_API_KEY:local-dev-internal-key-change-in-production}
+
+payment:
+  idram:
+    sandbox-mode: ${IDRAM_SANDBOX_MODE:true}
+    sandbox-url: ${IDRAM_SANDBOX_URL:https://sandbox.idram.am/payment}
+    merchant-id: ${IDRAM_MERCHANT_ID:sandbox-merchant}
+    secret-key: ${IDRAM_SECRET_KEY:sandbox-secret}
+  telcell:
+    sandbox-mode: ${TELCELL_SANDBOX_MODE:true}
+    sandbox-url: ${TELCELL_SANDBOX_URL:https://sandbox.telcellwallet.am/payment}
+    merchant-id: ${TELCELL_MERCHANT_ID:sandbox-merchant}
+    secret-key: ${TELCELL_SECRET_KEY:sandbox-secret}
 
 server:
   port: ${SERVER_PORT:8083}
@@ -39,3 +61,4 @@ services:
 logging:
   level:
     am.techshop.order: ${LOG_LEVEL:INFO}
+    org.springframework.security: ${SECURITY_LOG_LEVEL:WARN}
