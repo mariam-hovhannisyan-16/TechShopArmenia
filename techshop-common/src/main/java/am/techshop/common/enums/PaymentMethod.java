@@ -2,5 +2,6 @@ package am.techshop.common.enums;
 
 public enum PaymentMethod {
     IDRAM,
-    TELCELL
+    TELCELL,
+    ROKET_LINE
 }

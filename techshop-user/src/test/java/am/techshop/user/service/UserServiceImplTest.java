@@ -2,9 +2,11 @@ package am.techshop.user.service;
 
 import am.techshop.common.dto.request.LoginRequest;
 import am.techshop.common.dto.request.RegisterRequest;
+import am.techshop.common.dto.request.ResetPasswordRequest;
 import am.techshop.common.dto.response.AuthResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.enums.UserRole;
+import am.techshop.common.event.PasswordResetRequestedEvent;
 import am.techshop.common.event.UserRegisteredEvent;
 import am.techshop.common.event.UserVerifiedEvent;
 import am.techshop.common.exception.TechShopException;
@@ -16,6 +18,7 @@ import am.techshop.user.repository.UserRepository;
 import am.techshop.user.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -52,15 +55,15 @@ class UserServiceImplTest {
 
     @Test
     void register_WhenEmailNotTaken_RegistersUser() {
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password");
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
         User savedUser = User.builder()
                 .id(1L)
                 .name("Mariam")
                 .email("mariam@test.com")
                 .password("encoded")
-                .role(UserRole.USER)
+                .role(UserRole.CUSTOMER)
                 .build();
-        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.USER, LocalDateTime.now(), true);
+        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("encoded");
@@ -76,8 +79,46 @@ class UserServiceImplTest {
     }
 
     @Test
+    void register_WhenRoleNotProvided_DefaultsToCustomer() {
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
+        User savedUser = User.builder().id(1L).name("Mariam").email("mariam@test.com").role(UserRole.CUSTOMER).build();
+        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
+
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(passwordEncoder.encode(request.password())).thenReturn("encoded");
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(jwtService.generateToken(any(), any(), any())).thenReturn("token");
+        when(userMapper.toResponse(savedUser)).thenReturn(userResponse);
+
+        userService.register(request);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertEquals(UserRole.CUSTOMER, captor.getValue().getRole());
+    }
+
+    @Test
+    void register_WhenRoleProvided_UsesRequestedRole() {
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", UserRole.ADMIN);
+        User savedUser = User.builder().id(1L).name("Mariam").email("mariam@test.com").role(UserRole.ADMIN).build();
+        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.ADMIN, LocalDateTime.now(), true);
+
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(passwordEncoder.encode(request.password())).thenReturn("encoded");
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(jwtService.generateToken(any(), any(), any())).thenReturn("token");
+        when(userMapper.toResponse(savedUser)).thenReturn(userResponse);
+
+        userService.register(request);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertEquals(UserRole.ADMIN, captor.getValue().getRole());
+    }
+
+    @Test
     void register_WhenEmailAlreadyTaken_ThrowsException() {
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password");
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
         when(userRepository.existsByEmail(request.email())).thenReturn(true);
 
         TechShopException ex = assertThrows(TechShopException.class,
@@ -93,9 +134,9 @@ class UserServiceImplTest {
                 .id(1L)
                 .email("mariam@test.com")
                 .password("encoded")
-                .role(UserRole.USER)
+                .role(UserRole.CUSTOMER)
                 .build();
-        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.USER, LocalDateTime.now(), true);
+        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
 
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(request.password(), user.getPassword())).thenReturn(true);
@@ -124,7 +165,7 @@ class UserServiceImplTest {
                 .id(1L)
                 .email("mariam@test.com")
                 .password("encoded")
-                .role(UserRole.USER)
+                .role(UserRole.CUSTOMER)
                 .build();
 
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
@@ -140,7 +181,7 @@ class UserServiceImplTest {
     void getUserById_WhenExists_ReturnsUser() {
         Long id = 1L;
         User user = User.builder().id(id).name("Mariam").build();
-        UserResponse userResponse = new UserResponse(id, "Mariam", "mariam@test.com", UserRole.USER, LocalDateTime.now(), true);
+        UserResponse userResponse = new UserResponse(id, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
 
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
         when(userMapper.toResponse(user)).thenReturn(userResponse);
@@ -161,6 +202,31 @@ class UserServiceImplTest {
     }
 
     @Test
+    void updateUserRole_WhenExists_UpdatesRole() {
+        Long id = 1L;
+        User user = User.builder().id(id).name("Mariam").role(UserRole.CUSTOMER).build();
+        UserResponse userResponse = new UserResponse(id, "Mariam", "mariam@test.com", UserRole.ADMIN, LocalDateTime.now(), true);
+
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+        when(userMapper.toResponse(user)).thenReturn(userResponse);
+
+        UserResponse result = userService.updateUserRole(id, UserRole.ADMIN);
+
+        assertEquals(UserRole.ADMIN, user.getRole());
+        assertEquals(UserRole.ADMIN, result.role());
+    }
+
+    @Test
+    void updateUserRole_WhenNotFound_ThrowsException() {
+        Long id = 1L;
+        when(userRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class,
+                () -> userService.updateUserRole(id, UserRole.ADMIN));
+    }
+
+    @Test
     void login_WhenUnverifiedAndVerificationRequired_ThrowsException() {
         ReflectionTestUtils.setField(userService, "requireEmailVerification", true);
         LoginRequest request = new LoginRequest("mariam@test.com", "password");
@@ -168,7 +234,7 @@ class UserServiceImplTest {
                 .id(1L)
                 .email("mariam@test.com")
                 .password("encoded")
-                .role(UserRole.USER)
+                .role(UserRole.CUSTOMER)
                 .emailVerified(false)
                 .build();
 
@@ -188,10 +254,10 @@ class UserServiceImplTest {
                 .id(1L)
                 .email("mariam@test.com")
                 .password("encoded")
-                .role(UserRole.USER)
+                .role(UserRole.CUSTOMER)
                 .emailVerified(false)
                 .build();
-        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.USER, LocalDateTime.now(), false);
+        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), false);
 
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(request.password(), user.getPassword())).thenReturn(true);
@@ -214,7 +280,7 @@ class UserServiceImplTest {
                 .verificationToken("valid-token")
                 .verificationTokenExpiresAt(LocalDateTime.now().plusHours(1))
                 .build();
-        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.USER, LocalDateTime.now(), true);
+        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
 
         when(userRepository.findByVerificationToken("valid-token")).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
@@ -309,5 +375,83 @@ class UserServiceImplTest {
 
         verify(userRepository, never()).save(any(User.class));
         verify(userEventProducer, never()).sendUserRegisteredEvent(any(UserRegisteredEvent.class));
+    }
+
+    @Test
+    void forgotPassword_WhenUserExists_GeneratesResetTokenAndSendsEvent() {
+        User user = User.builder()
+                .id(1L)
+                .name("Mariam")
+                .email("mariam@test.com")
+                .build();
+        when(userRepository.findByEmail("mariam@test.com")).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        userService.forgotPassword("mariam@test.com");
+
+        assertNotNull(user.getResetToken());
+        assertNotNull(user.getResetTokenExpiresAt());
+        verify(userEventProducer).sendPasswordResetRequestedEvent(any(PasswordResetRequestedEvent.class));
+    }
+
+    @Test
+    void forgotPassword_WhenUserNotFound_DoesNothing() {
+        when(userRepository.findByEmail("missing@test.com")).thenReturn(Optional.empty());
+
+        userService.forgotPassword("missing@test.com");
+
+        verify(userRepository, never()).save(any(User.class));
+        verify(userEventProducer, never()).sendPasswordResetRequestedEvent(any(PasswordResetRequestedEvent.class));
+    }
+
+    @Test
+    void resetPassword_WhenTokenValid_UpdatesPasswordAndClearsToken() {
+        User user = User.builder()
+                .id(1L)
+                .email("mariam@test.com")
+                .password("old-encoded")
+                .resetToken("valid-token")
+                .resetTokenExpiresAt(LocalDateTime.now().plusMinutes(30))
+                .build();
+        ResetPasswordRequest request = new ResetPasswordRequest("valid-token", "newpassword");
+
+        when(userRepository.findByResetToken("valid-token")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("newpassword")).thenReturn("new-encoded");
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        userService.resetPassword(request);
+
+        assertEquals("new-encoded", user.getPassword());
+        assertNull(user.getResetToken());
+        assertNull(user.getResetTokenExpiresAt());
+    }
+
+    @Test
+    void resetPassword_WhenTokenNotFound_ThrowsException() {
+        ResetPasswordRequest request = new ResetPasswordRequest("missing", "newpassword");
+        when(userRepository.findByResetToken("missing")).thenReturn(Optional.empty());
+
+        TechShopException ex = assertThrows(TechShopException.class,
+                () -> userService.resetPassword(request));
+
+        assertEquals(400, ex.getStatusCode());
+    }
+
+    @Test
+    void resetPassword_WhenTokenExpired_ThrowsException() {
+        User user = User.builder()
+                .id(1L)
+                .email("mariam@test.com")
+                .resetToken("expired-token")
+                .resetTokenExpiresAt(LocalDateTime.now().minusMinutes(1))
+                .build();
+        ResetPasswordRequest request = new ResetPasswordRequest("expired-token", "newpassword");
+        when(userRepository.findByResetToken("expired-token")).thenReturn(Optional.of(user));
+
+        TechShopException ex = assertThrows(TechShopException.class,
+                () -> userService.resetPassword(request));
+
+        assertEquals(400, ex.getStatusCode());
+        verify(userRepository, never()).save(any(User.class));
     }
 }

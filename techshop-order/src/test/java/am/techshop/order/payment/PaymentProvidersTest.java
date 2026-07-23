@@ -40,6 +40,19 @@ class PaymentProvidersTest {
     }
 
     @Test
+    void roketLinePaymentService_CreatesReferenceWithMethodPrefix() {
+        RoketLinePaymentService provider = new RoketLinePaymentService();
+        ReflectionTestUtils.setField(provider, "sandboxUrl", "https://sandbox.roketline.am/payment");
+
+        PaymentInitiationResult result = provider.createPayment(Order.builder().totalPrice(BigDecimal.TEN).build());
+
+        assertEquals(PaymentMethod.ROKET_LINE, provider.getMethod());
+        assertTrue(result.paymentReference().startsWith("ROKET-LINE-"));
+        assertTrue(result.redirectUrl().startsWith("https://sandbox.roketline.am/payment?ref=ROKET-LINE-"));
+        assertEquals(PaymentStatus.PENDING, result.status());
+    }
+
+    @Test
     void verifyPayment_InSandboxMode_AlwaysApproves() {
         IdramPaymentService provider = new IdramPaymentService();
         ReflectionTestUtils.setField(provider, "sandboxMode", true);

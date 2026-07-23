@@ -12,7 +12,7 @@ import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentStatus;
-import am.techshop.common.event.OrderCreatedEvent;
+import am.techshop.common.event.OrderStatusChangedEvent;
 import am.techshop.common.exception.TechShopException;
 import am.techshop.order.client.CartClient;
 import am.techshop.order.client.ProductClient;
@@ -29,6 +29,7 @@ import am.techshop.order.repository.OrderRepository;
 import am.techshop.order.service.OrderService;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -44,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -103,9 +105,9 @@ public class OrderServiceImpl implements OrderService {
         Order saved = orderRepository.save(order);
         cartClient.clearCart(userId);
 
-        orderEventProducer.sendOrderCreatedEvent(
-                new OrderCreatedEvent(saved.getId(), saved.getUserId(), user.email(), user.name(), saved.getTotalPrice())
-        );
+        orderEventProducer.sendOrderStatusChangedEvent(new OrderStatusChangedEvent(
+                saved.getId(), saved.getUserId(), user.email(), user.name(),
+                saved.getStatus(), "Order created from cart", saved.getTotalPrice()));
 
         return orderMapper.toResponse(saved, paymentResult.redirectUrl());
     }
@@ -219,6 +221,21 @@ public class OrderServiceImpl implements OrderService {
         if (newStatus == OrderStatus.CANCELLED || newStatus == OrderStatus.REFUNDED) {
             restoreOrderStock(order);
         }
+        publishStatusChanged(order, note);
+    }
+
+    // Notifying the user is best-effort: a user-service hiccup here must never
+    // fail the order transition itself, which is the operation the caller
+    // actually asked for.
+    private void publishStatusChanged(Order order, String note) {
+        try {
+            UserResponse user = userClient.getUser(order.getUserId()).data();
+            orderEventProducer.sendOrderStatusChangedEvent(new OrderStatusChangedEvent(
+                    order.getId(), order.getUserId(), user.email(), user.name(),
+                    order.getStatus(), note, order.getTotalPrice()));
+        } catch (Exception ex) {
+            log.warn("Failed to publish status-changed notification for order {}: {}", order.getId(), ex.getMessage());
+        }
     }
 
     private void reserveStock(List<CartItemResponse> items) {
@@ -252,8 +269,7 @@ public class OrderServiceImpl implements OrderService {
         try {
             productClient.adjustStock(productId, new StockAdjustmentRequest(delta), internalApiKey);
         } catch (FeignException ignored) {
-            // Best-effort restock/compensation: a failure here must not block the status
-            // change or mask the original error that triggered it.
+
         }
     }
 }

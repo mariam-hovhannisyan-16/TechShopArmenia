@@ -56,7 +56,7 @@ class ProductServiceImplTest {
                 .category("Phones")
                 .imageUrl("img.jpg")
                 .build();
-        ProductResponse response = new ProductResponse(1L, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", "img.jpg", false);
+        ProductResponse response = new ProductResponse(1L, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", "img.jpg", false, null);
 
         when(categoryRepository.existsByNameIgnoreCase("Phones")).thenReturn(true);
         when(productRepository.save(any(Product.class))).thenReturn(product);
@@ -85,7 +85,7 @@ class ProductServiceImplTest {
     @Test
     void getAllProducts_ReturnsPagedProductList() {
         Product product = Product.builder().id(1L).name("Phone").build();
-        ProductResponse response = new ProductResponse(1L, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false);
+        ProductResponse response = new ProductResponse(1L, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, null);
         Page<Product> page = new PageImpl<>(List.of(product));
 
         when(productRepository.findAll(ArgumentMatchers.<Specification<Product>>any(), any(Pageable.class))).thenReturn(page);
@@ -102,7 +102,7 @@ class ProductServiceImplTest {
     void getProductById_WhenExists_ReturnsProduct() {
         Long id = 1L;
         Product product = Product.builder().id(id).name("Phone").build();
-        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false);
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, null);
 
         when(productRepository.findById(id)).thenReturn(Optional.of(product));
         when(productMapper.toResponse(product)).thenReturn(response);
@@ -145,7 +145,7 @@ class ProductServiceImplTest {
     void adjustStock_WhenSufficientStock_ReducesStock() {
         Long id = 1L;
         Product product = Product.builder().id(id).name("Phone").stock(10).build();
-        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 8, "Phones", null, false);
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 8, "Phones", null, false, null);
 
         when(productRepository.findById(id)).thenReturn(Optional.of(product));
         when(productRepository.save(product)).thenReturn(product);
@@ -174,7 +174,7 @@ class ProductServiceImplTest {
     void adjustStock_WhenRestoringStock_IncreasesStock() {
         Long id = 1L;
         Product product = Product.builder().id(id).name("Phone").stock(3).build();
-        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 5, "Phones", null, false);
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 5, "Phones", null, false, null);
 
         when(productRepository.findById(id)).thenReturn(Optional.of(product));
         when(productRepository.save(product)).thenReturn(product);
@@ -184,5 +184,71 @@ class ProductServiceImplTest {
 
         assertEquals(5, product.getStock());
         assertEquals(5, result.stock());
+    }
+
+    @Test
+    void updatePrice_WhenExists_UpdatesPrice() {
+        Long id = 1L;
+        Product product = Product.builder().id(id).name("Phone").price(BigDecimal.valueOf(100)).build();
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(150), 10, "Phones", null, false, null);
+
+        when(productRepository.findById(id)).thenReturn(Optional.of(product));
+        when(productRepository.save(product)).thenReturn(product);
+        when(productMapper.toResponse(product)).thenReturn(response);
+
+        ProductResponse result = productService.updatePrice(id, BigDecimal.valueOf(150));
+
+        assertEquals(BigDecimal.valueOf(150), product.getPrice());
+        assertEquals(BigDecimal.valueOf(150), result.price());
+    }
+
+    @Test
+    void updatePrice_WhenNotFound_ThrowsException() {
+        Long id = 1L;
+        when(productRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(ProductNotFoundException.class,
+                () -> productService.updatePrice(id, BigDecimal.valueOf(150)));
+    }
+
+    @Test
+    void updateDiscount_WhenExists_SetsDiscount() {
+        Long id = 1L;
+        Product product = Product.builder().id(id).name("Phone").build();
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, 20);
+
+        when(productRepository.findById(id)).thenReturn(Optional.of(product));
+        when(productRepository.save(product)).thenReturn(product);
+        when(productMapper.toResponse(product)).thenReturn(response);
+
+        ProductResponse result = productService.updateDiscount(id, 20);
+
+        assertEquals(20, product.getDiscountPercentage());
+        assertEquals(20, result.discountPercentage());
+    }
+
+    @Test
+    void updateDiscount_WithNull_ClearsDiscount() {
+        Long id = 1L;
+        Product product = Product.builder().id(id).name("Phone").discountPercentage(20).build();
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, null);
+
+        when(productRepository.findById(id)).thenReturn(Optional.of(product));
+        when(productRepository.save(product)).thenReturn(product);
+        when(productMapper.toResponse(product)).thenReturn(response);
+
+        ProductResponse result = productService.updateDiscount(id, null);
+
+        assertNull(product.getDiscountPercentage());
+        assertNull(result.discountPercentage());
+    }
+
+    @Test
+    void updateDiscount_WhenNotFound_ThrowsException() {
+        Long id = 1L;
+        when(productRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(ProductNotFoundException.class,
+                () -> productService.updateDiscount(id, 20));
     }
 }

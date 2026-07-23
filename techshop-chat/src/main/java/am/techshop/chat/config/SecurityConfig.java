@@ -17,13 +17,6 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 
-/**
- * Chat endpoints must work for anonymous guests, so unlike order/wishlist this permits
- * everything under /api/chat/** rather than requiring authentication. JwtAuthFilter still
- * runs first and populates the SecurityContext whenever a valid Bearer token is present,
- * so logged-in identity (and the admin role, for support detection) is available even
- * though the path itself doesn't require it.
- */
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {

@@ -2,9 +2,11 @@ package am.techshop.user.service.impl;
 
 import am.techshop.common.dto.request.LoginRequest;
 import am.techshop.common.dto.request.RegisterRequest;
+import am.techshop.common.dto.request.ResetPasswordRequest;
 import am.techshop.common.dto.response.AuthResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.enums.UserRole;
+import am.techshop.common.event.PasswordResetRequestedEvent;
 import am.techshop.common.event.UserRegisteredEvent;
 import am.techshop.common.event.UserVerifiedEvent;
 import am.techshop.common.exception.TechShopException;
@@ -31,6 +33,7 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
 
     private static final long VERIFICATION_TOKEN_TTL_HOURS = 24;
+    private static final long RESET_TOKEN_TTL_HOURS = 1;
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -53,7 +56,7 @@ public class UserServiceImpl implements UserService {
                 .name(request.name())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
-                .role(UserRole.USER)
+                .role(request.role() != null ? request.role() : UserRole.CUSTOMER)
                 .emailVerified(false)
                 .verificationToken(verificationToken)
                 .verificationTokenExpiresAt(LocalDateTime.now().plusHours(VERIFICATION_TOKEN_TTL_HOURS))
@@ -146,5 +149,47 @@ public class UserServiceImpl implements UserService {
                     new UserRegisteredEvent(user.getId(), user.getEmail(), user.getName(), verificationToken)
             );
         });
+    }
+
+    // Always succeeds from the caller's point of view whether or not the
+    // email exists, so this endpoint can't be used to enumerate registered
+    // addresses.
+    @Transactional
+    public void forgotPassword(String email) {
+        userRepository.findByEmail(email).ifPresent(user -> {
+            String resetToken = UUID.randomUUID().toString();
+            user.setResetToken(resetToken);
+            user.setResetTokenExpiresAt(LocalDateTime.now().plusHours(RESET_TOKEN_TTL_HOURS));
+            userRepository.save(user);
+
+            userEventProducer.sendPasswordResetRequestedEvent(
+                    new PasswordResetRequestedEvent(user.getId(), user.getEmail(), user.getName(), resetToken)
+            );
+        });
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        User user = userRepository.findByResetToken(request.token())
+                .orElseThrow(() -> new TechShopException("Invalid or already-used reset link", 400));
+
+        if (user.getResetTokenExpiresAt() == null || user.getResetTokenExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new TechShopException("This reset link has expired. Please request a new one.", 400);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        user.setResetToken(null);
+        user.setResetTokenExpiresAt(null);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public UserResponse updateUserRole(Long id, UserRole role) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
+
+        user.setRole(role);
+        User savedUser = userRepository.save(user);
+        return userMapper.toResponse(savedUser);
     }
 }

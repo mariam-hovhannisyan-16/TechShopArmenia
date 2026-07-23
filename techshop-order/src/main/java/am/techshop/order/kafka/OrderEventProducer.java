@@ -1,6 +1,6 @@
 package am.techshop.order.kafka;
 
-import am.techshop.common.event.OrderCreatedEvent;
+import am.techshop.common.event.OrderStatusChangedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -9,9 +9,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OrderEventProducer {
 
-    private final KafkaTemplate<String, OrderCreatedEvent> kafkaTemplate;
+    private final KafkaTemplate<String, OrderStatusChangedEvent> kafkaTemplate;
 
-    public void sendOrderCreatedEvent(OrderCreatedEvent event) {
-        kafkaTemplate.send("order-created", event);
+    public void sendOrderStatusChangedEvent(OrderStatusChangedEvent event) {
+        kafkaTemplate.send("order-status-changed", event);
     }
 }

@@ -2,14 +2,6 @@ package am.techshop.notification.email;
 
 import java.time.Year;
 
-// Shared branded HTML shell (header band + card + footer) for every
-// outbound email, so the layout/branding lives in one place instead of
-// being duplicated per email type. Every style is inline — most email
-// clients (Outlook desktop, Gmail's app, etc.) strip <style> blocks and
-// external stylesheets entirely, so a <style> tag here would silently not
-// apply for a large share of recipients. Layout uses nested <table>s
-// rather than divs/flexbox for the same reason (table layout is the one
-// thing virtually every email client renders consistently).
 public final class EmailTemplates {
 
     private static final String ACCENT = "#0066ff";
@@ -34,6 +26,19 @@ public final class EmailTemplates {
         return wrap(body);
     }
 
+    public static String passwordResetEmail(String name, String resetLink) {
+        String body =
+                "<p style=\"" + textStyle() + " margin:0 0 16px;\">Բարև, " + escape(name) + ":</p>" +
+                "<p style=\"" + textStyle() + " margin:0 0 28px;\">" +
+                "Մենք ստացել ենք ձեր հաշվի գաղտնաբառը վերականգնելու հայտը: Նոր գաղտնաբառ սահմանելու համար սեղմեք ստորև գտնվող կոճակին:" +
+                "</p>" +
+                button(resetLink, "Վերականգնել գաղտնաբառը") +
+                "<p style=\"" + smallTextStyle() + " margin:28px 0 0;\">Այս հղումն ուժի մեջ է 1 ժամ:</p>" +
+                "<p style=\"" + smallTextStyle() + " margin:8px 0 0;\">Եթե դուք չեք հայցել գաղտնաբառի վերականգնում, պարզապես անտեսեք այս նամակը:</p>";
+
+        return wrap(body);
+    }
+
     public static String welcomeEmail(String name, String homeUrl) {
         String body =
                 "<p style=\"" + textStyle() + " margin:0 0 16px;\">Բարև, " + escape(name) + ":</p>" +
@@ -44,8 +49,6 @@ public final class EmailTemplates {
 
         return wrap(body);
     }
-
-    // ---- shared shell ----
 
     private static String wrap(String bodyHtml) {
         return "<!DOCTYPE html>" +

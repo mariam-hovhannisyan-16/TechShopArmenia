@@ -1,5 +1,6 @@
 package am.techshop.common.dto.request;
 
+import am.techshop.common.enums.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -15,5 +16,7 @@ public record RegisterRequest(
 
         @NotBlank(message = "Password is required")
         @Size(min = 6, max = 100, message = "Password must be between 6 and 100 characters")
-        String password
+        String password,
+
+        UserRole role
 ) {}

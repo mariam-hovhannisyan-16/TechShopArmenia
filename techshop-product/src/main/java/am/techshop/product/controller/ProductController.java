@@ -1,5 +1,7 @@
 package am.techshop.product.controller;
 
+import am.techshop.common.dto.request.DiscountUpdateRequest;
+import am.techshop.common.dto.request.PriceUpdateRequest;
 import am.techshop.common.dto.request.ProductRequest;
 import am.techshop.common.dto.request.StockAdjustmentRequest;
 import am.techshop.common.dto.response.ApiResponse;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -71,5 +74,19 @@ public class ProductController {
             throw new TechShopException("Forbidden", 403);
         }
         return ResponseEntity.ok(ApiResponse.ok("Stock adjusted", productService.adjustStock(id, request.quantityDelta())));
+    }
+
+    @PutMapping("/api/products/{id}/price")
+    public ResponseEntity<ApiResponse<ProductResponse>> updatePrice(
+            @PathVariable Long id,
+            @RequestBody @Valid PriceUpdateRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Price updated", productService.updatePrice(id, request.price())));
+    }
+
+    @PutMapping("/api/products/{id}/discount")
+    public ResponseEntity<ApiResponse<ProductResponse>> updateDiscount(
+            @PathVariable Long id,
+            @RequestBody @Valid DiscountUpdateRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Discount updated", productService.updateDiscount(id, request.discountPercentage())));
     }
 }

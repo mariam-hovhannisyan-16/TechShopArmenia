@@ -20,6 +20,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -88,6 +90,22 @@ public class ProductServiceImpl implements ProductService {
         }
 
         product.setStock(newStock);
+        return productMapper.toResponse(productRepository.save(product));
+    }
+
+    public ProductResponse updatePrice(Long id, BigDecimal price) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+
+        product.setPrice(price);
+        return productMapper.toResponse(productRepository.save(product));
+    }
+
+    public ProductResponse updateDiscount(Long id, Integer discountPercentage) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
+
+        product.setDiscountPercentage(discountPercentage);
         return productMapper.toResponse(productRepository.save(product));
     }
 }

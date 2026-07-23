@@ -5,16 +5,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
-public class TelcellPaymentService extends AbstractSandboxPaymentProvider {
+public class RoketLinePaymentService extends AbstractSandboxPaymentProvider {
 
-    @Value("${payment.telcell.sandbox-mode:true}")
+    @Value("${payment.roket-line.sandbox-mode:true}")
     private boolean sandboxMode;
 
-    @Value("${payment.telcell.sandbox-url}")
+    @Value("${payment.roket-line.sandbox-url}")
     private String sandboxUrl;
 
-    public TelcellPaymentService() {
-        super(PaymentMethod.TELCELL, "TELCELL");
+    public RoketLinePaymentService() {
+        super(PaymentMethod.ROKET_LINE, "ROKET-LINE");
     }
 
     @Override

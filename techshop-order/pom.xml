@@ -39,6 +39,14 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
+        <!-- Feign's default client (java.net.HttpURLConnection) doesn't support
+             the PATCH method at all (throws ProtocolException: Invalid HTTP
+             method: PATCH) — needed here since ProductClient.adjustStock() is
+             a @PatchMapping. Apache HttpClient5 supports PATCH natively. -->
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-hc5</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.liquibase</groupId>
             <artifactId>liquibase-core</artifactId>

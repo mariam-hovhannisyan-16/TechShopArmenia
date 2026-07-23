@@ -52,7 +52,7 @@ class WishlistServiceImplTest {
     @Test
     void addToWishlist_WhenWishlistExistsAndProductIsNew_AddsItem() {
         Wishlist wishlist = Wishlist.builder().id(1L).userId(USER_ID).build();
-        ProductResponse product = new ProductResponse(PRODUCT_ID, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false);
+        ProductResponse product = new ProductResponse(PRODUCT_ID, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, null);
 
         when(wishlistRepository.findByUserId(USER_ID)).thenReturn(Optional.of(wishlist));
         when(productClient.getProduct(PRODUCT_ID)).thenReturn(new ApiResponse<>(true, "Success", product));
@@ -73,7 +73,7 @@ class WishlistServiceImplTest {
         when(wishlistRepository.findByUserId(USER_ID)).thenReturn(Optional.empty());
         when(wishlistRepository.save(any(Wishlist.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        ProductResponse product = new ProductResponse(PRODUCT_ID, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false);
+        ProductResponse product = new ProductResponse(PRODUCT_ID, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, null);
         when(productClient.getProduct(PRODUCT_ID)).thenReturn(new ApiResponse<>(true, "Success", product));
         when(wishlistMapper.toResponse(any(), any()))
                 .thenReturn(new WishlistResponse(null, USER_ID, List.of(), null));
@@ -114,7 +114,7 @@ class WishlistServiceImplTest {
     void getWishlist_WhenExists_ReturnsMappedWishlist() {
         Wishlist wishlist = Wishlist.builder().id(1L).userId(USER_ID).build();
         wishlist.addItem(WishlistItem.builder().id(1L).productId(PRODUCT_ID).build());
-        ProductResponse product = new ProductResponse(PRODUCT_ID, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false);
+        ProductResponse product = new ProductResponse(PRODUCT_ID, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, null);
 
         when(wishlistRepository.findByUserId(USER_ID)).thenReturn(Optional.of(wishlist));
         when(productClient.getProduct(PRODUCT_ID)).thenReturn(new ApiResponse<>(true, "Success", product));

@@ -1,17 +1,25 @@
 package am.techshop.product.controller;
 
+import am.techshop.common.dto.request.DiscountUpdateRequest;
+import am.techshop.common.dto.request.PriceUpdateRequest;
 import am.techshop.common.dto.request.ProductRequest;
 import am.techshop.common.dto.request.StockAdjustmentRequest;
 import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.dto.response.ProductResponse;
+import am.techshop.product.config.JwtAuthFilter;
+import am.techshop.product.config.SecurityConfig;
+import am.techshop.product.service.JwtService;
 import am.techshop.product.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -24,15 +32,17 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ProductController.class)
-@AutoConfigureMockMvc(addFilters = false)
+@Import({SecurityConfig.class, JwtAuthFilter.class})
 class ProductControllerTest {
 
     @Autowired
@@ -44,10 +54,23 @@ class ProductControllerTest {
     @MockBean
     private ProductService productService;
 
+    @MockBean
+    private JwtService jwtService;
+
+    private static final Long USER_ID = 1L;
+
+    private Authentication asUser() {
+        return new UsernamePasswordAuthenticationToken(USER_ID, null, List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER")));
+    }
+
+    private Authentication asAdmin() {
+        return new UsernamePasswordAuthenticationToken(USER_ID, null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+    }
+
     @Test
     void addProduct_ReturnsCreatedProduct() throws Exception {
         ProductRequest request = new ProductRequest("Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", "img.jpg", false);
-        ProductResponse response = new ProductResponse(1L, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", "img.jpg", false);
+        ProductResponse response = new ProductResponse(1L, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", "img.jpg", false, null);
 
         when(productService.addProduct(any(ProductRequest.class))).thenReturn(response);
 
@@ -60,7 +83,7 @@ class ProductControllerTest {
 
     @Test
     void getAllProducts_ReturnsPagedProductList() throws Exception {
-        ProductResponse response = new ProductResponse(1L, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false);
+        ProductResponse response = new ProductResponse(1L, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, null);
         PageResponse<ProductResponse> page = new PageResponse<>(List.of(response), 0, 20, 1, 1);
 
         when(productService.getAllProducts(any(), any(), anyInt(), anyInt())).thenReturn(page);
@@ -84,7 +107,7 @@ class ProductControllerTest {
     @Test
     void getProductById_ReturnsProduct() throws Exception {
         Long id = 1L;
-        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false);
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, null);
 
         when(productService.getProductById(id)).thenReturn(response);
 
@@ -107,7 +130,7 @@ class ProductControllerTest {
     void adjustStock_WithCorrectInternalApiKey_ReturnsUpdatedProduct() throws Exception {
         Long id = 1L;
         StockAdjustmentRequest request = new StockAdjustmentRequest(-2);
-        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 8, "Phones", null, false);
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 8, "Phones", null, false, null);
 
         when(productService.adjustStock(id, -2)).thenReturn(response);
 
@@ -130,5 +153,91 @@ class ProductControllerTest {
                 .andExpect(status().isForbidden());
 
         verify(productService, never()).adjustStock(any(), anyInt());
+    }
+
+    @Test
+    void updatePrice_WhenCalledByAdmin_ReturnsUpdatedProduct() throws Exception {
+        Long id = 1L;
+        PriceUpdateRequest request = new PriceUpdateRequest(BigDecimal.valueOf(150));
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(150), 10, "Phones", null, false, null);
+
+        when(productService.updatePrice(id, BigDecimal.valueOf(150))).thenReturn(response);
+
+        mockMvc.perform(put("/api/products/{id}/price", id)
+                        .with(authentication(asAdmin()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.price").value(150));
+    }
+
+    @Test
+    void updatePrice_WhenCalledByRegularUser_ReturnsForbidden() throws Exception {
+        PriceUpdateRequest request = new PriceUpdateRequest(BigDecimal.valueOf(150));
+
+        mockMvc.perform(put("/api/products/{id}/price", 1L)
+                        .with(authentication(asUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        verify(productService, never()).updatePrice(any(), any());
+    }
+
+    @Test
+    void updatePrice_WithoutAuthentication_ReturnsUnauthorized() throws Exception {
+        PriceUpdateRequest request = new PriceUpdateRequest(BigDecimal.valueOf(150));
+
+        mockMvc.perform(put("/api/products/{id}/price", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+
+        verify(productService, never()).updatePrice(any(), any());
+    }
+
+    @Test
+    void updateDiscount_WhenCalledByAdmin_ReturnsUpdatedProduct() throws Exception {
+        Long id = 1L;
+        DiscountUpdateRequest request = new DiscountUpdateRequest(20);
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, 20);
+
+        when(productService.updateDiscount(id, 20)).thenReturn(response);
+
+        mockMvc.perform(put("/api/products/{id}/discount", id)
+                        .with(authentication(asAdmin()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.discountPercentage").value(20));
+    }
+
+    @Test
+    void updateDiscount_WithNullClearsDiscount() throws Exception {
+        Long id = 1L;
+        DiscountUpdateRequest request = new DiscountUpdateRequest(null);
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, null);
+
+        when(productService.updateDiscount(id, null)).thenReturn(response);
+
+        mockMvc.perform(put("/api/products/{id}/discount", id)
+                        .with(authentication(asAdmin()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.discountPercentage").doesNotExist());
+    }
+
+    @Test
+    void updateDiscount_WhenCalledByRegularUser_ReturnsForbidden() throws Exception {
+        DiscountUpdateRequest request = new DiscountUpdateRequest(20);
+
+        mockMvc.perform(put("/api/products/{id}/discount", 1L)
+                        .with(authentication(asUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        verify(productService, never()).updateDiscount(any(), any());
     }
 }

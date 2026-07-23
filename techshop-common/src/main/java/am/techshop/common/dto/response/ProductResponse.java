@@ -10,5 +10,6 @@ public record ProductResponse(
         int stock,
         String category,
         String imageUrl,
-        boolean isNew
+        boolean isNew,
+        Integer discountPercentage
 ) {}

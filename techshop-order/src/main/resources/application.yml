@@ -28,6 +28,12 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
+  cloud:
+    openfeign:
+      httpclient:
+        hc5:
+          enabled: true
+
 app:
   jwt:
     secret: ${JWT_SECRET:local-dev-secret-change-in-production}
@@ -46,6 +52,11 @@ payment:
     sandbox-url: ${TELCELL_SANDBOX_URL:https://sandbox.telcellwallet.am/payment}
     merchant-id: ${TELCELL_MERCHANT_ID:sandbox-merchant}
     secret-key: ${TELCELL_SECRET_KEY:sandbox-secret}
+  roket-line:
+    sandbox-mode: ${ROKET_LINE_SANDBOX_MODE:true}
+    sandbox-url: ${ROKET_LINE_SANDBOX_URL:https://sandbox.roketline.am/payment}
+    merchant-id: ${ROKET_LINE_MERCHANT_ID:sandbox-merchant}
+    secret-key: ${ROKET_LINE_SECRET_KEY:sandbox-secret}
 
 server:
   port: ${SERVER_PORT:8083}

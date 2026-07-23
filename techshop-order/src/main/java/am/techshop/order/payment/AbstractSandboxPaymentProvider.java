@@ -6,13 +6,6 @@ import am.techshop.order.entity.Order;
 
 import java.util.UUID;
 
-/**
- * Shared sandbox/mock behavior for payment adapters: generates a prefixed reference
- * and redirect URL, and auto-approves verification while in sandbox mode. Concrete
- * providers supply their method, reference prefix, and their own @Value-injected
- * config (each needs distinct property keys, e.g. payment.idram.* vs
- * payment.telcell.*, so those fields can't live here).
- */
 public abstract class AbstractSandboxPaymentProvider implements PaymentProvider {
 
     private final PaymentMethod method;

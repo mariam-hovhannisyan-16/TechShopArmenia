@@ -56,7 +56,7 @@ class OrderControllerTest {
     private static final Long USER_ID = 1L;
 
     private Authentication asUser() {
-        return new UsernamePasswordAuthenticationToken(USER_ID, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        return new UsernamePasswordAuthenticationToken(USER_ID, null, List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER")));
     }
 
     private Authentication asAdmin() {

@@ -1,8 +1,11 @@
 package am.techshop.user.controller;
 
+import am.techshop.common.dto.request.ForgotPasswordRequest;
 import am.techshop.common.dto.request.LoginRequest;
 import am.techshop.common.dto.request.RegisterRequest;
 import am.techshop.common.dto.request.ResendVerificationRequest;
+import am.techshop.common.dto.request.ResetPasswordRequest;
+import am.techshop.common.dto.request.RoleUpdateRequest;
 import am.techshop.common.dto.response.ApiResponse;
 import am.techshop.common.dto.response.AuthResponse;
 import am.techshop.common.dto.response.UserResponse;
@@ -14,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -60,5 +64,27 @@ public class UserController {
         userService.resendVerification(request.email());
         return ResponseEntity.ok(ApiResponse.ok(
                 "If that account exists and isn't verified yet, a new verification email has been sent", null));
+    }
+
+    @PostMapping("/api/users/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+            @RequestBody @Valid ForgotPasswordRequest request) {
+        userService.forgotPassword(request.email());
+        return ResponseEntity.ok(ApiResponse.ok(
+                "If that account exists, a password reset email has been sent", null));
+    }
+
+    @PostMapping("/api/users/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @RequestBody @Valid ResetPasswordRequest request) {
+        userService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.ok("Password reset successfully", null));
+    }
+
+    @PutMapping("/api/users/{id}/role")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUserRole(
+            @PathVariable Long id,
+            @RequestBody @Valid RoleUpdateRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Role updated", userService.updateUserRole(id, request.role())));
     }
 }

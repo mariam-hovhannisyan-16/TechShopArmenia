@@ -49,6 +49,10 @@ public class User {
 
     private LocalDateTime verificationTokenExpiresAt;
 
+    private String resetToken;
+
+    private LocalDateTime resetTokenExpiresAt;
+
     @CreatedDate
     private LocalDateTime createdAt;
 

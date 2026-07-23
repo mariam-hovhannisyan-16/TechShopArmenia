@@ -14,7 +14,7 @@ import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
 import am.techshop.common.enums.PaymentStatus;
 import am.techshop.common.enums.UserRole;
-import am.techshop.common.event.OrderCreatedEvent;
+import am.techshop.common.event.OrderStatusChangedEvent;
 import am.techshop.common.exception.TechShopException;
 import am.techshop.order.client.CartClient;
 import am.techshop.order.client.ProductClient;
@@ -111,7 +111,7 @@ class OrderServiceImplTest {
     void checkout_WhenCartHasItems_ReservesStockAndCreatesOrder() {
         CartItemResponse cartItem = new CartItemResponse(1L, "Phone", BigDecimal.valueOf(100), 2, BigDecimal.valueOf(200));
         CartResponse cart = new CartResponse(1L, USER_ID, List.of(cartItem), BigDecimal.valueOf(200));
-        UserResponse user = new UserResponse(USER_ID, "Mariam", "mariam@test.com", UserRole.USER, LocalDateTime.now(), true);
+        UserResponse user = new UserResponse(USER_ID, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
         CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), "Leave at door", PaymentMethod.IDRAM);
 
         when(cartClient.getCart(USER_ID)).thenReturn(new ApiResponse<>(true, "Success", cart));
@@ -139,7 +139,42 @@ class OrderServiceImplTest {
         assertNotNull(result.paymentRedirectUrl());
         verify(productClient).adjustStock(eq(1L), any(), any());
         verify(cartClient).clearCart(USER_ID);
-        verify(orderEventProducer).sendOrderCreatedEvent(any(OrderCreatedEvent.class));
+        verify(orderEventProducer).sendOrderStatusChangedEvent(any(OrderStatusChangedEvent.class));
+    }
+
+    @Test
+    void checkout_WithRoketLinePaymentMethod_ReservesStockAndCreatesOrder() {
+        CartItemResponse cartItem = new CartItemResponse(1L, "Phone", BigDecimal.valueOf(100), 2, BigDecimal.valueOf(200));
+        CartResponse cart = new CartResponse(1L, USER_ID, List.of(cartItem), BigDecimal.valueOf(200));
+        UserResponse user = new UserResponse(USER_ID, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
+        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), "Leave at door", PaymentMethod.ROKET_LINE);
+
+        when(cartClient.getCart(USER_ID)).thenReturn(new ApiResponse<>(true, "Success", cart));
+        when(productClient.adjustStock(eq(1L), any(), any())).thenReturn(new ApiResponse<>(true, "ok", null));
+        when(userClient.getUser(USER_ID)).thenReturn(new ApiResponse<>(true, "Success", user));
+        when(orderMapper.toAddress(any(AddressRequest.class))).thenReturn(Address.builder().build());
+        when(paymentProviderFactory.resolve(PaymentMethod.ROKET_LINE)).thenReturn(paymentProvider);
+        when(paymentProvider.createPayment(any(Order.class)))
+                .thenReturn(new PaymentInitiationResult("ROKET-LINE-ref", "https://sandbox.roketline.am/payment?ref=ROKET-LINE-ref", PaymentStatus.PENDING));
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
+            Order order = inv.getArgument(0);
+            order.setId(1L);
+            return order;
+        });
+        when(orderMapper.toResponse(any(Order.class), any()))
+                .thenReturn(new OrderResponse(1L, USER_ID, List.of(), BigDecimal.valueOf(200), OrderStatus.PENDING,
+                        null, null, "Leave at door", List.of(), PaymentMethod.ROKET_LINE, "ROKET-LINE-ref", PaymentStatus.PENDING,
+                        "https://sandbox.roketline.am/payment?ref=ROKET-LINE-ref", LocalDateTime.now(), null));
+
+        OrderResponse result = orderService.checkout(USER_ID, request);
+
+        assertNotNull(result);
+        assertEquals(OrderStatus.PENDING, result.status());
+        assertEquals(PaymentStatus.PENDING, result.paymentStatus());
+        assertNotNull(result.paymentRedirectUrl());
+        verify(productClient).adjustStock(eq(1L), any(), any());
+        verify(cartClient).clearCart(USER_ID);
+        verify(orderEventProducer).sendOrderStatusChangedEvent(any(OrderStatusChangedEvent.class));
     }
 
     @Test
@@ -182,7 +217,7 @@ class OrderServiceImplTest {
         when(cartClient.getCart(USER_ID)).thenReturn(new ApiResponse<>(true, "Success", cart));
         when(productClient.adjustStock(eq(1L), any(), any())).thenReturn(new ApiResponse<>(true, "ok", null));
         when(userClient.getUser(USER_ID)).thenReturn(new ApiResponse<>(true, "Success",
-                new UserResponse(USER_ID, "Mariam", "mariam@test.com", UserRole.USER, LocalDateTime.now(), true)));
+                new UserResponse(USER_ID, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true)));
         when(orderMapper.toAddress(any(AddressRequest.class))).thenReturn(Address.builder().build());
         when(paymentProviderFactory.resolve(PaymentMethod.TELCELL))
                 .thenThrow(new TechShopException("Unsupported payment method: TELCELL", 400));
@@ -221,10 +256,12 @@ class OrderServiceImplTest {
     void payOrder_WhenPendingAndPaymentVerified_TransitionsToPaid() {
         Order order = Order.builder().id(1L).userId(USER_ID).status(OrderStatus.PENDING)
                 .paymentMethod(PaymentMethod.IDRAM).paymentReference("IDRAM-ref").build();
+        UserResponse user = new UserResponse(USER_ID, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(order)).thenReturn(order);
         when(paymentProviderFactory.resolve(PaymentMethod.IDRAM)).thenReturn(paymentProvider);
         when(paymentProvider.verifyPayment("IDRAM-ref")).thenReturn(new PaymentVerificationResult(PaymentStatus.PAID, "ok"));
+        when(userClient.getUser(USER_ID)).thenReturn(new ApiResponse<>(true, "Success", user));
         when(orderMapper.toResponse(order)).thenReturn(sampleResponse(OrderStatus.PAID));
 
         OrderResponse result = orderService.payOrder(USER_ID, 1L);
@@ -233,6 +270,25 @@ class OrderServiceImplTest {
         assertEquals(OrderStatus.PAID, order.getStatus());
         assertEquals(PaymentStatus.PAID, order.getPaymentStatus());
         assertEquals(1, order.getStatusHistory().size());
+        verify(orderEventProducer).sendOrderStatusChangedEvent(any(OrderStatusChangedEvent.class));
+    }
+
+    @Test
+    void payOrder_WhenUserLookupFailsDuringNotification_StillTransitionsOrder() {
+        Order order = Order.builder().id(1L).userId(USER_ID).status(OrderStatus.PENDING)
+                .paymentMethod(PaymentMethod.IDRAM).paymentReference("IDRAM-ref").build();
+        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(order)).thenReturn(order);
+        when(paymentProviderFactory.resolve(PaymentMethod.IDRAM)).thenReturn(paymentProvider);
+        when(paymentProvider.verifyPayment("IDRAM-ref")).thenReturn(new PaymentVerificationResult(PaymentStatus.PAID, "ok"));
+        when(userClient.getUser(USER_ID)).thenThrow(new RuntimeException("user-service unavailable"));
+        when(orderMapper.toResponse(order)).thenReturn(sampleResponse(OrderStatus.PAID));
+
+        OrderResponse result = orderService.payOrder(USER_ID, 1L);
+
+        assertEquals(OrderStatus.PAID, result.status());
+        assertEquals(OrderStatus.PAID, order.getStatus());
+        verify(orderEventProducer, never()).sendOrderStatusChangedEvent(any());
     }
 
     @Test
@@ -268,16 +324,19 @@ class OrderServiceImplTest {
     void cancelOrder_WhenPending_CancelsAndRestoresStock() {
         Order order = Order.builder().id(1L).userId(USER_ID).status(OrderStatus.PENDING).build();
         order.getItems().add(am.techshop.order.entity.OrderItem.builder().productId(1L).quantity(2).build());
+        UserResponse user = new UserResponse(USER_ID, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
 
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(order)).thenReturn(order);
         when(productClient.adjustStock(eq(1L), any(), any())).thenReturn(new ApiResponse<>(true, "ok", null));
+        when(userClient.getUser(USER_ID)).thenReturn(new ApiResponse<>(true, "Success", user));
         when(orderMapper.toResponse(order)).thenReturn(sampleResponse(OrderStatus.CANCELLED));
 
         OrderResponse result = orderService.cancelOrder(USER_ID, 1L);
 
         assertEquals(OrderStatus.CANCELLED, result.status());
         verify(productClient).adjustStock(eq(1L), any(), any());
+        verify(orderEventProducer).sendOrderStatusChangedEvent(any(OrderStatusChangedEvent.class));
     }
 
     @Test
@@ -293,13 +352,16 @@ class OrderServiceImplTest {
     @Test
     void updateOrderStatus_ValidTransition_Succeeds() {
         Order order = Order.builder().id(1L).userId(USER_ID).status(OrderStatus.PAID).build();
+        UserResponse user = new UserResponse(USER_ID, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(order)).thenReturn(order);
+        when(userClient.getUser(USER_ID)).thenReturn(new ApiResponse<>(true, "Success", user));
         when(orderMapper.toResponse(order)).thenReturn(sampleResponse(OrderStatus.PROCESSING));
 
         OrderResponse result = orderService.updateOrderStatus(1L, new OrderStatusUpdateRequest(OrderStatus.PROCESSING, "Packing"));
 
         assertEquals(OrderStatus.PROCESSING, result.status());
+        verify(orderEventProducer).sendOrderStatusChangedEvent(any(OrderStatusChangedEvent.class));
     }
 
     @Test

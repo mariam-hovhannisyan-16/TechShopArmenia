@@ -54,7 +54,7 @@ class WishlistControllerTest {
     @Test
     void addProduct_ReturnsCreatedWishlist() throws Exception {
         Long productId = 5L;
-        ProductResponse product = new ProductResponse(productId, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false);
+        ProductResponse product = new ProductResponse(productId, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, null);
         WishlistItemResponse item = new WishlistItemResponse(1L, product, LocalDateTime.now());
         WishlistResponse response = new WishlistResponse(1L, USER_ID, List.of(item), LocalDateTime.now());
 
@@ -84,7 +84,7 @@ class WishlistControllerTest {
 
     @Test
     void getWishlist_ReturnsWishlist() throws Exception {
-        ProductResponse product = new ProductResponse(5L, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false);
+        ProductResponse product = new ProductResponse(5L, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, null);
         WishlistItemResponse item = new WishlistItemResponse(1L, product, LocalDateTime.now());
         WishlistResponse response = new WishlistResponse(1L, USER_ID, List.of(item), LocalDateTime.now());
 

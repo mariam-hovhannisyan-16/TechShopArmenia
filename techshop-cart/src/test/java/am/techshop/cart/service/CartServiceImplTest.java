@@ -74,7 +74,7 @@ class CartServiceImplTest {
     void addItem_WhenProductExists_AddsItemToCart() {
         Long userId = 1L;
         AddItemRequest request = new AddItemRequest(1L, 2);
-        ProductResponse product = new ProductResponse(1L, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false);
+        ProductResponse product = new ProductResponse(1L, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, null);
         Cart cart = new Cart();
         cart.setUserId(userId);
         cart.setItems(new ArrayList<>());

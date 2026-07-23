@@ -39,6 +39,8 @@ public class Product {
     @Builder.Default
     private boolean isNew = false;
 
+    private Integer discountPercentage;
+
     @CreatedDate
     private LocalDateTime createdAt;
 }

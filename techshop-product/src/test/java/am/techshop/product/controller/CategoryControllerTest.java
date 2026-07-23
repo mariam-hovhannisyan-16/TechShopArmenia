@@ -2,6 +2,7 @@ package am.techshop.product.controller;
 
 import am.techshop.common.dto.response.CategoryResponse;
 import am.techshop.product.service.CategoryService;
+import am.techshop.product.service.JwtService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -25,6 +26,9 @@ class CategoryControllerTest {
 
     @MockBean
     private CategoryService categoryService;
+
+    @MockBean
+    private JwtService jwtService;
 
     @Test
     void getAllCategories_ReturnsCategoryList() throws Exception {
