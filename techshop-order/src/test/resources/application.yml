@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: techshop-order
+
+  datasource:
+    url: jdbc:h2:mem:ordertest;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  liquibase:
+    enabled: false
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+app:
+  jwt:
+    secret: test-only-integration-secret-not-for-production-use-1234
+
+internal:
+  api-key: test-internal-key
+
+payment:
+  idram:
+    sandbox-mode: true
+    sandbox-url: https://sandbox.idram.am/payment
+  telcell:
+    sandbox-mode: true
+    sandbox-url: https://sandbox.telcellwallet.am/payment
+  roket-line:
+    sandbox-mode: true
+    sandbox-url: https://sandbox.roketline.am/payment
+  installment:
+    sandbox-mode: true
+    sandbox-url: https://sandbox.installments.am/payment
+    annual-rate: 0.12
+
+server:
+  port: 0

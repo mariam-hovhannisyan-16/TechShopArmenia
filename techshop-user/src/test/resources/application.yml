@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: techshop-user
+
+  datasource:
+    url: jdbc:h2:mem:usertest;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+app:
+  jwt:
+    secret: test-only-integration-secret-not-for-production-use-1234
+    expiration-ms: 86400000
+
+internal:
+  api-key: test-internal-key
+
+server:
+  port: 0

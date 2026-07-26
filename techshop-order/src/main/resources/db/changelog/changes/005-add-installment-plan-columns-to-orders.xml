@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="005-add-installment-plan-columns-to-orders" author="techshop">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="orders" columnName="installment_bank_name"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="orders">
+            <column name="installment_bank_name" type="VARCHAR(150)"/>
+            <column name="installment_rate" type="DECIMAL(5,2)"/>
+            <column name="installment_duration_months" type="INT"/>
+            <column name="installment_down_payment" type="DECIMAL(19,2)"/>
+            <column name="installment_monthly_payment" type="DECIMAL(19,2)"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>
