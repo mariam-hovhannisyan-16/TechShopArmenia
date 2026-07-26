@@ -2,6 +2,7 @@ package am.techshop.chat.service.impl;
 
 import am.techshop.chat.entity.Conversation;
 import am.techshop.chat.entity.Message;
+import am.techshop.chat.kafka.ChatEventProducer;
 import am.techshop.chat.mapper.ConversationMapper;
 import am.techshop.chat.mapper.MessageMapper;
 import am.techshop.chat.repository.ConversationRepository;
@@ -13,13 +14,16 @@ import am.techshop.common.dto.response.ConversationResponse;
 import am.techshop.common.dto.response.MessageResponse;
 import am.techshop.common.enums.ConversationStatus;
 import am.techshop.common.enums.MessageSender;
+import am.techshop.common.event.ChatReplyEvent;
 import am.techshop.common.exception.TechShopException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -29,6 +33,7 @@ public class ChatServiceImpl implements ChatService {
     private final MessageRepository messageRepository;
     private final ConversationMapper conversationMapper;
     private final MessageMapper messageMapper;
+    private final ChatEventProducer chatEventProducer;
 
     public ConversationResponse getOrCreateConversation(ChatIdentity identity) {
         Conversation conversation = identity.isGuest()
@@ -69,21 +74,28 @@ public class ChatServiceImpl implements ChatService {
             throw new TechShopException("Conversation is closed", 409);
         }
 
-        Message message = Message.builder()
-                .conversationId(conversationId)
-                .sender(identity.admin() ? MessageSender.SUPPORT : MessageSender.CUSTOMER)
-                .text(request.text())
-                .build();
+        Message message = messageMapper.toEntity(conversationId,
+                identity.admin() ? MessageSender.SUPPORT : MessageSender.CUSTOMER, request);
 
-        return messageMapper.toResponse(messageRepository.save(message));
+        MessageResponse response = messageMapper.toResponse(messageRepository.save(message));
+
+        if (identity.admin() && conversation.getUserId() != null) {
+            notifyCustomerOfReply(conversation.getUserId(), conversationId, request.text());
+        }
+
+        return response;
+    }
+
+    private void notifyCustomerOfReply(Long userId, Long conversationId, String messagePreview) {
+        try {
+            chatEventProducer.sendChatReplyEvent(new ChatReplyEvent(userId, conversationId, messagePreview));
+        } catch (Exception ex) {
+            log.warn("Failed to publish chat-reply notification for conversation {}: {}", conversationId, ex.getMessage());
+        }
     }
 
     private Conversation createConversation(ChatIdentity identity) {
-        return conversationRepository.save(Conversation.builder()
-                .userId(identity.userId())
-                .guestSessionId(identity.guestSessionId())
-                .status(ConversationStatus.OPEN)
-                .build());
+        return conversationRepository.save(conversationMapper.toEntity(identity));
     }
 
     private Conversation getOwnedConversation(ChatIdentity identity, Long conversationId) {

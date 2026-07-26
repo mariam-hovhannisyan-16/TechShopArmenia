@@ -7,13 +7,12 @@ import am.techshop.common.dto.request.StockAdjustmentRequest;
 import am.techshop.common.dto.response.ApiResponse;
 import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.dto.response.ProductResponse;
-import am.techshop.common.exception.TechShopException;
+import am.techshop.product.security.InternalApiKeyGuard;
 import am.techshop.product.service.ProductService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -28,15 +27,15 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @Validated
 public class ProductController {
 
     private final ProductService productService;
-
-    @Value("${internal.api-key}")
-    private String internalApiKey;
+    private final InternalApiKeyGuard internalApiKeyGuard;
 
     @PostMapping("/api/products")
     public ResponseEntity<ApiResponse<ProductResponse>> addProduct(
@@ -59,6 +58,11 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.ok(productService.getProductById(id)));
     }
 
+    @GetMapping("/api/products/batch")
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getProductsByIds(@RequestParam List<Long> ids) {
+        return ResponseEntity.ok(ApiResponse.ok(productService.getProductsByIds(ids)));
+    }
+
     @DeleteMapping("/api/products/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
@@ -69,10 +73,8 @@ public class ProductController {
     public ResponseEntity<ApiResponse<ProductResponse>> adjustStock(
             @PathVariable Long id,
             @RequestBody @Valid StockAdjustmentRequest request,
-            @RequestHeader("X-Internal-Api-Key") String apiKey) {
-        if (!internalApiKey.equals(apiKey)) {
-            throw new TechShopException("Forbidden", 403);
-        }
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey) {
+        internalApiKeyGuard.verify(apiKey);
         return ResponseEntity.ok(ApiResponse.ok("Stock adjusted", productService.adjustStock(id, request.quantityDelta())));
     }
 

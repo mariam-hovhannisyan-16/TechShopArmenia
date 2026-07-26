@@ -34,9 +34,9 @@ app:
   jwt:
     secret: ${JWT_SECRET:local-dev-secret-change-in-production}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
-  # If true, login is rejected until the user has verified their email.
-  # Defaults to false — login is always allowed, and the frontend can use
-  # the `emailVerified` flag on the returned user to show a reminder instead.
+
+internal:
+  api-key: ${INTERNAL_API_KEY:local-dev-internal-key-change-in-production}
   require-email-verification: ${REQUIRE_EMAIL_VERIFICATION:false}
 
 server:

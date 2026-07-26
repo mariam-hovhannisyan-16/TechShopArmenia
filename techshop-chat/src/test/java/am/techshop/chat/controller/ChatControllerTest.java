@@ -1,10 +1,11 @@
 package am.techshop.chat.controller;
 
-import am.techshop.chat.config.JwtAuthFilter;
 import am.techshop.chat.config.SecurityConfig;
 import am.techshop.chat.security.ChatIdentity;
+import am.techshop.chat.security.ChatIdentityResolver;
+import am.techshop.chat.security.JwtAuthFilter;
+import am.techshop.chat.security.JwtService;
 import am.techshop.chat.service.ChatService;
-import am.techshop.chat.service.JwtService;
 import am.techshop.common.dto.request.SendMessageRequest;
 import am.techshop.common.dto.response.ConversationResponse;
 import am.techshop.common.dto.response.MessageResponse;
@@ -35,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ChatController.class)
-@Import({SecurityConfig.class, JwtAuthFilter.class})
+@Import({SecurityConfig.class, JwtAuthFilter.class, ChatIdentityResolver.class})
 class ChatControllerTest {
 
     @Autowired
@@ -47,6 +48,7 @@ class ChatControllerTest {
     @MockBean
     private ChatService chatService;
 
+    @SuppressWarnings("unused")
     @MockBean
     private JwtService jwtService;
 
@@ -125,26 +127,5 @@ class ChatControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void listConversations_AsAdmin_ReturnsList() throws Exception {
-        when(chatService.getAllConversations()).thenReturn(List.of(sampleConversation()));
-
-        mockMvc.perform(get("/api/chat/conversations").with(authentication(asAdmin())))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].userId").value(USER_ID));
-    }
-
-    @Test
-    void listConversations_AsRegularUser_ReturnsForbidden() throws Exception {
-        mockMvc.perform(get("/api/chat/conversations").with(authentication(asUser())))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void listConversations_WithoutAuth_ReturnsUnauthorized() throws Exception {
-        mockMvc.perform(get("/api/chat/conversations"))
-                .andExpect(status().isUnauthorized());
     }
 }

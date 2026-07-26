@@ -11,19 +11,19 @@ import am.techshop.common.event.UserRegisteredEvent;
 import am.techshop.common.event.UserVerifiedEvent;
 import am.techshop.common.exception.TechShopException;
 import am.techshop.common.exception.UserNotFoundException;
+import am.techshop.user.config.InternalProperties;
 import am.techshop.user.entity.User;
 import am.techshop.user.kafka.UserEventProducer;
 import am.techshop.user.mapper.UserMapper;
 import am.techshop.user.repository.UserRepository;
+import am.techshop.user.security.JwtService;
 import am.techshop.user.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -50,24 +50,32 @@ class UserServiceImplTest {
     @Mock
     private UserEventProducer userEventProducer;
 
+    @Mock
+    private InternalProperties internalProperties;
+
     @InjectMocks
     private UserServiceImpl userService;
 
     @Test
     void register_WhenEmailNotTaken_RegistersUser() {
         RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
-        User savedUser = User.builder()
-                .id(1L)
-                .name("Mariam")
-                .email("mariam@test.com")
-                .password("encoded")
-                .role(UserRole.CUSTOMER)
-                .build();
+        User newUser = new User();
+        newUser.setName("Mariam");
+        newUser.setEmail("mariam@test.com");
+        newUser.setPassword("encoded");
+        newUser.setRole(UserRole.CUSTOMER);
+        User savedUser = new User();
+        savedUser.setId(1L);
+        savedUser.setName("Mariam");
+        savedUser.setEmail("mariam@test.com");
+        savedUser.setPassword("encoded");
+        savedUser.setRole(UserRole.CUSTOMER);
         UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("encoded");
-        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(userMapper.toEntity(eq(request), eq("encoded"), eq(UserRole.CUSTOMER), any(), any())).thenReturn(newUser);
+        when(userRepository.save(newUser)).thenReturn(savedUser);
         when(jwtService.generateToken(any(), any(), any())).thenReturn("token");
         when(userMapper.toResponse(savedUser)).thenReturn(userResponse);
 
@@ -81,39 +89,47 @@ class UserServiceImplTest {
     @Test
     void register_WhenRoleNotProvided_DefaultsToCustomer() {
         RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
-        User savedUser = User.builder().id(1L).name("Mariam").email("mariam@test.com").role(UserRole.CUSTOMER).build();
+        User newUser = new User();
+        User savedUser = new User();
+        savedUser.setId(1L);
+        savedUser.setName("Mariam");
+        savedUser.setEmail("mariam@test.com");
+        savedUser.setRole(UserRole.CUSTOMER);
         UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("encoded");
-        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(userMapper.toEntity(eq(request), eq("encoded"), eq(UserRole.CUSTOMER), any(), any())).thenReturn(newUser);
+        when(userRepository.save(newUser)).thenReturn(savedUser);
         when(jwtService.generateToken(any(), any(), any())).thenReturn("token");
         when(userMapper.toResponse(savedUser)).thenReturn(userResponse);
 
         userService.register(request);
 
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture());
-        assertEquals(UserRole.CUSTOMER, captor.getValue().getRole());
+        verify(userMapper).toEntity(eq(request), eq("encoded"), eq(UserRole.CUSTOMER), any(), any());
     }
 
     @Test
     void register_WhenRoleProvided_UsesRequestedRole() {
         RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", UserRole.ADMIN);
-        User savedUser = User.builder().id(1L).name("Mariam").email("mariam@test.com").role(UserRole.ADMIN).build();
+        User newUser = new User();
+        User savedUser = new User();
+        savedUser.setId(1L);
+        savedUser.setName("Mariam");
+        savedUser.setEmail("mariam@test.com");
+        savedUser.setRole(UserRole.ADMIN);
         UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.ADMIN, LocalDateTime.now(), true);
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("encoded");
-        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(userMapper.toEntity(eq(request), eq("encoded"), eq(UserRole.ADMIN), any(), any())).thenReturn(newUser);
+        when(userRepository.save(newUser)).thenReturn(savedUser);
         when(jwtService.generateToken(any(), any(), any())).thenReturn("token");
         when(userMapper.toResponse(savedUser)).thenReturn(userResponse);
 
         userService.register(request);
 
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture());
-        assertEquals(UserRole.ADMIN, captor.getValue().getRole());
+        verify(userMapper).toEntity(eq(request), eq("encoded"), eq(UserRole.ADMIN), any(), any());
     }
 
     @Test
@@ -130,12 +146,11 @@ class UserServiceImplTest {
     @Test
     void login_WhenValidCredentials_ReturnsToken() {
         LoginRequest request = new LoginRequest("mariam@test.com", "password");
-        User user = User.builder()
-                .id(1L)
-                .email("mariam@test.com")
-                .password("encoded")
-                .role(UserRole.CUSTOMER)
-                .build();
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("mariam@test.com");
+        user.setPassword("encoded");
+        user.setRole(UserRole.CUSTOMER);
         UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
 
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
@@ -161,12 +176,11 @@ class UserServiceImplTest {
     @Test
     void login_WhenWrongPassword_ThrowsException() {
         LoginRequest request = new LoginRequest("mariam@test.com", "wrongpassword");
-        User user = User.builder()
-                .id(1L)
-                .email("mariam@test.com")
-                .password("encoded")
-                .role(UserRole.CUSTOMER)
-                .build();
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("mariam@test.com");
+        user.setPassword("encoded");
+        user.setRole(UserRole.CUSTOMER);
 
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(request.password(), user.getPassword())).thenReturn(false);
@@ -180,7 +194,9 @@ class UserServiceImplTest {
     @Test
     void getUserById_WhenExists_ReturnsUser() {
         Long id = 1L;
-        User user = User.builder().id(id).name("Mariam").build();
+        User user = new User();
+        user.setId(id);
+        user.setName("Mariam");
         UserResponse userResponse = new UserResponse(id, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
 
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
@@ -204,7 +220,10 @@ class UserServiceImplTest {
     @Test
     void updateUserRole_WhenExists_UpdatesRole() {
         Long id = 1L;
-        User user = User.builder().id(id).name("Mariam").role(UserRole.CUSTOMER).build();
+        User user = new User();
+        user.setId(id);
+        user.setName("Mariam");
+        user.setRole(UserRole.CUSTOMER);
         UserResponse userResponse = new UserResponse(id, "Mariam", "mariam@test.com", UserRole.ADMIN, LocalDateTime.now(), true);
 
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
@@ -228,15 +247,14 @@ class UserServiceImplTest {
 
     @Test
     void login_WhenUnverifiedAndVerificationRequired_ThrowsException() {
-        ReflectionTestUtils.setField(userService, "requireEmailVerification", true);
+        when(internalProperties.requireEmailVerification()).thenReturn(true);
         LoginRequest request = new LoginRequest("mariam@test.com", "password");
-        User user = User.builder()
-                .id(1L)
-                .email("mariam@test.com")
-                .password("encoded")
-                .role(UserRole.CUSTOMER)
-                .emailVerified(false)
-                .build();
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("mariam@test.com");
+        user.setPassword("encoded");
+        user.setRole(UserRole.CUSTOMER);
+        user.setEmailVerified(false);
 
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(request.password(), user.getPassword())).thenReturn(true);
@@ -250,13 +268,12 @@ class UserServiceImplTest {
     @Test
     void login_WhenUnverifiedButVerificationNotRequired_Succeeds() {
         LoginRequest request = new LoginRequest("mariam@test.com", "password");
-        User user = User.builder()
-                .id(1L)
-                .email("mariam@test.com")
-                .password("encoded")
-                .role(UserRole.CUSTOMER)
-                .emailVerified(false)
-                .build();
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("mariam@test.com");
+        user.setPassword("encoded");
+        user.setRole(UserRole.CUSTOMER);
+        user.setEmailVerified(false);
         UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), false);
 
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
@@ -272,14 +289,13 @@ class UserServiceImplTest {
 
     @Test
     void verifyEmail_WhenTokenValid_MarksUserVerified() {
-        User user = User.builder()
-                .id(1L)
-                .name("Mariam")
-                .email("mariam@test.com")
-                .emailVerified(false)
-                .verificationToken("valid-token")
-                .verificationTokenExpiresAt(LocalDateTime.now().plusHours(1))
-                .build();
+        User user = new User();
+        user.setId(1L);
+        user.setName("Mariam");
+        user.setEmail("mariam@test.com");
+        user.setEmailVerified(false);
+        user.setVerificationToken("valid-token");
+        user.setVerificationTokenExpiresAt(LocalDateTime.now().plusHours(1));
         UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
 
         when(userRepository.findByVerificationToken("valid-token")).thenReturn(Optional.of(user));
@@ -306,11 +322,10 @@ class UserServiceImplTest {
 
     @Test
     void verifyEmail_WhenAlreadyVerified_ThrowsException() {
-        User user = User.builder()
-                .id(1L)
-                .emailVerified(true)
-                .verificationToken("valid-token")
-                .build();
+        User user = new User();
+        user.setId(1L);
+        user.setEmailVerified(true);
+        user.setVerificationToken("valid-token");
         when(userRepository.findByVerificationToken("valid-token")).thenReturn(Optional.of(user));
 
         TechShopException ex = assertThrows(TechShopException.class,
@@ -321,12 +336,11 @@ class UserServiceImplTest {
 
     @Test
     void verifyEmail_WhenTokenExpired_ThrowsException() {
-        User user = User.builder()
-                .id(1L)
-                .emailVerified(false)
-                .verificationToken("expired-token")
-                .verificationTokenExpiresAt(LocalDateTime.now().minusHours(1))
-                .build();
+        User user = new User();
+        user.setId(1L);
+        user.setEmailVerified(false);
+        user.setVerificationToken("expired-token");
+        user.setVerificationTokenExpiresAt(LocalDateTime.now().minusHours(1));
         when(userRepository.findByVerificationToken("expired-token")).thenReturn(Optional.of(user));
 
         TechShopException ex = assertThrows(TechShopException.class,
@@ -337,12 +351,11 @@ class UserServiceImplTest {
 
     @Test
     void resendVerification_WhenUserExistsAndUnverified_GeneratesNewTokenAndSendsEvent() {
-        User user = User.builder()
-                .id(1L)
-                .name("Mariam")
-                .email("mariam@test.com")
-                .emailVerified(false)
-                .build();
+        User user = new User();
+        user.setId(1L);
+        user.setName("Mariam");
+        user.setEmail("mariam@test.com");
+        user.setEmailVerified(false);
         when(userRepository.findByEmail("mariam@test.com")).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
 
@@ -354,11 +367,10 @@ class UserServiceImplTest {
 
     @Test
     void resendVerification_WhenAlreadyVerified_DoesNothing() {
-        User user = User.builder()
-                .id(1L)
-                .email("mariam@test.com")
-                .emailVerified(true)
-                .build();
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("mariam@test.com");
+        user.setEmailVerified(true);
         when(userRepository.findByEmail("mariam@test.com")).thenReturn(Optional.of(user));
 
         userService.resendVerification("mariam@test.com");
@@ -379,11 +391,10 @@ class UserServiceImplTest {
 
     @Test
     void forgotPassword_WhenUserExists_GeneratesResetTokenAndSendsEvent() {
-        User user = User.builder()
-                .id(1L)
-                .name("Mariam")
-                .email("mariam@test.com")
-                .build();
+        User user = new User();
+        user.setId(1L);
+        user.setName("Mariam");
+        user.setEmail("mariam@test.com");
         when(userRepository.findByEmail("mariam@test.com")).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
 
@@ -406,13 +417,12 @@ class UserServiceImplTest {
 
     @Test
     void resetPassword_WhenTokenValid_UpdatesPasswordAndClearsToken() {
-        User user = User.builder()
-                .id(1L)
-                .email("mariam@test.com")
-                .password("old-encoded")
-                .resetToken("valid-token")
-                .resetTokenExpiresAt(LocalDateTime.now().plusMinutes(30))
-                .build();
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("mariam@test.com");
+        user.setPassword("old-encoded");
+        user.setResetToken("valid-token");
+        user.setResetTokenExpiresAt(LocalDateTime.now().plusMinutes(30));
         ResetPasswordRequest request = new ResetPasswordRequest("valid-token", "newpassword");
 
         when(userRepository.findByResetToken("valid-token")).thenReturn(Optional.of(user));
@@ -439,12 +449,11 @@ class UserServiceImplTest {
 
     @Test
     void resetPassword_WhenTokenExpired_ThrowsException() {
-        User user = User.builder()
-                .id(1L)
-                .email("mariam@test.com")
-                .resetToken("expired-token")
-                .resetTokenExpiresAt(LocalDateTime.now().minusMinutes(1))
-                .build();
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("mariam@test.com");
+        user.setResetToken("expired-token");
+        user.setResetTokenExpiresAt(LocalDateTime.now().minusMinutes(1));
         ResetPasswordRequest request = new ResetPasswordRequest("expired-token", "newpassword");
         when(userRepository.findByResetToken("expired-token")).thenReturn(Optional.of(user));
 

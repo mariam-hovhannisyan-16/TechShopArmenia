@@ -7,7 +7,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -19,7 +18,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "products")
 @Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
@@ -36,7 +34,6 @@ public class Product {
     private String category;
     private String imageUrl;
 
-    @Builder.Default
     private boolean isNew = false;
 
     private Integer discountPercentage;

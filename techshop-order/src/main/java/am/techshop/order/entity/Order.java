@@ -19,7 +19,6 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -34,7 +33,6 @@ import java.util.List;
 @Entity
 @Table(name = "orders")
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
@@ -48,7 +46,6 @@ public class Order {
     private Long userId;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
 
     @Column(name = "total_price", nullable = false)
@@ -98,9 +95,18 @@ public class Order {
     @Column(name = "payment_status")
     private PaymentStatus paymentStatus;
 
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "bankName", column = @Column(name = "installment_bank_name")),
+            @AttributeOverride(name = "rate", column = @Column(name = "installment_rate")),
+            @AttributeOverride(name = "durationMonths", column = @Column(name = "installment_duration_months")),
+            @AttributeOverride(name = "downPayment", column = @Column(name = "installment_down_payment")),
+            @AttributeOverride(name = "monthlyPayment", column = @Column(name = "installment_monthly_payment"))
+    })
+    private InstallmentPlan installmentPlan;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("changedAt ASC")
-    @Builder.Default
     private List<OrderStatusHistory> statusHistory = new ArrayList<>();
 
     @CreatedDate
@@ -113,10 +119,9 @@ public class Order {
 
     public void transitionTo(OrderStatus newStatus, String note) {
         this.status = newStatus;
-        OrderStatusHistory history = OrderStatusHistory.builder()
-                .status(newStatus)
-                .note(note)
-                .build();
+        OrderStatusHistory history = new OrderStatusHistory();
+        history.setStatus(newStatus);
+        history.setNote(note);
         history.setOrder(this);
         this.statusHistory.add(history);
     }

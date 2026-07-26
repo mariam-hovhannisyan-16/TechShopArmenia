@@ -11,7 +11,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -23,7 +22,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "users")
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
@@ -42,7 +40,6 @@ public class User {
     @Enumerated(EnumType.STRING)
     private UserRole role;
 
-    @Builder.Default
     private boolean emailVerified = false;
 
     private String verificationToken;

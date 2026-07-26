@@ -3,11 +3,11 @@ package am.techshop.wishlist.controller;
 import am.techshop.common.dto.response.ProductResponse;
 import am.techshop.common.dto.response.WishlistItemResponse;
 import am.techshop.common.dto.response.WishlistResponse;
-import am.techshop.wishlist.config.JwtAuthFilter;
 import am.techshop.wishlist.config.SecurityConfig;
-import am.techshop.wishlist.service.JwtService;
+import am.techshop.wishlist.security.InternalApiKeyGuard;
+import am.techshop.wishlist.security.JwtAuthFilter;
+import am.techshop.wishlist.security.JwtService;
 import am.techshop.wishlist.service.WishlistService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -30,18 +30,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(WishlistController.class)
-@Import({SecurityConfig.class, JwtAuthFilter.class})
+@Import({SecurityConfig.class, JwtAuthFilter.class, InternalApiKeyGuard.class})
 class WishlistControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @MockBean
     private WishlistService wishlistService;
 
+    @SuppressWarnings("unused")
     @MockBean
     private JwtService jwtService;
 
@@ -119,5 +117,29 @@ class WishlistControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Product removed from wishlist"))
                 .andExpect(jsonPath("$.data.items").isEmpty());
+    }
+
+    @Test
+    void getSubscribers_WithValidInternalApiKey_ReturnsUserIds() throws Exception {
+        Long productId = 5L;
+        when(wishlistService.getSubscriberUserIds(productId)).thenReturn(List.of(1L, 2L, 3L));
+
+        mockMvc.perform(get("/wishlist/products/{productId}/subscribers", productId)
+                        .header("X-Internal-Api-Key", "local-dev-internal-key-change-in-production"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(3));
+    }
+
+    @Test
+    void getSubscribers_WithoutInternalApiKey_ReturnsForbidden() throws Exception {
+        mockMvc.perform(get("/wishlist/products/{productId}/subscribers", 5L))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getSubscribers_WithWrongInternalApiKey_ReturnsForbidden() throws Exception {
+        mockMvc.perform(get("/wishlist/products/{productId}/subscribers", 5L)
+                        .header("X-Internal-Api-Key", "wrong-key"))
+                .andExpect(status().isForbidden());
     }
 }

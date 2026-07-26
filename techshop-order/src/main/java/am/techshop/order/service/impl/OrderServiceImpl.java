@@ -2,23 +2,20 @@ package am.techshop.order.service.impl;
 
 import am.techshop.common.dto.request.CheckoutRequest;
 import am.techshop.common.dto.request.OrderStatusUpdateRequest;
-import am.techshop.common.dto.request.StockAdjustmentRequest;
-import am.techshop.common.dto.response.CartItemResponse;
 import am.techshop.common.dto.response.CartResponse;
 import am.techshop.common.dto.response.OrderResponse;
-import am.techshop.common.dto.response.OrderStatisticsResponse;
 import am.techshop.common.dto.response.OrderStatusHistoryResponse;
 import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.enums.OrderStatus;
+import am.techshop.common.enums.PaymentMethod;
 import am.techshop.common.enums.PaymentStatus;
 import am.techshop.common.event.OrderStatusChangedEvent;
 import am.techshop.common.exception.TechShopException;
 import am.techshop.order.client.CartClient;
-import am.techshop.order.client.ProductClient;
 import am.techshop.order.client.UserClient;
+import am.techshop.order.entity.Address;
 import am.techshop.order.entity.Order;
-import am.techshop.order.entity.OrderItem;
 import am.techshop.order.kafka.OrderEventProducer;
 import am.techshop.order.mapper.OrderMapper;
 import am.techshop.order.payment.PaymentInitiationResult;
@@ -27,6 +24,7 @@ import am.techshop.order.payment.PaymentProviderFactory;
 import am.techshop.order.payment.PaymentVerificationResult;
 import am.techshop.order.repository.OrderRepository;
 import am.techshop.order.service.OrderService;
+import am.techshop.order.stock.StockReservationService;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,12 +36,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -51,65 +44,59 @@ import java.util.stream.Collectors;
 @Transactional
 public class OrderServiceImpl implements OrderService {
 
-    private static final List<OrderStatus> REVENUE_STATUSES =
-            List.of(OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED);
-
     private final OrderRepository orderRepository;
     private final CartClient cartClient;
     private final UserClient userClient;
-    private final ProductClient productClient;
     private final OrderEventProducer orderEventProducer;
     private final OrderMapper orderMapper;
     private final PaymentProviderFactory paymentProviderFactory;
+    private final StockReservationService stockReservationService;
 
     @Value("${internal.api-key}")
     private String internalApiKey;
 
     public OrderResponse checkout(Long userId, CheckoutRequest request) {
-        CartResponse cart = cartClient.getCart(userId).data();
+        CartResponse cart = cartClient.getCart(userId, internalApiKey).data();
 
         if (cart.items().isEmpty()) {
             throw new TechShopException("Cart is empty", 400);
         }
 
-        reserveStock(cart.items());
+        if (request.paymentMethod() != PaymentMethod.INSTALLMENT && request.installmentDetails() != null) {
+            throw new TechShopException("Installment details are only allowed for INSTALLMENT payments", 400);
+        }
 
-        UserResponse user = userClient.getUser(userId).data();
+        stockReservationService.reserve(cart.items());
 
-        Order order = Order.builder()
-                .userId(userId)
-                .totalPrice(cart.totalPrice())
-                .shippingAddress(orderMapper.toAddress(request.shippingAddress()))
-                .billingAddress(orderMapper.toAddress(request.billingAddress()))
-                .notes(request.notes())
-                .build();
+        try {
+            Address shippingAddress = orderMapper.toAddress(request.shippingAddress());
+            Address billingAddress = orderMapper.toAddress(request.billingAddress());
+            Order order = orderMapper.toEntity(request, userId, cart.totalPrice(), shippingAddress, billingAddress);
 
-        cart.items().forEach(cartItem -> order.getItems().add(
-                OrderItem.builder()
-                        .order(order)
-                        .productId(cartItem.productId())
-                        .productName(cartItem.productName())
-                        .productPrice(cartItem.productPrice())
-                        .quantity(cartItem.quantity())
-                        .build()
-        ));
+            cart.items().forEach(cartItem -> order.getItems().add(orderMapper.toOrderItem(cartItem, order)));
 
-        order.transitionTo(OrderStatus.PENDING, "Order created from cart");
+            order.transitionTo(OrderStatus.PENDING, "Order created from cart");
 
-        PaymentProvider paymentProvider = paymentProviderFactory.resolve(request.paymentMethod());
-        PaymentInitiationResult paymentResult = paymentProvider.createPayment(order);
-        order.setPaymentMethod(request.paymentMethod());
-        order.setPaymentReference(paymentResult.paymentReference());
-        order.setPaymentStatus(PaymentStatus.PENDING);
+            PaymentProvider paymentProvider = paymentProviderFactory.resolve(request.paymentMethod());
+            PaymentInitiationResult paymentResult = paymentProvider.createPayment(order);
+            order.setPaymentMethod(request.paymentMethod());
+            order.setPaymentReference(paymentResult.paymentReference());
+            order.setPaymentStatus(PaymentStatus.PENDING);
 
-        Order saved = orderRepository.save(order);
-        cartClient.clearCart(userId);
+            Order saved = orderRepository.save(order);
 
-        orderEventProducer.sendOrderStatusChangedEvent(new OrderStatusChangedEvent(
-                saved.getId(), saved.getUserId(), user.email(), user.name(),
-                saved.getStatus(), "Order created from cart", saved.getTotalPrice()));
+            try {
+                cartClient.clearCart(userId, internalApiKey);
+            } catch (FeignException ex) {
+                log.warn("Failed to clear cart for user {} after checkout: {}", userId, ex.getMessage());
+            }
+            publishStatusChanged(saved, "Order created from cart");
 
-        return orderMapper.toResponse(saved, paymentResult.redirectUrl());
+            return orderMapper.toResponse(saved, paymentResult.redirectUrl());
+        } catch (RuntimeException ex) {
+            stockReservationService.restore(cart.items());
+            throw ex;
+        }
     }
 
     @Transactional(readOnly = true)
@@ -144,7 +131,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         order.setPaymentStatus(PaymentStatus.PAID);
-        applyTransition(order, OrderStatus.PAID, "Payment verified via " + order.getPaymentMethod());
+        applyTransition(order, OrderStatus.PAID, "Payment verified via %s".formatted(order.getPaymentMethod()));
         return orderMapper.toResponse(orderRepository.save(order));
     }
 
@@ -158,11 +145,18 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<OrderResponse> getAllOrders(OrderStatus status, int page, int size) {
+    public PageResponse<OrderResponse> getAllOrders(OrderStatus status, Long userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Order> result = status != null
-                ? orderRepository.findByStatus(status, pageable)
-                : orderRepository.findAll(pageable);
+        Page<Order> result;
+        if (userId != null && status != null) {
+            result = orderRepository.findByUserIdAndStatus(userId, status, pageable);
+        } else if (userId != null) {
+            result = orderRepository.findByUserId(userId, pageable);
+        } else if (status != null) {
+            result = orderRepository.findByStatus(status, pageable);
+        } else {
+            result = orderRepository.findAll(pageable);
+        }
 
         return new PageResponse<>(
                 result.getContent().stream().map(orderMapper::toResponse).toList(),
@@ -187,22 +181,6 @@ public class OrderServiceImpl implements OrderService {
         return orderMapper.toResponse(orderRepository.save(order));
     }
 
-    @Transactional(readOnly = true)
-    public OrderStatisticsResponse getStatistics() {
-        long totalOrders = orderRepository.count();
-        BigDecimal totalRevenue = orderRepository.sumTotalPriceByStatusIn(REVENUE_STATUSES);
-        long revenueOrderCount = orderRepository.countByStatusIn(REVENUE_STATUSES);
-
-        BigDecimal averageOrderValue = revenueOrderCount == 0
-                ? BigDecimal.ZERO
-                : totalRevenue.divide(BigDecimal.valueOf(revenueOrderCount), 2, RoundingMode.HALF_UP);
-
-        Map<OrderStatus, Long> ordersByStatus = orderRepository.countGroupedByStatus().stream()
-                .collect(Collectors.toMap(row -> (OrderStatus) row[0], row -> (Long) row[1]));
-
-        return new OrderStatisticsResponse(totalOrders, totalRevenue, averageOrderValue, ordersByStatus);
-    }
-
     private Order getOwnedOrder(Long userId, Long id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new TechShopException("Order not found", 404));
@@ -213,63 +191,30 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void applyTransition(Order order, OrderStatus newStatus, String note) {
+        if (order.getStatus().isTerminal()) {
+            throw new TechShopException(
+                    "Order %s is already in a terminal state: %s".formatted(order.getId(), order.getStatus()), 409);
+        }
         if (!order.getStatus().canTransitionTo(newStatus)) {
             throw new TechShopException(
-                    "Cannot transition order from " + order.getStatus() + " to " + newStatus, 409);
+                    "Cannot transition order from %s to %s".formatted(order.getStatus(), newStatus), 409);
         }
         order.transitionTo(newStatus, note);
         if (newStatus == OrderStatus.CANCELLED || newStatus == OrderStatus.REFUNDED) {
-            restoreOrderStock(order);
+            stockReservationService.restore(order);
         }
         publishStatusChanged(order, note);
     }
 
-    // Notifying the user is best-effort: a user-service hiccup here must never
-    // fail the order transition itself, which is the operation the caller
-    // actually asked for.
     private void publishStatusChanged(Order order, String note) {
         try {
-            UserResponse user = userClient.getUser(order.getUserId()).data();
+            UserResponse user = userClient.getUser(order.getUserId(), internalApiKey).data();
             orderEventProducer.sendOrderStatusChangedEvent(new OrderStatusChangedEvent(
                     order.getId(), order.getUserId(), user.email(), user.name(),
-                    order.getStatus(), note, order.getTotalPrice()));
+                    order.getStatus(), note, order.getTotalPrice(),
+                    order.getPaymentMethod(), orderMapper.toInstallmentPlanResponse(order.getInstallmentPlan())));
         } catch (Exception ex) {
             log.warn("Failed to publish status-changed notification for order {}: {}", order.getId(), ex.getMessage());
-        }
-    }
-
-    private void reserveStock(List<CartItemResponse> items) {
-        List<CartItemResponse> reserved = new ArrayList<>();
-        try {
-            for (CartItemResponse item : items) {
-                adjustStock(item.productId(), -item.quantity());
-                reserved.add(item);
-            }
-        } catch (TechShopException ex) {
-            reserved.forEach(item -> adjustStockQuietly(item.productId(), item.quantity()));
-            throw ex;
-        }
-    }
-
-    private void restoreOrderStock(Order order) {
-        order.getItems().forEach(item -> adjustStockQuietly(item.getProductId(), item.getQuantity()));
-    }
-
-    private void adjustStock(Long productId, int delta) {
-        try {
-            productClient.adjustStock(productId, new StockAdjustmentRequest(delta), internalApiKey);
-        } catch (FeignException.Conflict ex) {
-            throw new TechShopException("Insufficient stock for product " + productId, 409);
-        } catch (FeignException ex) {
-            throw new TechShopException("Product service unavailable", 503);
-        }
-    }
-
-    private void adjustStockQuietly(Long productId, int delta) {
-        try {
-            productClient.adjustStock(productId, new StockAdjustmentRequest(delta), internalApiKey);
-        } catch (FeignException ignored) {
-
         }
     }
 }

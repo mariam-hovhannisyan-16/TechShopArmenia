@@ -57,6 +57,10 @@ payment:
     sandbox-url: ${ROKET_LINE_SANDBOX_URL:https://sandbox.roketline.am/payment}
     merchant-id: ${ROKET_LINE_MERCHANT_ID:sandbox-merchant}
     secret-key: ${ROKET_LINE_SECRET_KEY:sandbox-secret}
+  installment:
+    sandbox-mode: ${INSTALLMENT_SANDBOX_MODE:true}
+    sandbox-url: ${INSTALLMENT_SANDBOX_URL:https://sandbox.installments.am/payment}
+    annual-rate: ${INSTALLMENT_ANNUAL_RATE:0.12}
 
 server:
   port: ${SERVER_PORT:8083}

@@ -21,4 +21,16 @@ public interface WishlistMapper {
     @Mapping(target = "createdAt", source = "wishlist.createdAt")
     @Mapping(target = "items", source = "items")
     WishlistResponse toResponse(Wishlist wishlist, List<WishlistItemResponse> items);
+
+    @Mapping(target = "userId", source = "userId")
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "items", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    Wishlist toEntity(Long userId);
+
+    @Mapping(target = "productId", source = "productId")
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "wishlist", ignore = true)
+    @Mapping(target = "addedAt", ignore = true)
+    WishlistItem toItem(Long productId);
 }

@@ -167,8 +167,10 @@ services:
       DB_PORT: 5432
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     depends_on:
       - postgres
+      - kafka
 
 volumes:
   postgres_data:

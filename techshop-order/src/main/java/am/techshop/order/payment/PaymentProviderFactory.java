@@ -22,7 +22,7 @@ public class PaymentProviderFactory {
     public PaymentProvider resolve(PaymentMethod method) {
         PaymentProvider provider = providersByMethod.get(method);
         if (provider == null) {
-            throw new TechShopException("Unsupported payment method: " + method, 400);
+            throw new TechShopException("Unsupported payment method: %s".formatted(method), 400);
         }
         return provider;
     }

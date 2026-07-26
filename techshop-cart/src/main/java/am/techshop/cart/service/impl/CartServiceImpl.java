@@ -12,6 +12,7 @@ import am.techshop.common.exception.TechShopException;
 import am.techshop.cart.client.ProductClient;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,12 +37,16 @@ public class CartServiceImpl implements CartService {
 
         Cart cart = getOrCreate(userId);
 
-        CartItem item = CartItem.builder()
-                .productId(product.id())
-                .productName(product.name())
-                .productPrice(product.price())
-                .quantity(request.quantity())
-                .build();
+        int existingQuantity = cart.getItems().stream()
+                .filter(i -> i.getProductId().equals(request.productId()))
+                .findFirst()
+                .map(CartItem::getQuantity)
+                .orElse(0);
+        if (existingQuantity + request.quantity() > product.stock()) {
+            throw new TechShopException("Insufficient stock for product: %s".formatted(product.name()), 409);
+        }
+
+        CartItem item = cartMapper.toEntity(product, request.quantity());
 
         cart.addOrUpdateItem(item);
         return cartMapper.toResponse(cartRepository.save(cart));
@@ -76,10 +81,17 @@ public class CartServiceImpl implements CartService {
 
     private Cart getOrCreate(Long userId) {
         return cartRepository.findByUserId(userId)
-                .orElseGet(() -> {
-                    Cart cart = new Cart();
-                    cart.setUserId(userId);
-                    return cartRepository.save(cart);
-                });
+                .orElseGet(() -> createCart(userId));
+    }
+
+    private Cart createCart(Long userId) {
+        Cart cart = new Cart();
+        cart.setUserId(userId);
+        try {
+            return cartRepository.save(cart);
+        } catch (DataIntegrityViolationException ex) {
+            return cartRepository.findByUserId(userId)
+                    .orElseThrow(() -> ex);
+        }
     }
 }

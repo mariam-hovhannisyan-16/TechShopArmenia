@@ -43,6 +43,8 @@ spring:
 
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:4200}
+  jwt:
+    secret: ${JWT_SECRET:local-dev-secret-change-in-production}
 
 server:
   port: ${SERVER_PORT:8085}

@@ -6,9 +6,10 @@ import am.techshop.common.dto.request.ProductRequest;
 import am.techshop.common.dto.request.StockAdjustmentRequest;
 import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.dto.response.ProductResponse;
-import am.techshop.product.config.JwtAuthFilter;
 import am.techshop.product.config.SecurityConfig;
-import am.techshop.product.service.JwtService;
+import am.techshop.product.security.InternalApiKeyGuard;
+import am.techshop.product.security.JwtAuthFilter;
+import am.techshop.product.security.JwtService;
 import am.techshop.product.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ProductController.class)
-@Import({SecurityConfig.class, JwtAuthFilter.class})
+@Import({SecurityConfig.class, JwtAuthFilter.class, InternalApiKeyGuard.class})
 class ProductControllerTest {
 
     @Autowired
@@ -54,6 +55,7 @@ class ProductControllerTest {
     @MockBean
     private ProductService productService;
 
+    @SuppressWarnings("unused")
     @MockBean
     private JwtService jwtService;
 
@@ -68,17 +70,43 @@ class ProductControllerTest {
     }
 
     @Test
-    void addProduct_ReturnsCreatedProduct() throws Exception {
+    void addProduct_WhenCalledByAdmin_ReturnsCreatedProduct() throws Exception {
         ProductRequest request = new ProductRequest("Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", "img.jpg", false);
         ProductResponse response = new ProductResponse(1L, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", "img.jpg", false, null);
 
         when(productService.addProduct(any(ProductRequest.class))).thenReturn(response);
 
         mockMvc.perform(post("/api/products")
+                        .with(authentication(asAdmin()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.message").value("Product created"));
+    }
+
+    @Test
+    void addProduct_WhenCalledByRegularUser_ReturnsForbidden() throws Exception {
+        ProductRequest request = new ProductRequest("Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", "img.jpg", false);
+
+        mockMvc.perform(post("/api/products")
+                        .with(authentication(asUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        verify(productService, never()).addProduct(any());
+    }
+
+    @Test
+    void addProduct_WithoutAuthentication_ReturnsUnauthorized() throws Exception {
+        ProductRequest request = new ProductRequest("Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", "img.jpg", false);
+
+        mockMvc.perform(post("/api/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+
+        verify(productService, never()).addProduct(any());
     }
 
     @Test
@@ -117,13 +145,29 @@ class ProductControllerTest {
     }
 
     @Test
-    void deleteProduct_ReturnsSuccess() throws Exception {
+    void deleteProduct_WhenCalledByAdmin_ReturnsSuccess() throws Exception {
         Long id = 1L;
         doNothing().when(productService).deleteProduct(id);
 
-        mockMvc.perform(delete("/api/products/{id}", id))
+        mockMvc.perform(delete("/api/products/{id}", id).with(authentication(asAdmin())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Product deleted"));
+    }
+
+    @Test
+    void deleteProduct_WhenCalledByRegularUser_ReturnsForbidden() throws Exception {
+        mockMvc.perform(delete("/api/products/{id}", 1L).with(authentication(asUser())))
+                .andExpect(status().isForbidden());
+
+        verify(productService, never()).deleteProduct(any());
+    }
+
+    @Test
+    void deleteProduct_WithoutAuthentication_ReturnsUnauthorized() throws Exception {
+        mockMvc.perform(delete("/api/products/{id}", 1L))
+                .andExpect(status().isUnauthorized());
+
+        verify(productService, never()).deleteProduct(any());
     }
 
     @Test

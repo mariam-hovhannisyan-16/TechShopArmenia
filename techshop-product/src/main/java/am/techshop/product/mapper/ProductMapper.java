@@ -1,5 +1,6 @@
 package am.techshop.product.mapper;
 
+import am.techshop.common.dto.request.ProductRequest;
 import am.techshop.common.dto.response.ProductResponse;
 import am.techshop.product.entity.Product;
 import org.mapstruct.Mapper;
@@ -10,4 +11,10 @@ public interface ProductMapper {
 
     @Mapping(target = "isNew", expression = "java(product.isNew())")
     ProductResponse toResponse(Product product);
+
+    @Mapping(target = "new", expression = "java(request.isNew())")
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "discountPercentage", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    Product toEntity(ProductRequest request);
 }

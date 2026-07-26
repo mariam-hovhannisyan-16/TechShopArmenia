@@ -1,29 +1,30 @@
 package am.techshop.order.payment;
 
 import am.techshop.common.enums.PaymentMethod;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class RoketLinePaymentService extends AbstractSandboxPaymentProvider {
 
-    @Value("${payment.roket-line.sandbox-mode:true}")
-    private boolean sandboxMode;
+    private final RoketLineProperties properties;
 
-    @Value("${payment.roket-line.sandbox-url}")
-    private String sandboxUrl;
-
-    public RoketLinePaymentService() {
+    public RoketLinePaymentService(RoketLineProperties properties) {
         super(PaymentMethod.ROKET_LINE, "ROKET-LINE");
+        this.properties = properties;
     }
 
     @Override
     protected boolean isSandboxMode() {
-        return sandboxMode;
+        return properties.sandboxMode();
     }
 
     @Override
     protected String getSandboxUrl() {
-        return sandboxUrl;
+        return properties.sandboxUrl();
+    }
+
+    @Override
+    protected String getMerchantId() {
+        return properties.merchantId();
     }
 }

@@ -19,12 +19,25 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
 internal:
   api-key: ${INTERNAL_API_KEY:local-dev-internal-key-change-in-production}
 
 app:
   jwt:
     secret: ${JWT_SECRET:local-dev-secret-change-in-production}
+
+services:
+  wishlist:
+    url: ${WISHLIST_SERVICE_URL:http://localhost:8086}
 
 server:
   port: ${SERVER_PORT:8084}

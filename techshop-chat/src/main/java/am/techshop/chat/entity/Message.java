@@ -11,7 +11,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -22,7 +21,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "messages")
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
@@ -42,7 +40,6 @@ public class Message {
     @Column(nullable = false, length = 2000)
     private String text;
 
-    @Builder.Default
     @Column(nullable = false)
     private boolean read = false;
 

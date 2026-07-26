@@ -10,10 +10,10 @@ import am.techshop.common.dto.response.AuthResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.enums.UserRole;
 import am.techshop.common.exception.TechShopException;
-import am.techshop.user.config.JwtAuthFilter;
 import am.techshop.user.config.SecurityConfig;
+import am.techshop.user.security.JwtAuthFilter;
+import am.techshop.user.security.JwtService;
 import am.techshop.user.service.CustomUserDetailsService;
-import am.techshop.user.service.JwtService;
 import am.techshop.user.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -57,9 +57,11 @@ class UserControllerTest {
     @MockBean
     private UserService userService;
 
+    @SuppressWarnings("unused")
     @MockBean
     private JwtService jwtService;
 
+    @SuppressWarnings("unused")
     @MockBean
     private CustomUserDetailsService userDetailsService;
 
@@ -138,13 +140,40 @@ class UserControllerTest {
     }
 
     @Test
-    void getUserById_ReturnsUser() throws Exception {
+    void getUserById_WithInternalApiKey_ReturnsUser() throws Exception {
         Long id = 1L;
         UserResponse userResponse = new UserResponse(id, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
         when(userService.getUserById(id)).thenReturn(userResponse);
-        mockMvc.perform(get("/api/users/{id}", id))
+        mockMvc.perform(get("/api/users/{id}", id)
+                        .header("X-Internal-Api-Key", "test-internal-key"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(id));
+    }
+
+    @Test
+    void getUserById_AsAdmin_ReturnsUser() throws Exception {
+        Long id = 1L;
+        UserResponse userResponse = new UserResponse(id, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
+        when(userService.getUserById(id)).thenReturn(userResponse);
+        mockMvc.perform(get("/api/users/{id}", id).with(authentication(asAdmin())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(id));
+    }
+
+    @Test
+    void getUserById_WithoutAdminOrInternalKey_ReturnsForbidden() throws Exception {
+        mockMvc.perform(get("/api/users/{id}", 1L).with(authentication(asUser())))
+                .andExpect(status().isForbidden());
+
+        verify(userService, never()).getUserById(any());
+    }
+
+    @Test
+    void getUserById_WithoutAuthOrKey_ReturnsForbidden() throws Exception {
+        mockMvc.perform(get("/api/users/{id}", 1L))
+                .andExpect(status().isForbidden());
+
+        verify(userService, never()).getUserById(any());
     }
 
     @Test

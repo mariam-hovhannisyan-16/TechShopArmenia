@@ -3,7 +3,6 @@ package am.techshop.order.service;
 import am.techshop.common.dto.request.CheckoutRequest;
 import am.techshop.common.dto.request.OrderStatusUpdateRequest;
 import am.techshop.common.dto.response.OrderResponse;
-import am.techshop.common.dto.response.OrderStatisticsResponse;
 import am.techshop.common.dto.response.OrderStatusHistoryResponse;
 import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.enums.OrderStatus;
@@ -24,11 +23,9 @@ public interface OrderService {
 
     OrderResponse cancelOrder(Long userId, Long id);
 
-    PageResponse<OrderResponse> getAllOrders(OrderStatus status, int page, int size);
+    PageResponse<OrderResponse> getAllOrders(OrderStatus status, Long userId, int page, int size);
 
     OrderResponse getOrderByIdAdmin(Long id);
 
     OrderResponse updateOrderStatus(Long id, OrderStatusUpdateRequest request);
-
-    OrderStatisticsResponse getStatistics();
 }

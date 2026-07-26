@@ -24,6 +24,6 @@ public class CustomUserDetailsService implements UserDetailsService {
                         user.getPassword(),
                         List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
                 ))
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: %s".formatted(email)));
     }
 }

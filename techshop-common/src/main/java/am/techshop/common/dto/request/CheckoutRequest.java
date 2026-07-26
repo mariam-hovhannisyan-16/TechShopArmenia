@@ -18,5 +18,8 @@ public record CheckoutRequest(
         String notes,
 
         @NotNull(message = "Payment method is required")
-        PaymentMethod paymentMethod
+        PaymentMethod paymentMethod,
+
+        @Valid
+        InstallmentDetailsRequest installmentDetails
 ) {}

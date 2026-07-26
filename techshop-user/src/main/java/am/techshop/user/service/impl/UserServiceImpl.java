@@ -11,14 +11,14 @@ import am.techshop.common.event.UserRegisteredEvent;
 import am.techshop.common.event.UserVerifiedEvent;
 import am.techshop.common.exception.TechShopException;
 import am.techshop.common.exception.UserNotFoundException;
+import am.techshop.user.config.InternalProperties;
 import am.techshop.user.entity.User;
 import am.techshop.user.kafka.UserEventProducer;
 import am.techshop.user.mapper.UserMapper;
 import am.techshop.user.repository.UserRepository;
-import am.techshop.user.service.JwtService;
+import am.techshop.user.security.JwtService;
 import am.techshop.user.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,9 +40,7 @@ public class UserServiceImpl implements UserService {
     private final JwtService jwtService;
     private final UserMapper userMapper;
     private final UserEventProducer userEventProducer;
-
-    @Value("${app.require-email-verification:false}")
-    private boolean requireEmailVerification;
+    private final InternalProperties internalProperties;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -52,23 +50,13 @@ public class UserServiceImpl implements UserService {
 
         String verificationToken = UUID.randomUUID().toString();
 
-        User user = User.builder()
-                .name(request.name())
-                .email(request.email())
-                .password(passwordEncoder.encode(request.password()))
-                .role(request.role() != null ? request.role() : UserRole.CUSTOMER)
-                .emailVerified(false)
-                .verificationToken(verificationToken)
-                .verificationTokenExpiresAt(LocalDateTime.now().plusHours(VERIFICATION_TOKEN_TTL_HOURS))
-                .build();
+        User user = userMapper.toEntity(request, passwordEncoder.encode(request.password()),
+                request.role() != null ? request.role() : UserRole.CUSTOMER,
+                verificationToken, LocalDateTime.now().plusHours(VERIFICATION_TOKEN_TTL_HOURS));
 
         User savedUser = userRepository.save(user);
         String token = jwtService.generateToken(savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name());
 
-        // Sending the verification email happens asynchronously in
-        // techshop-notification (consuming this event) — a mail failure
-        // there can never fail this request, and the user can always
-        // request a resend via /api/users/resend-verification.
         userEventProducer.sendUserRegisteredEvent(
                 new UserRegisteredEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getName(), verificationToken)
         );
@@ -85,7 +73,7 @@ public class UserServiceImpl implements UserService {
             throw new TechShopException("Invalid email or password", 401);
         }
 
-        if (requireEmailVerification && !user.isEmailVerified()) {
+        if (internalProperties.requireEmailVerification() && !user.isEmailVerified()) {
             throw new TechShopException("Please verify your email before logging in", 403);
         }
 
@@ -97,6 +85,10 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAll().stream()
                 .map(userMapper::toResponse)
                 .toList();
+    }
+
+    public long getUserCount() {
+        return userRepository.count();
     }
 
     public UserResponse getUserById(Long id) {
@@ -130,9 +122,6 @@ public class UserServiceImpl implements UserService {
         return userMapper.toResponse(savedUser);
     }
 
-    // Always succeeds from the caller's point of view whether or not the
-    // email exists / is already verified, so this endpoint can't be used to
-    // enumerate registered addresses.
     @Transactional
     public void resendVerification(String email) {
         userRepository.findByEmail(email).ifPresent(user -> {
@@ -151,9 +140,6 @@ public class UserServiceImpl implements UserService {
         });
     }
 
-    // Always succeeds from the caller's point of view whether or not the
-    // email exists, so this endpoint can't be used to enumerate registered
-    // addresses.
     @Transactional
     public void forgotPassword(String email) {
         userRepository.findByEmail(email).ifPresent(user -> {

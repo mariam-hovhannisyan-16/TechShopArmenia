@@ -1,4 +1,4 @@
-package am.techshop.product.service;
+package am.techshop.chat.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

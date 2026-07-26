@@ -1,6 +1,7 @@
 package am.techshop.product.config;
 
 import am.techshop.common.dto.response.ErrorResponse;
+import am.techshop.product.security.JwtAuthFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,8 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, "/api/products").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/products/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/products/*/price", "/api/products/*/discount")
                         .hasRole("ADMIN")
                         .anyRequest().permitAll()

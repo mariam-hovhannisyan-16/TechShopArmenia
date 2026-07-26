@@ -13,6 +13,7 @@ public interface UserService {
     AuthResponse register(RegisterRequest request);
     AuthResponse login(LoginRequest request);
     List<UserResponse> getAllUsers();
+    long getUserCount();
     UserResponse getUserById(Long id);
     UserResponse verifyEmail(String token);
     void resendVerification(String email);

@@ -1,6 +1,7 @@
 package am.techshop.user.config;
 
 import am.techshop.common.dto.response.ErrorResponse;
+import am.techshop.user.security.JwtAuthFilter;
 import am.techshop.user.service.CustomUserDetailsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;

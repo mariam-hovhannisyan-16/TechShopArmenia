@@ -1,4 +1,4 @@
-package am.techshop.order.service;
+package am.techshop.wishlist.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -26,10 +26,6 @@ public class JwtService {
 
     public Long extractUserId(String token) {
         return extractAllClaims(token).get("userId", Long.class);
-    }
-
-    public String extractRole(String token) {
-        return extractAllClaims(token).get("role", String.class);
     }
 
     private Claims extractAllClaims(String token) {

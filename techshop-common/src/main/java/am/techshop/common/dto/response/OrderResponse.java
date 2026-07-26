@@ -22,6 +22,7 @@ public record OrderResponse(
         String paymentReference,
         PaymentStatus paymentStatus,
         String paymentRedirectUrl,
+        InstallmentPlanResponse installmentPlan,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {}

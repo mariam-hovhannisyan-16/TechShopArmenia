@@ -1,6 +1,5 @@
-package am.techshop.user.config;
+package am.techshop.product.security;
 
-import am.techshop.user.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,12 +40,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        String email = jwtService.extractEmail(token);
+        Long userId = jwtService.extractUserId(token);
         String role = jwtService.extractRole(token);
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
-                        email,
+                        userId,
                         null,
                         List.of(new SimpleGrantedAuthority("ROLE_" + role))
                 );

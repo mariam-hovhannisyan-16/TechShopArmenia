@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface NotificationService {
     List<NotificationResponse> getUserNotifications(Long userId);
-    void markAsRead(Long id);
+    void markAsRead(Long userId, Long id);
 }

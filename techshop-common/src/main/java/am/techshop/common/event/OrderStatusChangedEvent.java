@@ -1,6 +1,8 @@
 package am.techshop.common.event;
 
+import am.techshop.common.dto.response.InstallmentPlanResponse;
 import am.techshop.common.enums.OrderStatus;
+import am.techshop.common.enums.PaymentMethod;
 
 import java.math.BigDecimal;
 
@@ -11,5 +13,7 @@ public record OrderStatusChangedEvent(
         String userName,
         OrderStatus status,
         String note,
-        BigDecimal totalPrice
+        BigDecimal totalPrice,
+        PaymentMethod paymentMethod,
+        InstallmentPlanResponse installmentPlan
 ) {}

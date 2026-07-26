@@ -27,9 +27,12 @@ public class NotificationServiceImpl implements NotificationService {
                 .toList();
     }
 
-    public void markAsRead(Long id) {
+    public void markAsRead(Long userId, Long id) {
         Notification notification = notificationRepository.findById(id)
                 .orElseThrow(() -> new TechShopException("Notification not found", 404));
+        if (!notification.getUserId().equals(userId)) {
+            throw new TechShopException("You do not have permission to access this resource", 403);
+        }
         notification.setRead(true);
         notificationRepository.save(notification);
     }

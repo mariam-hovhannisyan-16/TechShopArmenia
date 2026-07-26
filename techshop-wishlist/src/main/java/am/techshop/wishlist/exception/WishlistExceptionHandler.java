@@ -23,7 +23,7 @@ public class WishlistExceptionHandler {
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors()
                 .stream()
-                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                .map(e -> "%s: %s".formatted(e.getField(), e.getDefaultMessage()))
                 .findFirst()
                 .orElse("Validation error");
         return ResponseEntity
@@ -35,7 +35,7 @@ public class WishlistExceptionHandler {
     public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
         String message = ex.getConstraintViolations().stream()
                 .findFirst()
-                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                .map(violation -> "%s: %s".formatted(violation.getPropertyPath(), violation.getMessage()))
                 .orElse("Validation error");
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)

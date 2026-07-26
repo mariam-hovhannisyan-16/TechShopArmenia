@@ -25,6 +25,10 @@ public abstract class AbstractSandboxPaymentProvider implements PaymentProvider 
     public PaymentInitiationResult createPayment(Order order) {
         String reference = referencePrefix + "-" + UUID.randomUUID();
         String redirectUrl = getSandboxUrl() + "?ref=" + reference + "&amount=" + order.getTotalPrice();
+        String merchantId = getMerchantId();
+        if (merchantId != null) {
+            redirectUrl += "&merchant_id=" + merchantId;
+        }
         return new PaymentInitiationResult(reference, redirectUrl, PaymentStatus.PENDING);
     }
 
@@ -33,10 +37,14 @@ public abstract class AbstractSandboxPaymentProvider implements PaymentProvider 
         if (isSandboxMode()) {
             return new PaymentVerificationResult(PaymentStatus.PAID, "Sandbox payment auto-approved");
         }
-        throw new UnsupportedOperationException("Live " + method + " verification is not yet implemented");
+        throw new UnsupportedOperationException("Live %s verification is not yet implemented".formatted(method));
     }
 
     protected abstract boolean isSandboxMode();
 
     protected abstract String getSandboxUrl();
+
+    protected String getMerchantId() {
+        return null;
+    }
 }

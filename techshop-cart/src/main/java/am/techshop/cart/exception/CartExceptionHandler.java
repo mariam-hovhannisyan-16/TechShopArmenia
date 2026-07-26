@@ -22,7 +22,7 @@ public class CartExceptionHandler {
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors()
                 .stream()
-                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                .map(e -> "%s: %s".formatted(e.getField(), e.getDefaultMessage()))
                 .findFirst()
                 .orElse("Validation error");
         return ResponseEntity

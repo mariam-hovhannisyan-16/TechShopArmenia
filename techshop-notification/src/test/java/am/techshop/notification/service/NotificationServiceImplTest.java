@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
@@ -38,12 +39,11 @@ class NotificationServiceImplTest {
     @Test
     void getUserNotifications_ReturnsNotificationList() {
         Long userId = 1L;
-        Notification notification = Notification.builder()
-                .id(1L)
-                .userId(userId)
-                .message("Your order has been created")
-                .read(false)
-                .build();
+        Notification notification = new Notification();
+        notification.setId(1L);
+        notification.setUserId(userId);
+        notification.setMessage("Your order has been created");
+        notification.setRead(false);
         NotificationResponse response = new NotificationResponse(1L, userId, "Your order has been created", false, LocalDateTime.now());
 
         when(notificationRepository.findByUserId(userId)).thenReturn(List.of(notification));
@@ -52,7 +52,7 @@ class NotificationServiceImplTest {
         List<NotificationResponse> result = notificationService.getUserNotifications(userId);
 
         assertEquals(1, result.size());
-        assertEquals(userId, result.get(0).userId());
+        assertEquals(userId, result.getFirst().userId());
         verify(notificationRepository).findByUserId(userId);
     }
 
@@ -69,16 +69,16 @@ class NotificationServiceImplTest {
     @Test
     void markAsRead_WhenNotificationExists_MarksAsRead() {
         Long id = 1L;
-        Notification notification = Notification.builder()
-                .id(id)
-                .userId(1L)
-                .message("Test")
-                .read(false)
-                .build();
+        Long userId = 1L;
+        Notification notification = new Notification();
+        notification.setId(id);
+        notification.setUserId(userId);
+        notification.setMessage("Test");
+        notification.setRead(false);
 
         when(notificationRepository.findById(id)).thenReturn(Optional.of(notification));
 
-        notificationService.markAsRead(id);
+        notificationService.markAsRead(userId, id);
 
         assertTrue(notification.isRead());
         verify(notificationRepository).save(notification);
@@ -90,8 +90,26 @@ class NotificationServiceImplTest {
         when(notificationRepository.findById(id)).thenReturn(Optional.empty());
 
         TechShopException ex = assertThrows(TechShopException.class,
-                () -> notificationService.markAsRead(id));
+                () -> notificationService.markAsRead(1L, id));
 
         assertEquals(404, ex.getStatusCode());
+    }
+
+    @Test
+    void markAsRead_WhenNotificationBelongsToDifferentUser_ThrowsForbidden() {
+        Long id = 1L;
+        Notification notification = new Notification();
+        notification.setId(id);
+        notification.setUserId(1L);
+        notification.setMessage("Test");
+        notification.setRead(false);
+
+        when(notificationRepository.findById(id)).thenReturn(Optional.of(notification));
+
+        TechShopException ex = assertThrows(TechShopException.class,
+                () -> notificationService.markAsRead(2L, id));
+
+        assertEquals(403, ex.getStatusCode());
+        assertFalse(notification.isRead());
     }
 }

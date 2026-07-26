@@ -1,6 +1,8 @@
 package am.techshop.notification.service;
 
+import am.techshop.common.dto.response.InstallmentPlanResponse;
 import am.techshop.common.enums.OrderStatus;
+import am.techshop.common.enums.PaymentMethod;
 import am.techshop.notification.email.EmailTemplates;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -29,11 +32,16 @@ public class EmailService {
     public void sendVerificationEmail(String to, String userName, String verificationToken) {
         String link = frontendUrl + "/verify-email?token=" + verificationToken;
         String html = EmailTemplates.verificationEmail(userName, link);
-        String text = "Բարև, " + userName + ":\n\n" +
-                "Շնորհակալություն TechShop AM-ում գրանցվելու համար: Ձեր հաշիվը ակտիվացնելու համար խնդրում ենք հետևել այս հղմանը.\n\n" +
-                link + "\n\n" +
-                "Հղումն ուժի մեջ է 24 ժամ:\n\n" +
-                "Եթե դուք չեք գրանցվել TechShop AM-ում, պարզապես անտեսեք այս նամակը:";
+        String text = """
+                Բարև, %s:
+
+                Շնորհակալություն TechShop AM-ում գրանցվելու համար: Ձեր հաշիվը ակտիվացնելու համար խնդրում ենք հետևել այս հղմանը.
+
+                %s
+
+                Հղումն ուժի մեջ է 24 ժամ:
+
+                Եթե դուք չեք գրանցվել TechShop AM-ում, պարզապես անտեսեք այս նամակը:""".formatted(userName, link);
 
         sendHtml(to, "Հաստատեք ձեր հաշիվը TechShop AM-ում", html, text);
     }
@@ -41,59 +49,89 @@ public class EmailService {
     public void sendPasswordResetEmail(String to, String userName, String resetToken) {
         String link = frontendUrl + "/reset-password?token=" + resetToken;
         String html = EmailTemplates.passwordResetEmail(userName, link);
-        String text = "Բարև, " + userName + ":\n\n" +
-                "Մենք ստացել ենք ձեր հաշվի գաղտնաբառը վերականգնելու հայտը: Նոր գաղտնաբառ սահմանելու համար հետևեք այս հղմանը.\n\n" +
-                link + "\n\n" +
-                "Հղումն ուժի մեջ է 1 ժամ:\n\n" +
-                "Եթե դուք չեք հայցել գաղտնաբառի վերականգնում, պարզապես անտեսեք այս նամակը:";
+        String text = """
+                Բարև, %s:
+
+                Մենք ստացել ենք ձեր հաշվի գաղտնաբառը վերականգնելու հայտը: Նոր գաղտնաբառ սահմանելու համար հետևեք այս հղմանը.
+
+                %s
+
+                Հղումն ուժի մեջ է 1 ժամ:
+
+                Եթե դուք չեք հայցել գաղտնաբառի վերականգնում, պարզապես անտեսեք այս նամակը:""".formatted(userName, link);
 
         sendHtml(to, "Գաղտնաբառի վերականգնում TechShop AM-ում", html, text);
     }
 
     public void sendWelcome(String to, String userName) {
         String html = EmailTemplates.welcomeEmail(userName, frontendUrl);
-        String text = "Բարև, " + userName + ":\n\n" +
-                "Ձեր հաշիվը հաստատված է, և դուք այժմ կարող եք օգտվել TechShop AM-ի բոլոր հնարավորություններից: Բարի գնումներ:";
+        String text = """
+                Բարև, %s:
+
+                Ձեր հաշիվը հաստատված է, և դուք այժմ կարող եք օգտվել TechShop AM-ի բոլոր հնարավորություններից: Բարի գնումներ:""".formatted(userName);
 
         sendHtml(to, "Բարի գալուստ TechShop AM", html, text);
     }
 
-    public void sendOrderStatusChanged(String to, String userName, Long orderId, OrderStatus status, BigDecimal totalPrice) {
+    public void sendOrderStatusChanged(String to, String userName, Long orderId, OrderStatus status, BigDecimal totalPrice,
+                                        PaymentMethod paymentMethod, InstallmentPlanResponse installmentPlan) {
         boolean justCreated = status == OrderStatus.PENDING;
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
         message.setSubject(justCreated
                 ? "Your order has been received — TechShopArmenia"
-                : "Order #" + orderId + " status update — TechShopArmenia");
+                : "Order #%s status update — TechShopArmenia".formatted(orderId));
         message.setText(
-                "Hello " + userName + ",\n\n" +
-                        (justCreated
-                                ? "Your order #" + orderId + " has been successfully received.\n"
-                                : "Your order #" + orderId + " status is now: " + status + ".\n") +
-                        "Total amount: " + totalPrice + " AMD\n\n" +
-                        "Thank you for shopping at TechShopArmenia!"
+                """
+                Hello %s,
+
+                %s%sTotal amount: %s AMD
+
+                Thank you for shopping at TechShopArmenia!""".formatted(
+                                userName,
+                                justCreated
+                                        ? "Your order #%s has been successfully received.\n".formatted(orderId)
+                                        : "Your order #%s status is now: %s.\n".formatted(orderId, status),
+                                paymentMethodSummary(paymentMethod, installmentPlan),
+                                totalPrice)
         );
         send(message);
     }
 
+    private String paymentMethodSummary(PaymentMethod paymentMethod, InstallmentPlanResponse installmentPlan) {
+        if (paymentMethod == null) {
+            return "";
+        }
+        if (paymentMethod == PaymentMethod.INSTALLMENT && installmentPlan != null) {
+            return "Դուք ընտրել եք ապառիկ վճարում %s-ի միջոցով, %d ամսով, ամսական %s դրամ\n"
+                    .formatted(installmentPlan.bankName(), installmentPlan.durationMonths(), installmentPlan.monthlyPayment());
+        }
+        return "Վճարման եղանակ՝ %s\n".formatted(paymentMethodDisplayName(paymentMethod));
+    }
+
+    private String paymentMethodDisplayName(PaymentMethod paymentMethod) {
+        return switch (paymentMethod) {
+            case IDRAM -> "Idram";
+            case TELCELL -> "Telcell";
+            case ROKET_LINE -> "Roket Line";
+            case INSTALLMENT -> "ապառիկ վճարում";
+        };
+    }
+
     private void send(SimpleMailMessage message) {
+        String to = recipients(message);
         if (isDevMode()) {
-            logDevModeSend(String.join(", ", message.getTo()), message.getSubject(), message.getText());
+            logDevModeSend(to, message.getSubject(), message.getText());
             return;
         }
 
         try {
-            // Without an explicit From, JavaMail falls back to deriving one from
-            // the container's local hostname (e.g. "root@3f8a2b91c4d2") instead of
-            // the authenticated account — Gmail then silently drops or spam-filters
-            // the message rather than bouncing it, since the SMTP transaction
-            // itself still completes "successfully" from JavaMail's point of view.
             message.setFrom(mailUsername);
             mailSender.send(message);
-            log.info("[EmailService] Sent email to {} (subject: {})", message.getTo(), message.getSubject());
+            logSendSuccess(to, message.getSubject());
         } catch (Exception ex) {
-            log.error("Failed to send email to {}: {}", message.getTo(), ex.getMessage(), ex);
+            logSendFailure(to, ex);
         }
     }
 
@@ -111,15 +149,32 @@ public class EmailService {
             helper.setSubject(subject);
             helper.setText(textFallback, html);
             mailSender.send(mimeMessage);
-            log.info("[EmailService] Sent email to {} (subject: {})", to, subject);
+            logSendSuccess(to, subject);
         } catch (Exception ex) {
-            log.error("Failed to send email to {}: {}", to, ex.getMessage(), ex);
+            logSendFailure(to, ex);
         }
     }
 
+    private static String recipients(SimpleMailMessage message) {
+        return String.join(", ", Objects.requireNonNullElse(message.getTo(), new String[0]));
+    }
+
+    private void logSendSuccess(String to, String subject) {
+        log.info("[EmailService] Sent email to {} (subject: {})", to, subject);
+    }
+
+    private void logSendFailure(String to, Exception ex) {
+        log.error("Failed to send email to {}: {}", to, ex.getMessage(), ex);
+    }
+
     private void logDevModeSend(String to, String subject, String body) {
-        log.info("[EmailService] (dev mode, no SMTP configured) Not sending email — printing instead:\n" +
-                "  To:      {}\n  Subject: {}\n  ---\n{}\n  ---", to, subject, body);
+        log.info("""
+                [EmailService] (dev mode, no SMTP configured) Not sending email — printing instead:
+                  To:      {}
+                  Subject: {}
+                  ---
+                {}
+                  ---""", to, subject, body);
     }
 
     private boolean isDevMode() {

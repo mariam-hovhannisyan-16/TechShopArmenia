@@ -75,6 +75,9 @@
                     <configuration>
                         <release>${java.version}</release>
                         <parameters>true</parameters>
+                        <compilerArgs>
+                            <arg>-Xlint:all,-processing</arg>
+                        </compilerArgs>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.projectlombok</groupId>

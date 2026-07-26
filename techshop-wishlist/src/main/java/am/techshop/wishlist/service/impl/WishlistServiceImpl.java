@@ -12,6 +12,7 @@ import am.techshop.wishlist.repository.WishlistRepository;
 import am.techshop.wishlist.service.WishlistService;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +37,7 @@ public class WishlistServiceImpl implements WishlistService {
         }
 
         fetchProduct(productId);
-        wishlist.addItem(WishlistItem.builder().productId(productId).build());
+        wishlist.addItem(wishlistMapper.toItem(productId));
 
         return buildResponse(wishlistRepository.save(wishlist));
     }
@@ -65,14 +66,28 @@ public class WishlistServiceImpl implements WishlistService {
         return buildResponse(wishlistRepository.save(wishlist));
     }
 
+    @Transactional(readOnly = true)
+    public List<Long> getSubscriberUserIds(Long productId) {
+        return wishlistRepository.findUserIdsByProductId(productId);
+    }
+
     private Wishlist getOrCreateWishlist(Long userId) {
         return wishlistRepository.findByUserId(userId)
-                .orElseGet(() -> wishlistRepository.save(Wishlist.builder().userId(userId).build()));
+                .orElseGet(() -> {
+                    try {
+                        return wishlistRepository.save(wishlistMapper.toEntity(userId));
+                    } catch (DataIntegrityViolationException ex) {
+                        throw new TechShopException("Wishlist already exists for this user, please retry", 409);
+                    }
+                });
     }
 
     private WishlistResponse buildResponse(Wishlist wishlist) {
-        Map<Long, ProductResponse> productsById = wishlist.getItems().stream()
-                .collect(Collectors.toMap(WishlistItem::getProductId, item -> fetchProductSafely(item.getProductId())));
+        List<Long> productIds = wishlist.getItems().stream()
+                .map(WishlistItem::getProductId)
+                .distinct()
+                .toList();
+        Map<Long, ProductResponse> productsById = fetchProductsSafely(productIds);
 
         List<WishlistItemResponse> items = wishlist.getItems().stream()
                 .map(item -> wishlistMapper.toItemResponse(item, productsById.get(item.getProductId())))
@@ -81,13 +96,12 @@ public class WishlistServiceImpl implements WishlistService {
         return wishlistMapper.toResponse(wishlist, items);
     }
 
-    private ProductResponse fetchProduct(Long productId) {
+    private void fetchProduct(Long productId) {
         try {
             var response = productClient.getProduct(productId);
             if (response == null || response.data() == null) {
                 throw new TechShopException("Product not found", 404);
             }
-            return response.data();
         } catch (FeignException.NotFound ex) {
             throw new TechShopException("Product not found", 404);
         } catch (FeignException ex) {
@@ -95,12 +109,19 @@ public class WishlistServiceImpl implements WishlistService {
         }
     }
 
-    private ProductResponse fetchProductSafely(Long productId) {
+    private Map<Long, ProductResponse> fetchProductsSafely(List<Long> productIds) {
+        if (productIds.isEmpty()) {
+            return Map.of();
+        }
         try {
-            var response = productClient.getProduct(productId);
-            return response != null ? response.data() : null;
+            var response = productClient.getProducts(productIds);
+            List<ProductResponse> products = response != null ? response.data() : null;
+            if (products == null) {
+                return Map.of();
+            }
+            return products.stream().collect(Collectors.toMap(ProductResponse::id, product -> product));
         } catch (FeignException ex) {
-            return null;
+            return Map.of();
         }
     }
 }

@@ -8,7 +8,9 @@ import am.techshop.common.dto.response.OrderStatisticsResponse;
 import am.techshop.common.dto.response.OrderStatusHistoryResponse;
 import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.enums.OrderStatus;
+import am.techshop.common.security.CurrentUser;
 import am.techshop.order.service.OrderService;
+import am.techshop.order.stats.OrderStatsService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -36,50 +38,52 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderStatsService orderStatsService;
 
     @PostMapping("/checkout")
     public ResponseEntity<ApiResponse<OrderResponse>> checkout(
             @RequestBody @Valid CheckoutRequest request, Authentication authentication) {
-        OrderResponse response = orderService.checkout(currentUserId(authentication), request);
+        OrderResponse response = orderService.checkout(CurrentUser.id(authentication), request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok("Order created", response));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<OrderResponse>>> getUserOrders(Authentication authentication) {
-        return ResponseEntity.ok(ApiResponse.ok(orderService.getUserOrders(currentUserId(authentication))));
+        return ResponseEntity.ok(ApiResponse.ok(orderService.getUserOrders(CurrentUser.id(authentication))));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<OrderResponse>> getOrderById(
             @PathVariable @Positive Long id, Authentication authentication) {
-        return ResponseEntity.ok(ApiResponse.ok(orderService.getOrderById(currentUserId(authentication), id)));
+        return ResponseEntity.ok(ApiResponse.ok(orderService.getOrderById(CurrentUser.id(authentication), id)));
     }
 
     @GetMapping("/{id}/tracking")
     public ResponseEntity<ApiResponse<List<OrderStatusHistoryResponse>>> getOrderTracking(
             @PathVariable @Positive Long id, Authentication authentication) {
-        return ResponseEntity.ok(ApiResponse.ok(orderService.getOrderTracking(currentUserId(authentication), id)));
+        return ResponseEntity.ok(ApiResponse.ok(orderService.getOrderTracking(CurrentUser.id(authentication), id)));
     }
 
     @PatchMapping("/{id}/pay")
     public ResponseEntity<ApiResponse<OrderResponse>> payOrder(
             @PathVariable @Positive Long id, Authentication authentication) {
-        return ResponseEntity.ok(ApiResponse.ok("Order paid", orderService.payOrder(currentUserId(authentication), id)));
+        return ResponseEntity.ok(ApiResponse.ok("Order paid", orderService.payOrder(CurrentUser.id(authentication), id)));
     }
 
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(
             @PathVariable @Positive Long id, Authentication authentication) {
-        return ResponseEntity.ok(ApiResponse.ok("Order cancelled", orderService.cancelOrder(currentUserId(authentication), id)));
+        return ResponseEntity.ok(ApiResponse.ok("Order cancelled", orderService.cancelOrder(CurrentUser.id(authentication), id)));
     }
 
     @GetMapping("/admin")
     public ResponseEntity<ApiResponse<PageResponse<OrderResponse>>> getAllOrders(
             @RequestParam(required = false) OrderStatus status,
+            @RequestParam(required = false) Long userId,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-        return ResponseEntity.ok(ApiResponse.ok(orderService.getAllOrders(status, page, size)));
+        return ResponseEntity.ok(ApiResponse.ok(orderService.getAllOrders(status, userId, page, size)));
     }
 
     @GetMapping("/admin/{id}")
@@ -95,10 +99,7 @@ public class OrderController {
 
     @GetMapping("/admin/statistics")
     public ResponseEntity<ApiResponse<OrderStatisticsResponse>> getStatistics() {
-        return ResponseEntity.ok(ApiResponse.ok(orderService.getStatistics()));
+        return ResponseEntity.ok(ApiResponse.ok(orderStatsService.getStatistics()));
     }
 
-    private Long currentUserId(Authentication authentication) {
-        return (Long) authentication.getPrincipal();
-    }
 }

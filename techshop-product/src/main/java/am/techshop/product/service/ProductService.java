@@ -5,11 +5,13 @@ import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.dto.response.ProductResponse;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public interface ProductService {
     ProductResponse addProduct(ProductRequest request);
     PageResponse<ProductResponse> getAllProducts(String category, String search, int page, int size);
     ProductResponse getProductById(Long id);
+    List<ProductResponse> getProductsByIds(List<Long> ids);
     void deleteProduct(Long id);
     ProductResponse adjustStock(Long id, int quantityDelta);
     ProductResponse updatePrice(Long id, BigDecimal price);

@@ -1,29 +1,30 @@
 package am.techshop.order.payment;
 
 import am.techshop.common.enums.PaymentMethod;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class IdramPaymentService extends AbstractSandboxPaymentProvider {
 
-    @Value("${payment.idram.sandbox-mode:true}")
-    private boolean sandboxMode;
+    private final IdramProperties properties;
 
-    @Value("${payment.idram.sandbox-url}")
-    private String sandboxUrl;
-
-    public IdramPaymentService() {
+    public IdramPaymentService(IdramProperties properties) {
         super(PaymentMethod.IDRAM, "IDRAM");
+        this.properties = properties;
     }
 
     @Override
     protected boolean isSandboxMode() {
-        return sandboxMode;
+        return properties.sandboxMode();
     }
 
     @Override
     protected String getSandboxUrl() {
-        return sandboxUrl;
+        return properties.sandboxUrl();
+    }
+
+    @Override
+    protected String getMerchantId() {
+        return properties.merchantId();
     }
 }

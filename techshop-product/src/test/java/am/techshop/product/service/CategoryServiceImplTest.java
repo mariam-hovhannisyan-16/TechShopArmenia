@@ -30,7 +30,7 @@ class CategoryServiceImplTest {
 
     @Test
     void getAllCategories_ReturnsAllCategories() {
-        Category category = Category.builder().id(1L).name("Phones").build();
+        Category category = new Category(1L, "Phones");
         CategoryResponse response = new CategoryResponse(1L, "Phones");
 
         when(categoryRepository.findAll()).thenReturn(List.of(category));
@@ -39,6 +39,6 @@ class CategoryServiceImplTest {
         List<CategoryResponse> result = categoryService.getAllCategories();
 
         assertEquals(1, result.size());
-        assertEquals("Phones", result.get(0).name());
+        assertEquals("Phones", result.getFirst().name());
     }
 }

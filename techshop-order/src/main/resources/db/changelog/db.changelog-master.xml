@@ -3,11 +3,12 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
     <include file="db/changelog/changes/001-create-orders-table.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/002-create-order-items-table.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/003-create-order-status-history-table.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/004-add-payment-columns-to-orders.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/005-add-installment-plan-columns-to-orders.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

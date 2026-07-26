@@ -1,8 +1,12 @@
 package am.techshop.notification.kafka;
 
+import am.techshop.common.dto.response.InstallmentPlanResponse;
 import am.techshop.common.enums.OrderStatus;
+import am.techshop.common.enums.PaymentMethod;
+import am.techshop.common.event.ChatReplyEvent;
 import am.techshop.common.event.OrderStatusChangedEvent;
 import am.techshop.common.event.PasswordResetRequestedEvent;
+import am.techshop.common.event.PriceDropEvent;
 import am.techshop.common.event.UserRegisteredEvent;
 import am.techshop.common.event.UserVerifiedEvent;
 import am.techshop.notification.dispatch.NotificationDispatcher;
@@ -27,13 +31,16 @@ class NotificationEventConsumerTest {
 
     @Test
     void handleOrderStatusChanged_DelegatesToDispatcher() {
+        InstallmentPlanResponse installmentPlan = new InstallmentPlanResponse(
+                "Ameriabank", BigDecimal.valueOf(0.12), 12, BigDecimal.valueOf(20), BigDecimal.valueOf(16.80));
         OrderStatusChangedEvent event = new OrderStatusChangedEvent(
-                42L, 1L, "mariam@test.com", "Mariam", OrderStatus.PAID, "Payment verified", BigDecimal.valueOf(200));
+                42L, 1L, "mariam@test.com", "Mariam", OrderStatus.PAID, "Payment verified", BigDecimal.valueOf(200),
+                PaymentMethod.INSTALLMENT, installmentPlan);
 
         consumer.handleOrderStatusChanged(event);
 
         verify(dispatcher).dispatchOrderStatusChanged(1L, "mariam@test.com", "Mariam", 42L,
-                OrderStatus.PAID, "Payment verified", BigDecimal.valueOf(200));
+                OrderStatus.PAID, "Payment verified", BigDecimal.valueOf(200), PaymentMethod.INSTALLMENT, installmentPlan);
     }
 
     @Test
@@ -61,5 +68,23 @@ class NotificationEventConsumerTest {
         consumer.handlePasswordResetRequested(event);
 
         verify(dispatcher).dispatchPasswordReset(1L, "mariam@test.com", "Mariam", "reset-token");
+    }
+
+    @Test
+    void handleChatReply_DelegatesToDispatcher() {
+        ChatReplyEvent event = new ChatReplyEvent(1L, 42L, "It shipped yesterday!");
+
+        consumer.handleChatReply(event);
+
+        verify(dispatcher).dispatchChatReply(1L, "It shipped yesterday!");
+    }
+
+    @Test
+    void handlePriceDrop_DelegatesToDispatcher() {
+        PriceDropEvent event = new PriceDropEvent(1L, 7L, "Phone", BigDecimal.valueOf(150));
+
+        consumer.handlePriceDrop(event);
+
+        verify(dispatcher).dispatchPriceDrop(1L, "Phone", BigDecimal.valueOf(150));
     }
 }

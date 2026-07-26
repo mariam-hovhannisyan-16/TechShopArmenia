@@ -2,6 +2,7 @@ package am.techshop.chat.service;
 
 import am.techshop.chat.entity.Conversation;
 import am.techshop.chat.entity.Message;
+import am.techshop.chat.kafka.ChatEventProducer;
 import am.techshop.chat.mapper.ConversationMapper;
 import am.techshop.chat.mapper.MessageMapper;
 import am.techshop.chat.repository.ConversationRepository;
@@ -13,10 +14,10 @@ import am.techshop.common.dto.response.ConversationResponse;
 import am.techshop.common.dto.response.MessageResponse;
 import am.techshop.common.enums.ConversationStatus;
 import am.techshop.common.enums.MessageSender;
+import am.techshop.common.event.ChatReplyEvent;
 import am.techshop.common.exception.TechShopException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -50,13 +52,19 @@ class ChatServiceImplTest {
     @Mock
     private MessageMapper messageMapper;
 
+    @Mock
+    private ChatEventProducer chatEventProducer;
+
     @InjectMocks
     private ChatServiceImpl chatService;
 
     @Test
     void getOrCreateConversation_ForLoggedInUser_ReturnsExistingOpenConversation() {
         ChatIdentity identity = new ChatIdentity(1L, null, false);
-        Conversation existing = Conversation.builder().id(1L).userId(1L).status(ConversationStatus.OPEN).build();
+        Conversation existing = new Conversation();
+        existing.setId(1L);
+        existing.setUserId(1L);
+        existing.setStatus(ConversationStatus.OPEN);
         ConversationResponse response = new ConversationResponse(1L, 1L, null, ConversationStatus.OPEN, LocalDateTime.now());
 
         when(conversationRepository.findFirstByUserIdAndStatusOrderByIdDesc(1L, ConversationStatus.OPEN))
@@ -72,27 +80,32 @@ class ChatServiceImplTest {
     @Test
     void getOrCreateConversation_ForGuestWithNoExisting_CreatesNewConversation() {
         ChatIdentity identity = new ChatIdentity(null, "guest-abc", false);
-        Conversation saved = Conversation.builder().id(2L).guestSessionId("guest-abc").status(ConversationStatus.OPEN).build();
+        Conversation newConversation = new Conversation();
+        newConversation.setGuestSessionId("guest-abc");
+        Conversation saved = new Conversation();
+        saved.setId(2L);
+        saved.setGuestSessionId("guest-abc");
+        saved.setStatus(ConversationStatus.OPEN);
         ConversationResponse response = new ConversationResponse(2L, null, "guest-abc", ConversationStatus.OPEN, LocalDateTime.now());
 
         when(conversationRepository.findFirstByGuestSessionIdAndStatusOrderByIdDesc("guest-abc", ConversationStatus.OPEN))
                 .thenReturn(Optional.empty());
-        when(conversationRepository.save(any(Conversation.class))).thenReturn(saved);
+        when(conversationMapper.toEntity(identity)).thenReturn(newConversation);
+        when(conversationRepository.save(newConversation)).thenReturn(saved);
         when(conversationMapper.toResponse(saved)).thenReturn(response);
 
         ConversationResponse result = chatService.getOrCreateConversation(identity);
 
         assertEquals("guest-abc", result.guestSessionId());
-
-        ArgumentCaptor<Conversation> captor = ArgumentCaptor.forClass(Conversation.class);
-        verify(conversationRepository).save(captor.capture());
-        assertEquals("guest-abc", captor.getValue().getGuestSessionId());
-        assertEquals(ConversationStatus.OPEN, captor.getValue().getStatus());
+        verify(conversationRepository).save(newConversation);
     }
 
     @Test
     void getMessages_WhenNotOwner_ThrowsNotFound() {
-        Conversation conversation = Conversation.builder().id(1L).userId(1L).status(ConversationStatus.OPEN).build();
+        Conversation conversation = new Conversation();
+        conversation.setId(1L);
+        conversation.setUserId(1L);
+        conversation.setStatus(ConversationStatus.OPEN);
         when(conversationRepository.findById(1L)).thenReturn(Optional.of(conversation));
 
         ChatIdentity otherUser = new ChatIdentity(2L, null, false);
@@ -117,9 +130,22 @@ class ChatServiceImplTest {
 
     @Test
     void getMessages_AsCustomer_MarksSupportMessagesRead() {
-        Conversation conversation = Conversation.builder().id(1L).userId(1L).status(ConversationStatus.OPEN).build();
-        Message supportMsg = Message.builder().id(10L).conversationId(1L).sender(MessageSender.SUPPORT).text("hi").read(false).build();
-        Message customerMsg = Message.builder().id(11L).conversationId(1L).sender(MessageSender.CUSTOMER).text("hello").read(false).build();
+        Conversation conversation = new Conversation();
+        conversation.setId(1L);
+        conversation.setUserId(1L);
+        conversation.setStatus(ConversationStatus.OPEN);
+        Message supportMsg = new Message();
+        supportMsg.setId(10L);
+        supportMsg.setConversationId(1L);
+        supportMsg.setSender(MessageSender.SUPPORT);
+        supportMsg.setText("hi");
+        supportMsg.setRead(false);
+        Message customerMsg = new Message();
+        customerMsg.setId(11L);
+        customerMsg.setConversationId(1L);
+        customerMsg.setSender(MessageSender.CUSTOMER);
+        customerMsg.setText("hello");
+        customerMsg.setRead(false);
 
         when(conversationRepository.findById(1L)).thenReturn(Optional.of(conversation));
         when(messageRepository.findByConversationIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(supportMsg, customerMsg));
@@ -137,8 +163,16 @@ class ChatServiceImplTest {
 
     @Test
     void getMessages_AsAdmin_BypassesOwnershipAndMarksCustomerMessagesRead() {
-        Conversation conversation = Conversation.builder().id(1L).userId(99L).status(ConversationStatus.OPEN).build();
-        Message customerMsg = Message.builder().id(11L).conversationId(1L).sender(MessageSender.CUSTOMER).text("hello").read(false).build();
+        Conversation conversation = new Conversation();
+        conversation.setId(1L);
+        conversation.setUserId(99L);
+        conversation.setStatus(ConversationStatus.OPEN);
+        Message customerMsg = new Message();
+        customerMsg.setId(11L);
+        customerMsg.setConversationId(1L);
+        customerMsg.setSender(MessageSender.CUSTOMER);
+        customerMsg.setText("hello");
+        customerMsg.setRead(false);
 
         when(conversationRepository.findById(1L)).thenReturn(Optional.of(conversation));
         when(messageRepository.findByConversationIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(customerMsg));
@@ -154,40 +188,130 @@ class ChatServiceImplTest {
 
     @Test
     void sendMessage_AsCustomer_SavesCustomerMessage() {
-        Conversation conversation = Conversation.builder().id(1L).userId(1L).status(ConversationStatus.OPEN).build();
+        Conversation conversation = new Conversation();
+        conversation.setId(1L);
+        conversation.setUserId(1L);
+        conversation.setStatus(ConversationStatus.OPEN);
+        SendMessageRequest request = new SendMessageRequest("Hello");
+        Message newMessage = new Message();
+        newMessage.setSender(MessageSender.CUSTOMER);
+        newMessage.setText("Hello");
+
         when(conversationRepository.findById(1L)).thenReturn(Optional.of(conversation));
-        when(messageRepository.save(any(Message.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(messageMapper.toResponse(any(Message.class))).thenAnswer(inv -> {
-            Message m = inv.getArgument(0);
-            return new MessageResponse(1L, 1L, m.getSender(), m.getText(), false, LocalDateTime.now());
-        });
+        when(messageMapper.toEntity(1L, MessageSender.CUSTOMER, request)).thenReturn(newMessage);
+        when(messageRepository.save(newMessage)).thenReturn(newMessage);
+        when(messageMapper.toResponse(newMessage)).thenReturn(
+                new MessageResponse(1L, 1L, MessageSender.CUSTOMER, "Hello", false, LocalDateTime.now()));
 
         ChatIdentity identity = new ChatIdentity(1L, null, false);
-        MessageResponse result = chatService.sendMessage(identity, 1L, new SendMessageRequest("Hello"));
+        MessageResponse result = chatService.sendMessage(identity, 1L, request);
 
         assertEquals(MessageSender.CUSTOMER, result.sender());
         assertEquals("Hello", result.text());
+        verify(chatEventProducer, never()).sendChatReplyEvent(any());
     }
 
     @Test
     void sendMessage_AsAdmin_SavesSupportMessage() {
-        Conversation conversation = Conversation.builder().id(1L).userId(99L).status(ConversationStatus.OPEN).build();
+        Conversation conversation = new Conversation();
+        conversation.setId(1L);
+        conversation.setUserId(99L);
+        conversation.setStatus(ConversationStatus.OPEN);
+        SendMessageRequest request = new SendMessageRequest("We can help");
+        Message newMessage = new Message();
+        newMessage.setSender(MessageSender.SUPPORT);
+        newMessage.setText("We can help");
+
         when(conversationRepository.findById(1L)).thenReturn(Optional.of(conversation));
-        when(messageRepository.save(any(Message.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(messageMapper.toResponse(any(Message.class))).thenAnswer(inv -> {
-            Message m = inv.getArgument(0);
-            return new MessageResponse(1L, 1L, m.getSender(), m.getText(), false, LocalDateTime.now());
-        });
+        when(messageMapper.toEntity(1L, MessageSender.SUPPORT, request)).thenReturn(newMessage);
+        when(messageRepository.save(newMessage)).thenReturn(newMessage);
+        when(messageMapper.toResponse(newMessage)).thenReturn(
+                new MessageResponse(1L, 1L, MessageSender.SUPPORT, "We can help", false, LocalDateTime.now()));
 
         ChatIdentity admin = new ChatIdentity(5L, null, true);
-        MessageResponse result = chatService.sendMessage(admin, 1L, new SendMessageRequest("We can help"));
+        MessageResponse result = chatService.sendMessage(admin, 1L, request);
+
+        assertEquals(MessageSender.SUPPORT, result.sender());
+    }
+
+    @Test
+    void sendMessage_AsAdminReplyingToRegisteredUser_PublishesChatReplyEvent() {
+        Conversation conversation = new Conversation();
+        conversation.setId(1L);
+        conversation.setUserId(99L);
+        conversation.setStatus(ConversationStatus.OPEN);
+        SendMessageRequest request = new SendMessageRequest("It shipped yesterday!");
+        Message newMessage = new Message();
+        newMessage.setSender(MessageSender.SUPPORT);
+        newMessage.setText("It shipped yesterday!");
+
+        when(conversationRepository.findById(1L)).thenReturn(Optional.of(conversation));
+        when(messageMapper.toEntity(1L, MessageSender.SUPPORT, request)).thenReturn(newMessage);
+        when(messageRepository.save(newMessage)).thenReturn(newMessage);
+        when(messageMapper.toResponse(newMessage)).thenReturn(
+                new MessageResponse(1L, 1L, MessageSender.SUPPORT, "It shipped yesterday!", false, LocalDateTime.now()));
+
+        ChatIdentity admin = new ChatIdentity(5L, null, true);
+        chatService.sendMessage(admin, 1L, request);
+
+        verify(chatEventProducer).sendChatReplyEvent(new ChatReplyEvent(99L, 1L, "It shipped yesterday!"));
+    }
+
+    @Test
+    void sendMessage_AsAdminReplyingToGuestConversation_DoesNotPublishEvent() {
+        Conversation conversation = new Conversation();
+        conversation.setId(1L);
+        conversation.setGuestSessionId("guest-abc");
+        conversation.setUserId(null);
+        conversation.setStatus(ConversationStatus.OPEN);
+        SendMessageRequest request = new SendMessageRequest("We can help");
+        Message newMessage = new Message();
+        newMessage.setSender(MessageSender.SUPPORT);
+        newMessage.setText("We can help");
+
+        when(conversationRepository.findById(1L)).thenReturn(Optional.of(conversation));
+        when(messageMapper.toEntity(1L, MessageSender.SUPPORT, request)).thenReturn(newMessage);
+        when(messageRepository.save(newMessage)).thenReturn(newMessage);
+        when(messageMapper.toResponse(newMessage)).thenReturn(
+                new MessageResponse(1L, 1L, MessageSender.SUPPORT, "We can help", false, LocalDateTime.now()));
+
+        ChatIdentity admin = new ChatIdentity(5L, null, true);
+        chatService.sendMessage(admin, 1L, request);
+
+        verify(chatEventProducer, never()).sendChatReplyEvent(any());
+    }
+
+    @Test
+    void sendMessage_WhenEventPublishFails_StillReturnsSavedMessage() {
+        Conversation conversation = new Conversation();
+        conversation.setId(1L);
+        conversation.setUserId(99L);
+        conversation.setStatus(ConversationStatus.OPEN);
+        SendMessageRequest request = new SendMessageRequest("We can help");
+        Message newMessage = new Message();
+        newMessage.setSender(MessageSender.SUPPORT);
+        newMessage.setText("We can help");
+
+        when(conversationRepository.findById(1L)).thenReturn(Optional.of(conversation));
+        when(messageMapper.toEntity(1L, MessageSender.SUPPORT, request)).thenReturn(newMessage);
+        when(messageRepository.save(newMessage)).thenReturn(newMessage);
+        when(messageMapper.toResponse(newMessage)).thenReturn(
+                new MessageResponse(1L, 1L, MessageSender.SUPPORT, "We can help", false, LocalDateTime.now()));
+        doThrow(new RuntimeException("kafka unavailable"))
+                .when(chatEventProducer).sendChatReplyEvent(any());
+
+        ChatIdentity admin = new ChatIdentity(5L, null, true);
+        MessageResponse result = chatService.sendMessage(admin, 1L, request);
 
         assertEquals(MessageSender.SUPPORT, result.sender());
     }
 
     @Test
     void sendMessage_WhenConversationClosed_ThrowsConflict() {
-        Conversation conversation = Conversation.builder().id(1L).userId(1L).status(ConversationStatus.CLOSED).build();
+        Conversation conversation = new Conversation();
+        conversation.setId(1L);
+        conversation.setUserId(1L);
+        conversation.setStatus(ConversationStatus.CLOSED);
         when(conversationRepository.findById(1L)).thenReturn(Optional.of(conversation));
 
         ChatIdentity identity = new ChatIdentity(1L, null, false);
@@ -201,7 +325,10 @@ class ChatServiceImplTest {
 
     @Test
     void getAllConversations_ReturnsAllMappedConversations() {
-        Conversation conversation = Conversation.builder().id(1L).userId(1L).status(ConversationStatus.OPEN).build();
+        Conversation conversation = new Conversation();
+        conversation.setId(1L);
+        conversation.setUserId(1L);
+        conversation.setStatus(ConversationStatus.OPEN);
         when(conversationRepository.findAllByOrderByIdDesc()).thenReturn(List.of(conversation));
         when(conversationMapper.toResponse(conversation)).thenReturn(
                 new ConversationResponse(1L, 1L, null, ConversationStatus.OPEN, LocalDateTime.now()));

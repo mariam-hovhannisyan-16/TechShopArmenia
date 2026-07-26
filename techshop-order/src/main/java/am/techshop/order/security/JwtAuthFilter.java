@@ -1,6 +1,5 @@
-package am.techshop.chat.config;
+package am.techshop.order.security;
 
-import am.techshop.chat.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

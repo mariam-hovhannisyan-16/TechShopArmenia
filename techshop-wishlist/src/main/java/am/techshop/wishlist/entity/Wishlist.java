@@ -11,7 +11,6 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -24,7 +23,6 @@ import java.util.List;
 @Entity
 @Table(name = "wishlists", uniqueConstraints = @UniqueConstraint(name = "uk_wishlist_user", columnNames = "user_id"))
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
@@ -38,7 +36,6 @@ public class Wishlist {
     private Long userId;
 
     @OneToMany(mappedBy = "wishlist", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
     private List<WishlistItem> items = new ArrayList<>();
 
     @CreatedDate
