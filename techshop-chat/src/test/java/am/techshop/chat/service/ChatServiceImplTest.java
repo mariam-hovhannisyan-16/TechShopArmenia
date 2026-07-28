@@ -1,5 +1,6 @@
 package am.techshop.chat.service;
 
+import am.techshop.chat.dto.SendMessageResult;
 import am.techshop.chat.entity.Conversation;
 import am.techshop.chat.entity.Message;
 import am.techshop.chat.kafka.ChatEventProducer;
@@ -29,9 +30,11 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -54,6 +57,9 @@ class ChatServiceImplTest {
 
     @Mock
     private ChatEventProducer chatEventProducer;
+
+    @Mock
+    private AiReplyService aiReplyService;
 
     @InjectMocks
     private ChatServiceImpl chatService;
@@ -204,11 +210,72 @@ class ChatServiceImplTest {
                 new MessageResponse(1L, 1L, MessageSender.CUSTOMER, "Hello", false, LocalDateTime.now()));
 
         ChatIdentity identity = new ChatIdentity(1L, null, false);
-        MessageResponse result = chatService.sendMessage(identity, 1L, request);
+        SendMessageResult result = chatService.sendMessage(identity, 1L, request);
 
-        assertEquals(MessageSender.CUSTOMER, result.sender());
-        assertEquals("Hello", result.text());
+        assertEquals(MessageSender.CUSTOMER, result.message().sender());
+        assertEquals("Hello", result.message().text());
         verify(chatEventProducer, never()).sendChatReplyEvent(any());
+    }
+
+    @Test
+    void sendMessage_AsCustomer_GeneratesAndSavesBotReplyImmediately() {
+        Conversation conversation = new Conversation();
+        conversation.setId(1L);
+        conversation.setUserId(1L);
+        conversation.setStatus(ConversationStatus.OPEN);
+        SendMessageRequest request = new SendMessageRequest("Do you deliver to Gyumri?");
+        Message newMessage = new Message();
+        newMessage.setSender(MessageSender.CUSTOMER);
+        newMessage.setText("Do you deliver to Gyumri?");
+        Message botMessage = new Message();
+        botMessage.setSender(MessageSender.BOT);
+        botMessage.setText("Yes, delivery to Gyumri takes 2-5 business days.");
+
+        when(conversationRepository.findById(1L)).thenReturn(Optional.of(conversation));
+        when(messageMapper.toEntity(1L, MessageSender.CUSTOMER, request)).thenReturn(newMessage);
+        when(messageRepository.save(newMessage)).thenReturn(newMessage);
+        when(messageMapper.toResponse(newMessage)).thenReturn(
+                new MessageResponse(1L, 1L, MessageSender.CUSTOMER, "Do you deliver to Gyumri?", false, LocalDateTime.now()));
+        when(messageRepository.findByConversationIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(newMessage));
+        when(aiReplyService.generateReply(List.of(newMessage)))
+                .thenReturn(Optional.of("Yes, delivery to Gyumri takes 2-5 business days."));
+        when(messageRepository.save(argThat(m -> m != null && m.getSender() == MessageSender.BOT))).thenReturn(botMessage);
+        when(messageMapper.toResponse(botMessage)).thenReturn(
+                new MessageResponse(2L, 1L, MessageSender.BOT, "Yes, delivery to Gyumri takes 2-5 business days.", false, LocalDateTime.now()));
+
+        ChatIdentity identity = new ChatIdentity(1L, null, false);
+        SendMessageResult result = chatService.sendMessage(identity, 1L, request);
+
+        assertEquals(MessageSender.CUSTOMER, result.message().sender());
+        assertNotNull(result.botReply());
+        assertEquals(MessageSender.BOT, result.botReply().sender());
+        assertEquals("Yes, delivery to Gyumri takes 2-5 business days.", result.botReply().text());
+    }
+
+    @Test
+    void sendMessage_AsCustomer_WhenAiReplyDisabled_ReturnsNullBotReply() {
+        Conversation conversation = new Conversation();
+        conversation.setId(1L);
+        conversation.setUserId(1L);
+        conversation.setStatus(ConversationStatus.OPEN);
+        SendMessageRequest request = new SendMessageRequest("Hello");
+        Message newMessage = new Message();
+        newMessage.setSender(MessageSender.CUSTOMER);
+        newMessage.setText("Hello");
+
+        when(conversationRepository.findById(1L)).thenReturn(Optional.of(conversation));
+        when(messageMapper.toEntity(1L, MessageSender.CUSTOMER, request)).thenReturn(newMessage);
+        when(messageRepository.save(newMessage)).thenReturn(newMessage);
+        when(messageMapper.toResponse(newMessage)).thenReturn(
+                new MessageResponse(1L, 1L, MessageSender.CUSTOMER, "Hello", false, LocalDateTime.now()));
+        when(messageRepository.findByConversationIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(newMessage));
+        when(aiReplyService.generateReply(List.of(newMessage))).thenReturn(Optional.empty());
+
+        ChatIdentity identity = new ChatIdentity(1L, null, false);
+        SendMessageResult result = chatService.sendMessage(identity, 1L, request);
+
+        assertEquals(MessageSender.CUSTOMER, result.message().sender());
+        assertNull(result.botReply());
     }
 
     @Test
@@ -229,9 +296,10 @@ class ChatServiceImplTest {
                 new MessageResponse(1L, 1L, MessageSender.SUPPORT, "We can help", false, LocalDateTime.now()));
 
         ChatIdentity admin = new ChatIdentity(5L, null, true);
-        MessageResponse result = chatService.sendMessage(admin, 1L, request);
+        SendMessageResult result = chatService.sendMessage(admin, 1L, request);
 
-        assertEquals(MessageSender.SUPPORT, result.sender());
+        assertEquals(MessageSender.SUPPORT, result.message().sender());
+        assertNull(result.botReply());
     }
 
     @Test
@@ -301,9 +369,9 @@ class ChatServiceImplTest {
                 .when(chatEventProducer).sendChatReplyEvent(any());
 
         ChatIdentity admin = new ChatIdentity(5L, null, true);
-        MessageResponse result = chatService.sendMessage(admin, 1L, request);
+        SendMessageResult result = chatService.sendMessage(admin, 1L, request);
 
-        assertEquals(MessageSender.SUPPORT, result.sender());
+        assertEquals(MessageSender.SUPPORT, result.message().sender());
     }
 
     @Test

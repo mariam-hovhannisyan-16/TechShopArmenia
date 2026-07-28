@@ -47,7 +47,8 @@ public class AdminChatController {
             @PathVariable @Positive Long id,
             @RequestBody @Valid SendMessageRequest request,
             Authentication authentication) {
+        MessageResponse saved = chatService.sendMessage(chatIdentityResolver.resolveAdmin(authentication), id, request).message();
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok("Message sent", chatService.sendMessage(chatIdentityResolver.resolveAdmin(authentication), id, request)));
+                .body(ApiResponse.ok("Message sent", saved));
     }
 }

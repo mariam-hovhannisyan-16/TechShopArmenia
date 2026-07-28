@@ -1,5 +1,6 @@
 package am.techshop.chat.service.impl;
 
+import am.techshop.chat.dto.SendMessageResult;
 import am.techshop.chat.entity.Conversation;
 import am.techshop.chat.entity.Message;
 import am.techshop.chat.kafka.ChatEventProducer;
@@ -8,6 +9,7 @@ import am.techshop.chat.mapper.MessageMapper;
 import am.techshop.chat.repository.ConversationRepository;
 import am.techshop.chat.repository.MessageRepository;
 import am.techshop.chat.security.ChatIdentity;
+import am.techshop.chat.service.AiReplyService;
 import am.techshop.chat.service.ChatService;
 import am.techshop.common.dto.request.SendMessageRequest;
 import am.techshop.common.dto.response.ConversationResponse;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -34,6 +37,7 @@ public class ChatServiceImpl implements ChatService {
     private final ConversationMapper conversationMapper;
     private final MessageMapper messageMapper;
     private final ChatEventProducer chatEventProducer;
+    private final AiReplyService aiReplyService;
 
     public ConversationResponse getOrCreateConversation(ChatIdentity identity) {
         Conversation conversation = identity.isGuest()
@@ -68,7 +72,7 @@ public class ChatServiceImpl implements ChatService {
         return messages.stream().map(messageMapper::toResponse).toList();
     }
 
-    public MessageResponse sendMessage(ChatIdentity identity, Long conversationId, SendMessageRequest request) {
+    public SendMessageResult sendMessage(ChatIdentity identity, Long conversationId, SendMessageRequest request) {
         Conversation conversation = getOwnedConversation(identity, conversationId);
         if (conversation.getStatus() == ConversationStatus.CLOSED) {
             throw new TechShopException("Conversation is closed", 409);
@@ -79,11 +83,27 @@ public class ChatServiceImpl implements ChatService {
 
         MessageResponse response = messageMapper.toResponse(messageRepository.save(message));
 
+        MessageResponse botReply = null;
         if (identity.admin() && conversation.getUserId() != null) {
             notifyCustomerOfReply(conversation.getUserId(), conversationId, request.text());
+        } else if (!identity.admin()) {
+            // Generated inline, in the same request, so the bot's reply is already
+            // persisted and included in the response by the time this method returns.
+            botReply = autoReply(conversation).orElse(null);
         }
 
-        return response;
+        return new SendMessageResult(response, botReply);
+    }
+
+    private Optional<MessageResponse> autoReply(Conversation conversation) {
+        List<Message> history = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
+        return aiReplyService.generateReply(history).map(text -> {
+            Message botMessage = new Message();
+            botMessage.setConversationId(conversation.getId());
+            botMessage.setSender(MessageSender.BOT);
+            botMessage.setText(text);
+            return messageMapper.toResponse(messageRepository.save(botMessage));
+        });
     }
 
     private void notifyCustomerOfReply(Long userId, Long conversationId, String messagePreview) {

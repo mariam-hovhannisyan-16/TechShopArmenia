@@ -1,6 +1,7 @@
 package am.techshop.chat.controller;
 
 import am.techshop.chat.config.SecurityConfig;
+import am.techshop.chat.dto.SendMessageResult;
 import am.techshop.chat.security.ChatIdentity;
 import am.techshop.chat.security.ChatIdentityResolver;
 import am.techshop.chat.security.JwtAuthFilter;
@@ -108,14 +109,33 @@ class ChatControllerTest {
     void sendMessage_AsAdmin_ReturnsSupportMessage() throws Exception {
         SendMessageRequest request = new SendMessageRequest("We're looking into it");
         when(chatService.sendMessage(any(ChatIdentity.class), eq(1L), any(SendMessageRequest.class)))
-                .thenReturn(sampleMessage(MessageSender.SUPPORT));
+                .thenReturn(new SendMessageResult(sampleMessage(MessageSender.SUPPORT), null));
 
         mockMvc.perform(post("/api/chat/conversations/{id}/messages", 1L)
                         .with(authentication(asAdmin()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.sender").value("SUPPORT"));
+                .andExpect(jsonPath("$.data.message.sender").value("SUPPORT"))
+                .andExpect(jsonPath("$.data.botReply").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    void sendMessage_AsCustomer_ReturnsBotReplyInSameResponse() throws Exception {
+        SendMessageRequest request = new SendMessageRequest("Do you deliver to Gyumri?");
+        MessageResponse botReply = new MessageResponse(2L, 1L, MessageSender.BOT,
+                "Yes, delivery to Gyumri takes 2-5 business days.", false, LocalDateTime.now());
+        when(chatService.sendMessage(any(ChatIdentity.class), eq(1L), any(SendMessageRequest.class)))
+                .thenReturn(new SendMessageResult(sampleMessage(MessageSender.CUSTOMER), botReply));
+
+        mockMvc.perform(post("/api/chat/conversations/{id}/messages", 1L)
+                        .with(authentication(asUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.message.sender").value("CUSTOMER"))
+                .andExpect(jsonPath("$.data.botReply.sender").value("BOT"))
+                .andExpect(jsonPath("$.data.botReply.text").value("Yes, delivery to Gyumri takes 2-5 business days."));
     }
 
     @Test

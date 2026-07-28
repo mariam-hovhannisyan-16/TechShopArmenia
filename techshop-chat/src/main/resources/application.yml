@@ -32,6 +32,10 @@ app:
   jwt:
     secret: ${JWT_SECRET:local-dev-secret-change-in-production}
 
+anthropic:
+  api-key: ${ANTHROPIC_API_KEY:}
+  model: ${ANTHROPIC_MODEL:claude-opus-4-8}
+
 server:
   port: ${SERVER_PORT:8087}
 

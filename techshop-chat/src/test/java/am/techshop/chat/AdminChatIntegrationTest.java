@@ -72,7 +72,7 @@ class AdminChatIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new SendMessageRequest("Where is my order?"))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.sender").value("CUSTOMER"));
+                .andExpect(jsonPath("$.data.message.sender").value("CUSTOMER"));
 
         mockMvc.perform(get("/api/admin/chat/conversations").with(authentication(asAdmin())))
                 .andExpect(status().isOk())

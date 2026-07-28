@@ -1,5 +1,6 @@
 package am.techshop.chat.controller;
 
+import am.techshop.chat.dto.SendMessageResult;
 import am.techshop.chat.security.ChatIdentity;
 import am.techshop.chat.security.ChatIdentityResolver;
 import am.techshop.chat.service.ChatService;
@@ -54,7 +55,7 @@ public class ChatController {
     }
 
     @PostMapping("/{id}/messages")
-    public ResponseEntity<ApiResponse<MessageResponse>> sendMessage(
+    public ResponseEntity<ApiResponse<SendMessageResult>> sendMessage(
             @PathVariable @Positive Long id,
             @RequestBody @Valid SendMessageRequest request,
             Authentication authentication,
