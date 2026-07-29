@@ -1,0 +1,87 @@
+name: Build, Test, and Deploy
+
+# Run on every push and pull request to any branch, so the test suite guards
+# all feature branches; the deploy job below further restricts itself to
+# pushes on main only.
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the repository so Maven has the source to build.
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Install JDK 21, the version this project's modules target.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # Run the full reactor test suite. Maven exits non-zero on any test
+      # failure, which automatically fails this workflow step/job.
+      - name: Run tests
+        run: mvn --batch-mode clean test
+
+  deploy:
+    name: Deploy to EC2
+    # Only deploy on a push to main, and only once build-and-test has passed.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the repository (needed to build the jars that get shipped).
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Install JDK 21 to build deployable artifacts.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # Package every module into a runnable jar (skip tests here since
+      # build-and-test already verified them). This mirrors what will be
+      # rebuilt on the server, and doubles as a pre-deploy sanity check that
+      # packaging succeeds before we ever touch the EC2 box.
+      - name: Build jars
+        run: mvn --batch-mode clean package -DskipTests
+
+      # Deploy over SSH. Each Dockerfile's build context is its module
+      # directory and expects a target/*.jar there (see e.g.
+      # techshop-product/Dockerfile), so rather than scp-ing individual jars
+      # into every module directory, it's simplest to just rebuild them
+      # in place on the server after pulling the latest source - the
+      # source and the resulting target/*.jar always stay in sync that way.
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/TechShopArmenia
+
+            # Pull the latest code that just merged to main.
+            git pull
+
+            # Rebuild the jars on the server so each module's target/*.jar
+            # matches the freshly pulled source (Dockerfiles COPY these in).
+            mvn --batch-mode package -DskipTests
+
+            # Rebuild only the images whose sources changed and restart
+            # those containers; unaffected services are left running.
+            docker compose up -d --build
