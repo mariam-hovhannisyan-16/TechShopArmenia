@@ -87,8 +87,7 @@ public class ChatServiceImpl implements ChatService {
         if (identity.admin() && conversation.getUserId() != null) {
             notifyCustomerOfReply(conversation.getUserId(), conversationId, request.text());
         } else if (!identity.admin()) {
-            // Generated inline, in the same request, so the bot's reply is already
-            // persisted and included in the response by the time this method returns.
+
             botReply = autoReply(conversation).orElse(null);
         }
 
