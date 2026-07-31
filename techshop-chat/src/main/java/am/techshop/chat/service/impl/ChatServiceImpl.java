@@ -87,8 +87,10 @@ public class ChatServiceImpl implements ChatService {
         if (identity.admin() && conversation.getUserId() != null) {
             notifyCustomerOfReply(conversation.getUserId(), conversationId, request.text());
         } else if (!identity.admin()) {
-
-            botReply = autoReply(conversation).orElse(null);
+            boolean adminHasReplied = messageRepository.existsByConversationIdAndSender(conversationId, MessageSender.SUPPORT);
+            if (!adminHasReplied) {
+                botReply = autoReply(conversation).orElse(null);
+            }
         }
 
         return new SendMessageResult(response, botReply);
