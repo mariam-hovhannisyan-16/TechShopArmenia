@@ -19,6 +19,7 @@ import am.techshop.user.repository.UserRepository;
 import am.techshop.user.security.JwtService;
 import am.techshop.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -57,9 +59,7 @@ public class UserServiceImpl implements UserService {
         User savedUser = userRepository.save(user);
         String token = jwtService.generateToken(savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name());
 
-        userEventProducer.sendUserRegisteredEvent(
-                new UserRegisteredEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getName(), verificationToken)
-        );
+        notifyUserRegistered(savedUser, verificationToken);
 
         return new AuthResponse(token, userMapper.toResponse(savedUser));
     }
@@ -79,6 +79,16 @@ public class UserServiceImpl implements UserService {
 
         String token = jwtService.generateToken(user.getId(), user.getEmail(), user.getRole().name());
         return new AuthResponse(token, userMapper.toResponse(user));
+    }
+
+    private void notifyUserRegistered(User user, String verificationToken) {
+        try {
+            userEventProducer.sendUserRegisteredEvent(
+                    new UserRegisteredEvent(user.getId(), user.getEmail(), user.getName(), verificationToken)
+            );
+        } catch (Exception ex) {
+            log.warn("Failed to publish user-registered event for user {}: {}", user.getId(), ex.getMessage());
+        }
     }
 
     public List<UserResponse> getAllUsers() {

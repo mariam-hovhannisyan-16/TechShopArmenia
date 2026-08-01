@@ -133,6 +133,33 @@ class UserServiceImplTest {
     }
 
     @Test
+    void register_WhenEventPublishFails_StillReturnsAuthResponse() {
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", UserRole.ADMIN);
+        User newUser = new User();
+        User savedUser = new User();
+        savedUser.setId(1L);
+        savedUser.setName("Mariam");
+        savedUser.setEmail("mariam@test.com");
+        savedUser.setRole(UserRole.ADMIN);
+        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.ADMIN, LocalDateTime.now(), true);
+
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(passwordEncoder.encode(request.password())).thenReturn("encoded");
+        when(userMapper.toEntity(eq(request), eq("encoded"), eq(UserRole.ADMIN), any(), any())).thenReturn(newUser);
+        when(userRepository.save(newUser)).thenReturn(savedUser);
+        when(jwtService.generateToken(any(), any(), any())).thenReturn("token");
+        when(userMapper.toResponse(savedUser)).thenReturn(userResponse);
+        doThrow(new RuntimeException("kafka unavailable"))
+                .when(userEventProducer).sendUserRegisteredEvent(any(UserRegisteredEvent.class));
+
+        AuthResponse result = userService.register(request);
+
+        assertNotNull(result);
+        assertEquals("token", result.token());
+        assertEquals(UserRole.ADMIN, result.user().role());
+    }
+
+    @Test
     void register_WhenEmailAlreadyTaken_ThrowsException() {
         RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
         when(userRepository.existsByEmail(request.email())).thenReturn(true);
