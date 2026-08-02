@@ -1,5 +1,6 @@
 package am.techshop.user.service;
 
+import am.techshop.common.dto.request.DeleteAccountRequest;
 import am.techshop.common.dto.request.LoginRequest;
 import am.techshop.common.dto.request.RegisterRequest;
 import am.techshop.common.dto.request.ResetPasswordRequest;
@@ -7,6 +8,7 @@ import am.techshop.common.dto.response.AuthResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.enums.UserRole;
 import am.techshop.common.event.PasswordResetRequestedEvent;
+import am.techshop.common.event.UserDeletedEvent;
 import am.techshop.common.event.UserRegisteredEvent;
 import am.techshop.common.event.UserVerifiedEvent;
 import am.techshop.common.exception.TechShopException;
@@ -489,5 +491,71 @@ class UserServiceImplTest {
 
         assertEquals(400, ex.getStatusCode());
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void deleteAccount_WhenPasswordCorrect_DeletesUserAndPublishesEvent() {
+        Long userId = 1L;
+        User user = new User();
+        user.setId(userId);
+        user.setEmail("mariam@test.com");
+        user.setPassword("encoded");
+        DeleteAccountRequest request = new DeleteAccountRequest("password");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("password", "encoded")).thenReturn(true);
+
+        userService.deleteAccount(userId, request);
+
+        verify(userRepository).delete(user);
+        verify(userEventProducer).sendUserDeletedEvent(new UserDeletedEvent(userId));
+    }
+
+    @Test
+    void deleteAccount_WhenPasswordIncorrect_ThrowsAndDoesNotDelete() {
+        Long userId = 1L;
+        User user = new User();
+        user.setId(userId);
+        user.setPassword("encoded");
+        DeleteAccountRequest request = new DeleteAccountRequest("wrong-password");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong-password", "encoded")).thenReturn(false);
+
+        TechShopException ex = assertThrows(TechShopException.class,
+                () -> userService.deleteAccount(userId, request));
+
+        assertEquals(401, ex.getStatusCode());
+        verify(userRepository, never()).delete(any(User.class));
+        verify(userEventProducer, never()).sendUserDeletedEvent(any());
+    }
+
+    @Test
+    void deleteAccount_WhenUserNotFound_ThrowsException() {
+        Long userId = 404L;
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class,
+                () -> userService.deleteAccount(userId, new DeleteAccountRequest("password")));
+
+        verify(userRepository, never()).delete(any(User.class));
+    }
+
+    @Test
+    void deleteAccount_WhenEventPublishFails_StillDeletesUser() {
+        Long userId = 1L;
+        User user = new User();
+        user.setId(userId);
+        user.setPassword("encoded");
+        DeleteAccountRequest request = new DeleteAccountRequest("password");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("password", "encoded")).thenReturn(true);
+        doThrow(new RuntimeException("kafka unavailable"))
+                .when(userEventProducer).sendUserDeletedEvent(any(UserDeletedEvent.class));
+
+        userService.deleteAccount(userId, request);
+
+        verify(userRepository).delete(user);
     }
 }

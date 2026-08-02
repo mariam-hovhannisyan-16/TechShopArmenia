@@ -4,9 +4,11 @@ import am.techshop.common.event.ChatReplyEvent;
 import am.techshop.common.event.OrderStatusChangedEvent;
 import am.techshop.common.event.PasswordResetRequestedEvent;
 import am.techshop.common.event.PriceDropEvent;
+import am.techshop.common.event.UserDeletedEvent;
 import am.techshop.common.event.UserRegisteredEvent;
 import am.techshop.common.event.UserVerifiedEvent;
 import am.techshop.notification.dispatch.NotificationDispatcher;
+import am.techshop.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Component;
 public class NotificationEventConsumer {
 
     private final NotificationDispatcher dispatcher;
+    private final NotificationService notificationService;
 
     @KafkaListener(topics = "order-status-changed", groupId = "notification-group",
             properties = {"spring.json.value.default.type=am.techshop.common.event.OrderStatusChangedEvent"})
@@ -53,5 +56,11 @@ public class NotificationEventConsumer {
             properties = {"spring.json.value.default.type=am.techshop.common.event.PriceDropEvent"})
     public void handlePriceDrop(PriceDropEvent event) {
         dispatcher.dispatchPriceDrop(event.userId(), event.productName(), event.newPrice());
+    }
+
+    @KafkaListener(topics = "user-deleted", groupId = "notification-group",
+            properties = {"spring.json.value.default.type=am.techshop.common.event.UserDeletedEvent"})
+    public void handleUserDeleted(UserDeletedEvent event) {
+        notificationService.deleteNotificationsForUser(event.userId());
     }
 }

@@ -36,4 +36,8 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setRead(true);
         notificationRepository.save(notification);
     }
+
+    public void deleteNotificationsForUser(Long userId) {
+        notificationRepository.deleteByUserId(userId);
+    }
 }

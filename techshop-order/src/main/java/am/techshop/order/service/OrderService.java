@@ -28,4 +28,6 @@ public interface OrderService {
     OrderResponse getOrderByIdAdmin(Long id);
 
     OrderResponse updateOrderStatus(Long id, OrderStatusUpdateRequest request);
+
+    void anonymizeOrdersForUser(Long userId);
 }

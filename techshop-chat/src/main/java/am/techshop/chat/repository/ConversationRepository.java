@@ -16,4 +16,6 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
     Optional<Conversation> findFirstByGuestSessionIdAndStatusOrderByIdDesc(String guestSessionId, ConversationStatus status);
 
     List<Conversation> findAllByOrderByIdDesc();
+
+    List<Conversation> findByUserId(Long userId);
 }

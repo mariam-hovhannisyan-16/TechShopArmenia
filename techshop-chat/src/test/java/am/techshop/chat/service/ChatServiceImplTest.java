@@ -434,4 +434,31 @@ class ChatServiceImplTest {
         assertNotNull(result);
         assertEquals(1, result.size());
     }
+
+    @Test
+    void deleteConversationsForUser_DeletesMessagesThenConversations() {
+        Conversation conversation1 = new Conversation();
+        conversation1.setId(1L);
+        conversation1.setUserId(9L);
+        Conversation conversation2 = new Conversation();
+        conversation2.setId(2L);
+        conversation2.setUserId(9L);
+
+        when(conversationRepository.findByUserId(9L)).thenReturn(List.of(conversation1, conversation2));
+
+        chatService.deleteConversationsForUser(9L);
+
+        verify(messageRepository).deleteByConversationIdIn(List.of(1L, 2L));
+        verify(conversationRepository).deleteAll(List.of(conversation1, conversation2));
+    }
+
+    @Test
+    void deleteConversationsForUser_WhenNoConversations_DoesNothing() {
+        when(conversationRepository.findByUserId(9L)).thenReturn(List.of());
+
+        chatService.deleteConversationsForUser(9L);
+
+        verify(messageRepository, never()).deleteByConversationIdIn(any());
+        verify(conversationRepository, never()).deleteAll(any());
+    }
 }

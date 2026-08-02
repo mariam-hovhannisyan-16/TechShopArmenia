@@ -1,5 +1,6 @@
 package am.techshop.user.controller;
 
+import am.techshop.common.dto.request.DeleteAccountRequest;
 import am.techshop.common.dto.request.ForgotPasswordRequest;
 import am.techshop.common.dto.request.LoginRequest;
 import am.techshop.common.dto.request.RegisterRequest;
@@ -38,6 +39,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -280,5 +282,61 @@ class UserControllerTest {
                 .andExpect(status().isUnauthorized());
 
         verify(userService, never()).updateUserRole(any(), any());
+    }
+
+    @Test
+    void deleteMyAccount_WhenAuthenticatedWithCorrectPassword_ReturnsOk() throws Exception {
+        DeleteAccountRequest request = new DeleteAccountRequest("password123");
+        doNothing().when(userService).deleteAccount(eq(USER_ID), any(DeleteAccountRequest.class));
+
+        mockMvc.perform(delete("/api/users/me")
+                        .with(authentication(asUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Account deleted successfully"));
+
+        verify(userService).deleteAccount(USER_ID, request);
+    }
+
+    @Test
+    void deleteMyAccount_WhenPasswordIncorrect_ReturnsUnauthorized() throws Exception {
+        DeleteAccountRequest request = new DeleteAccountRequest("wrong-password");
+        doThrow(new TechShopException("Incorrect password", 401))
+                .when(userService).deleteAccount(eq(USER_ID), any(DeleteAccountRequest.class));
+
+        mockMvc.perform(delete("/api/users/me")
+                        .with(authentication(asUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deleteMyAccount_WithoutAuthentication_ReturnsUnauthorized() throws Exception {
+        DeleteAccountRequest request = new DeleteAccountRequest("password123");
+
+        mockMvc.perform(delete("/api/users/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+
+        verify(userService, never()).deleteAccount(any(), any());
+    }
+
+    @Test
+    void deleteMyAccount_CannotTargetAnotherUsersAccount() throws Exception {
+        DeleteAccountRequest request = new DeleteAccountRequest("password123");
+        doNothing().when(userService).deleteAccount(eq(USER_ID), any(DeleteAccountRequest.class));
+
+        mockMvc.perform(delete("/api/users/me")
+                        .with(authentication(asUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        // The endpoint takes no user id from the request itself - it can only ever
+        // act on the id embedded in the caller's own authenticated JWT.
+        verify(userService, never()).deleteAccount(eq(2L), any());
     }
 }

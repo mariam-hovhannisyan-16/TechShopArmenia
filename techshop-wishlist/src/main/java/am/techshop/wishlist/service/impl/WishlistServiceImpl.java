@@ -71,6 +71,10 @@ public class WishlistServiceImpl implements WishlistService {
         return wishlistRepository.findUserIdsByProductId(productId);
     }
 
+    public void deleteWishlistForUser(Long userId) {
+        wishlistRepository.findByUserId(userId).ifPresent(wishlistRepository::delete);
+    }
+
     private Wishlist getOrCreateWishlist(Long userId) {
         return wishlistRepository.findByUserId(userId)
                 .orElseGet(() -> {

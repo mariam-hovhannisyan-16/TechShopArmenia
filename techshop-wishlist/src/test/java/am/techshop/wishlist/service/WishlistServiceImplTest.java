@@ -296,4 +296,25 @@ class WishlistServiceImplTest {
 
         assertEquals(404, ex.getStatusCode());
     }
+
+    @Test
+    void deleteWishlistForUser_WhenWishlistExists_DeletesIt() {
+        Wishlist wishlist = new Wishlist();
+        wishlist.setId(1L);
+        wishlist.setUserId(USER_ID);
+        when(wishlistRepository.findByUserId(USER_ID)).thenReturn(Optional.of(wishlist));
+
+        wishlistService.deleteWishlistForUser(USER_ID);
+
+        verify(wishlistRepository).delete(wishlist);
+    }
+
+    @Test
+    void deleteWishlistForUser_WhenNoWishlistExists_DoesNothing() {
+        when(wishlistRepository.findByUserId(USER_ID)).thenReturn(Optional.empty());
+
+        wishlistService.deleteWishlistForUser(USER_ID);
+
+        verify(wishlistRepository, never()).delete(any());
+    }
 }

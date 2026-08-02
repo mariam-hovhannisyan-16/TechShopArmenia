@@ -1,6 +1,7 @@
 package am.techshop.user.kafka;
 
 import am.techshop.common.event.PasswordResetRequestedEvent;
+import am.techshop.common.event.UserDeletedEvent;
 import am.techshop.common.event.UserRegisteredEvent;
 import am.techshop.common.event.UserVerifiedEvent;
 import lombok.RequiredArgsConstructor;
@@ -23,5 +24,9 @@ public class UserEventProducer {
 
     public void sendPasswordResetRequestedEvent(PasswordResetRequestedEvent event) {
         kafkaTemplate.send("password-reset-requested", event);
+    }
+
+    public void sendUserDeletedEvent(UserDeletedEvent event) {
+        kafkaTemplate.send("user-deleted", event);
     }
 }

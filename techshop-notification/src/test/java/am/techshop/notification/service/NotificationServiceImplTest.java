@@ -112,4 +112,11 @@ class NotificationServiceImplTest {
         assertEquals(403, ex.getStatusCode());
         assertFalse(notification.isRead());
     }
+
+    @Test
+    void deleteNotificationsForUser_DeletesAllNotificationsForThatUser() {
+        notificationService.deleteNotificationsForUser(1L);
+
+        verify(notificationRepository).deleteByUserId(1L);
+    }
 }

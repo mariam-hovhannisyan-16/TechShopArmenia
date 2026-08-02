@@ -1,5 +1,6 @@
 package am.techshop.user.service.impl;
 
+import am.techshop.common.dto.request.DeleteAccountRequest;
 import am.techshop.common.dto.request.LoginRequest;
 import am.techshop.common.dto.request.RegisterRequest;
 import am.techshop.common.dto.request.ResetPasswordRequest;
@@ -7,6 +8,7 @@ import am.techshop.common.dto.response.AuthResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.enums.UserRole;
 import am.techshop.common.event.PasswordResetRequestedEvent;
+import am.techshop.common.event.UserDeletedEvent;
 import am.techshop.common.event.UserRegisteredEvent;
 import am.techshop.common.event.UserVerifiedEvent;
 import am.techshop.common.exception.TechShopException;
@@ -187,5 +189,26 @@ public class UserServiceImpl implements UserService {
         user.setRole(role);
         User savedUser = userRepository.save(user);
         return userMapper.toResponse(savedUser);
+    }
+
+    @Transactional
+    public void deleteAccount(Long userId, DeleteAccountRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            throw new TechShopException("Incorrect password", 401);
+        }
+
+        userRepository.delete(user);
+        notifyUserDeleted(userId);
+    }
+
+    private void notifyUserDeleted(Long userId) {
+        try {
+            userEventProducer.sendUserDeletedEvent(new UserDeletedEvent(userId));
+        } catch (Exception ex) {
+            log.warn("Failed to publish user-deleted event for user {}: {}", userId, ex.getMessage());
+        }
     }
 }

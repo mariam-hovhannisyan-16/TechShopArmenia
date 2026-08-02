@@ -40,12 +40,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        String email = jwtService.extractEmail(token);
+        Long userId = jwtService.extractUserId(token);
         String role = jwtService.extractRole(token);
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
-                        email,
+                        userId,
                         null,
                         List.of(new SimpleGrantedAuthority("ROLE_" + role))
                 );

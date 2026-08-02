@@ -1,5 +1,6 @@
 package am.techshop.user.service;
 
+import am.techshop.common.dto.request.DeleteAccountRequest;
 import am.techshop.common.dto.request.LoginRequest;
 import am.techshop.common.dto.request.RegisterRequest;
 import am.techshop.common.dto.request.ResetPasswordRequest;
@@ -20,4 +21,5 @@ public interface UserService {
     void forgotPassword(String email);
     void resetPassword(ResetPasswordRequest request);
     UserResponse updateUserRole(Long id, UserRole role);
+    void deleteAccount(Long userId, DeleteAccountRequest request);
 }

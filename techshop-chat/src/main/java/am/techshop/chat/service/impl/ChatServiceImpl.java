@@ -115,6 +115,19 @@ public class ChatServiceImpl implements ChatService {
         }
     }
 
+    // Full deletion (not detaching userId, the way guest conversations work) since
+    // conversation transcripts contain the user's own message text/PII and, unlike
+    // orders, there's no business/accounting need to retain them after account deletion.
+    public void deleteConversationsForUser(Long userId) {
+        List<Conversation> conversations = conversationRepository.findByUserId(userId);
+        if (conversations.isEmpty()) {
+            return;
+        }
+        List<Long> conversationIds = conversations.stream().map(Conversation::getId).toList();
+        messageRepository.deleteByConversationIdIn(conversationIds);
+        conversationRepository.deleteAll(conversations);
+    }
+
     private Conversation createConversation(ChatIdentity identity) {
         return conversationRepository.save(conversationMapper.toEntity(identity));
     }

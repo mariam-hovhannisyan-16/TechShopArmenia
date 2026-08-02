@@ -34,6 +34,10 @@ public class JwtService {
         return parseClaims(token).getSubject();
     }
 
+    public Long extractUserId(String token) {
+        return parseClaims(token).get("userId", Long.class);
+    }
+
     public boolean isTokenValid(String token) {
         try {
             parseClaims(token);

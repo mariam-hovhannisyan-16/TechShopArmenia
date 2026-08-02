@@ -72,17 +72,17 @@ class JwtAuthFilterTest {
     }
 
     @Test
-    void doFilterInternal_WithValidToken_SetsAuthenticationWithEmailPrincipalAndRoleAuthority() throws Exception {
+    void doFilterInternal_WithValidToken_SetsAuthenticationWithUserIdPrincipalAndRoleAuthority() throws Exception {
         JwtAuthFilter filter = new JwtAuthFilter(jwtService);
         when(request.getHeader("Authorization")).thenReturn("Bearer good-token");
         when(jwtService.isTokenValid("good-token")).thenReturn(true);
-        when(jwtService.extractEmail("good-token")).thenReturn("mariam@test.com");
+        when(jwtService.extractUserId("good-token")).thenReturn(1L);
         when(jwtService.extractRole("good-token")).thenReturn("ADMIN");
 
         filter.doFilter(request, response, filterChain);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        assertEquals("mariam@test.com", authentication.getPrincipal());
+        assertEquals(1L, authentication.getPrincipal());
         assertTrue(authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")));
         verify(filterChain).doFilter(request, response);

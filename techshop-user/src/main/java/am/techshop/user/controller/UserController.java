@@ -1,5 +1,6 @@
 package am.techshop.user.controller;
 
+import am.techshop.common.dto.request.DeleteAccountRequest;
 import am.techshop.common.dto.request.ForgotPasswordRequest;
 import am.techshop.common.dto.request.LoginRequest;
 import am.techshop.common.dto.request.RegisterRequest;
@@ -10,6 +11,7 @@ import am.techshop.common.dto.response.ApiResponse;
 import am.techshop.common.dto.response.AuthResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.exception.TechShopException;
+import am.techshop.common.security.CurrentUser;
 import am.techshop.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -119,5 +122,13 @@ public class UserController {
             @PathVariable Long id,
             @RequestBody @Valid RoleUpdateRequest request) {
         return ResponseEntity.ok(ApiResponse.ok("Role updated", userService.updateUserRole(id, request.role())));
+    }
+
+    @DeleteMapping("/api/users/me")
+    public ResponseEntity<ApiResponse<Void>> deleteMyAccount(
+            Authentication authentication,
+            @RequestBody @Valid DeleteAccountRequest request) {
+        userService.deleteAccount(CurrentUser.id(authentication), request);
+        return ResponseEntity.ok(ApiResponse.ok("Account deleted successfully", null));
     }
 }

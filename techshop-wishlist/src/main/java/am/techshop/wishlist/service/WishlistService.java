@@ -10,4 +10,5 @@ public interface WishlistService {
     long getWishlistCount(Long userId);
     WishlistResponse removeFromWishlist(Long userId, Long productId);
     List<Long> getSubscriberUserIds(Long productId);
+    void deleteWishlistForUser(Long userId);
 }

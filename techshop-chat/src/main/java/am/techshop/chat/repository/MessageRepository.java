@@ -13,4 +13,6 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findByConversationIdOrderByCreatedAtAsc(Long conversationId);
 
     boolean existsByConversationIdAndSender(Long conversationId, MessageSender sender);
+
+    void deleteByConversationIdIn(List<Long> conversationIds);
 }

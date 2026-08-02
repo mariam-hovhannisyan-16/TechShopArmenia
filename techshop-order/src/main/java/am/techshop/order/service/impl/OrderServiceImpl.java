@@ -217,4 +217,29 @@ public class OrderServiceImpl implements OrderService {
             log.warn("Failed to publish status-changed notification for order {}: {}", order.getId(), ex.getMessage());
         }
     }
+
+    // Order rows themselves are kept (not deleted) for accounting/business records, but
+    // the directly-identifying PII embedded on each order is redacted once the account
+    // behind it is gone. userId is intentionally left in place - it's just a numeric
+    // reference to a now-deleted account, not PII, and keeps the record traceable for
+    // audit purposes. City/state/postal code/country are kept too since they're useful
+    // for tax/accounting jurisdiction and aren't identifying on their own.
+    public void anonymizeOrdersForUser(Long userId) {
+        List<Order> orders = orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        orders.forEach(order -> {
+            redactAddress(order.getShippingAddress());
+            redactAddress(order.getBillingAddress());
+        });
+        orderRepository.saveAll(orders);
+    }
+
+    private void redactAddress(Address address) {
+        if (address == null) {
+            return;
+        }
+        address.setFullName("Deleted User");
+        address.setPhone("[redacted]");
+        address.setLine1("[redacted]");
+        address.setLine2(null);
+    }
 }

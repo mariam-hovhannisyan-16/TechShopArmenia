@@ -7,9 +7,11 @@ import am.techshop.common.event.ChatReplyEvent;
 import am.techshop.common.event.OrderStatusChangedEvent;
 import am.techshop.common.event.PasswordResetRequestedEvent;
 import am.techshop.common.event.PriceDropEvent;
+import am.techshop.common.event.UserDeletedEvent;
 import am.techshop.common.event.UserRegisteredEvent;
 import am.techshop.common.event.UserVerifiedEvent;
 import am.techshop.notification.dispatch.NotificationDispatcher;
+import am.techshop.notification.service.NotificationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,6 +27,9 @@ class NotificationEventConsumerTest {
 
     @Mock
     private NotificationDispatcher dispatcher;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private NotificationEventConsumer consumer;
@@ -86,5 +91,14 @@ class NotificationEventConsumerTest {
         consumer.handlePriceDrop(event);
 
         verify(dispatcher).dispatchPriceDrop(1L, "Phone", BigDecimal.valueOf(150));
+    }
+
+    @Test
+    void handleUserDeleted_DeletesNotificationsForUser() {
+        UserDeletedEvent event = new UserDeletedEvent(1L);
+
+        consumer.handleUserDeleted(event);
+
+        verify(notificationService).deleteNotificationsForUser(1L);
     }
 }

@@ -65,6 +65,10 @@ public class CartServiceImpl implements CartService {
         );
     }
 
+    public void deleteCartForUser(Long userId) {
+        cartRepository.findByUserId(userId).ifPresent(cartRepository::delete);
+    }
+
     private ProductResponse fetchProduct(Long productId) {
         try {
             var response = productClient.getProduct(productId);

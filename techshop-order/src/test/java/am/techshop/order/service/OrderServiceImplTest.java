@@ -48,6 +48,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -546,5 +547,33 @@ class OrderServiceImplTest {
 
         assertEquals(1, result.content().size());
         assertEquals(1, result.totalElements());
+    }
+
+    @Test
+    void anonymizeOrdersForUser_RedactsAddressPiiButKeepsOrderAndJurisdictionFields() {
+        Order order = new Order();
+        order.setId(1L);
+        order.setUserId(USER_ID);
+        order.setStatus(OrderStatus.DELIVERED);
+        Address shipping = new Address("Mariam Hovhannisyan", "+37491234567", "1 Mashtots Ave", "Apt 4",
+                "Yerevan", "Yerevan", "0001", "Armenia");
+        Address billing = new Address("Mariam Hovhannisyan", "+37491234567", "1 Mashtots Ave", "Apt 4",
+                "Yerevan", "Yerevan", "0001", "Armenia");
+        order.setShippingAddress(shipping);
+        order.setBillingAddress(billing);
+
+        when(orderRepository.findByUserIdOrderByCreatedAtDesc(USER_ID)).thenReturn(List.of(order));
+
+        orderService.anonymizeOrdersForUser(USER_ID);
+
+        assertEquals("Deleted User", order.getShippingAddress().getFullName());
+        assertEquals("[redacted]", order.getShippingAddress().getPhone());
+        assertEquals("[redacted]", order.getShippingAddress().getLine1());
+        assertNull(order.getShippingAddress().getLine2());
+        assertEquals("Yerevan", order.getShippingAddress().getCity());
+        assertEquals("Armenia", order.getShippingAddress().getCountry());
+        assertEquals("Deleted User", order.getBillingAddress().getFullName());
+        assertEquals(USER_ID, order.getUserId());
+        verify(orderRepository).saveAll(List.of(order));
     }
 }

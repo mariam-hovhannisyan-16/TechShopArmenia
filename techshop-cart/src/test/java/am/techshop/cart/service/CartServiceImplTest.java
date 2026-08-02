@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -224,5 +225,28 @@ class CartServiceImplTest {
         cartService.clearCart(userId);
 
         assertTrue(cart.getItems().isEmpty());
+    }
+
+    @Test
+    void deleteCartForUser_WhenCartExists_DeletesIt() {
+        Long userId = 1L;
+        Cart cart = new Cart();
+        cart.setUserId(userId);
+
+        when(cartRepository.findByUserId(userId)).thenReturn(Optional.of(cart));
+
+        cartService.deleteCartForUser(userId);
+
+        verify(cartRepository).delete(cart);
+    }
+
+    @Test
+    void deleteCartForUser_WhenNoCartExists_DoesNothing() {
+        Long userId = 1L;
+        when(cartRepository.findByUserId(userId)).thenReturn(Optional.empty());
+
+        cartService.deleteCartForUser(userId);
+
+        verify(cartRepository, never()).delete(any());
     }
 }
