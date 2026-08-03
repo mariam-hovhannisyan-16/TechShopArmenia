@@ -5,7 +5,9 @@ import am.techshop.common.dto.request.PriceUpdateRequest;
 import am.techshop.common.dto.request.ProductRequest;
 import am.techshop.common.dto.request.StockAdjustmentRequest;
 import am.techshop.common.dto.response.PageResponse;
+import am.techshop.common.dto.response.PricePredictionResponse;
 import am.techshop.common.dto.response.ProductResponse;
+import am.techshop.common.exception.ProductNotFoundException;
 import am.techshop.product.config.SecurityConfig;
 import am.techshop.product.security.InternalApiKeyGuard;
 import am.techshop.product.security.JwtAuthFilter;
@@ -24,6 +26,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import java.util.List;
 
@@ -283,5 +286,41 @@ class ProductControllerTest {
                 .andExpect(status().isForbidden());
 
         verify(productService, never()).updateDiscount(any(), any());
+    }
+
+    @Test
+    void getPricePrediction_WithEnoughHistory_ReturnsPrediction() throws Exception {
+        Long id = 1L;
+        PricePredictionResponse response = new PricePredictionResponse(
+                "Գինը հավանաբար կնվազի ~5%-ով հաջորդ շաբաթ", null, LocalDateTime.now());
+
+        when(productService.getPricePrediction(id)).thenReturn(response);
+
+        mockMvc.perform(get("/api/products/{id}/price-prediction", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.prediction").value(response.prediction()))
+                .andExpect(jsonPath("$.data.reason").doesNotExist());
+    }
+
+    @Test
+    void getPricePrediction_WithInsufficientHistory_ReturnsReasonWithNullPrediction() throws Exception {
+        Long id = 1L;
+        PricePredictionResponse response = new PricePredictionResponse(null, "insufficient_history", null);
+
+        when(productService.getPricePrediction(id)).thenReturn(response);
+
+        mockMvc.perform(get("/api/products/{id}/price-prediction", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.prediction").doesNotExist())
+                .andExpect(jsonPath("$.data.reason").value("insufficient_history"));
+    }
+
+    @Test
+    void getPricePrediction_WhenProductNotFound_ReturnsNotFound() throws Exception {
+        Long id = 1L;
+        when(productService.getPricePrediction(id)).thenThrow(new ProductNotFoundException(id));
+
+        mockMvc.perform(get("/api/products/{id}/price-prediction", id))
+                .andExpect(status().isNotFound());
     }
 }

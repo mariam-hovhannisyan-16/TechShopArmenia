@@ -6,6 +6,7 @@ import am.techshop.common.dto.request.ProductRequest;
 import am.techshop.common.dto.request.StockAdjustmentRequest;
 import am.techshop.common.dto.response.ApiResponse;
 import am.techshop.common.dto.response.PageResponse;
+import am.techshop.common.dto.response.PricePredictionResponse;
 import am.techshop.common.dto.response.ProductResponse;
 import am.techshop.product.security.InternalApiKeyGuard;
 import am.techshop.product.service.ProductService;
@@ -61,6 +62,11 @@ public class ProductController {
     @GetMapping("/api/products/batch")
     public ResponseEntity<ApiResponse<List<ProductResponse>>> getProductsByIds(@RequestParam List<Long> ids) {
         return ResponseEntity.ok(ApiResponse.ok(productService.getProductsByIds(ids)));
+    }
+
+    @GetMapping("/api/products/{id}/price-prediction")
+    public ResponseEntity<ApiResponse<PricePredictionResponse>> getPricePrediction(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok(productService.getPricePrediction(id)));
     }
 
     @DeleteMapping("/api/products/{id}")
