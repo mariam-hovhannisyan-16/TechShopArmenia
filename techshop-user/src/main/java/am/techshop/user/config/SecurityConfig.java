@@ -44,6 +44,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
                     config.addAllowedOrigin(frontendUrl);
+                    // Belt-and-suspenders: guarantee the real deployed frontend origin is
+                    // always allowed even if FRONTEND_URL resolves unexpectedly in some
+                    // environment (e.g. a pre-existing env var set for another purpose).
+                    config.addAllowedOrigin("http://13.53.171.79");
                     config.addAllowedMethod("*");
                     config.addAllowedHeader("*");
                     return config;

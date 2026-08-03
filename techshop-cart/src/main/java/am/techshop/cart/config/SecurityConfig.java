@@ -33,6 +33,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
                     config.addAllowedOrigin(frontendUrl);
+                    config.addAllowedOrigin("http://13.53.171.79");
                     config.addAllowedMethod("*");
                     config.addAllowedHeader("*");
                     return config;
