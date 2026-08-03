@@ -22,6 +22,7 @@ import am.techshop.user.security.JwtService;
 import am.techshop.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,7 +59,15 @@ public class UserServiceImpl implements UserService {
                 request.role() != null ? request.role() : UserRole.CUSTOMER,
                 verificationToken, LocalDateTime.now().plusHours(VERIFICATION_TOKEN_TTL_HOURS));
 
-        User savedUser = userRepository.save(user);
+        User savedUser;
+        try {
+            savedUser = userRepository.save(user);
+        } catch (DataIntegrityViolationException ex) {
+            // The existsByEmail check above is racy (check-then-insert); the unique
+            // constraint on users.email is the real guard, and a violation here means
+            // a concurrent request won the race for this email.
+            throw new TechShopException("Email already in use", 409);
+        }
         String token = jwtService.generateToken(savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name());
 
         notifyUserRegistered(savedUser, verificationToken);

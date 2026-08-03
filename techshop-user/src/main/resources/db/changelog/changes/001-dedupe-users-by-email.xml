@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="001-dedupe-users-by-email" author="mariam">
+        <comment>
+            A race condition in the old registration flow (check-then-insert with no
+            DB-level guard) could create multiple rows sharing the same email. Removes
+            any such duplicates, keeping the lowest id per email, so the unique
+            constraint added in the next changeset can be applied cleanly.
+        </comment>
+        <sql>
+            DELETE FROM users
+            WHERE id NOT IN (
+                SELECT MIN(id) FROM users GROUP BY email
+            );
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

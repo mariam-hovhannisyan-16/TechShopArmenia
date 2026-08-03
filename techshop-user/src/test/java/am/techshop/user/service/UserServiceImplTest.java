@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
@@ -557,5 +558,23 @@ class UserServiceImplTest {
         userService.deleteAccount(userId, request);
 
         verify(userRepository).delete(user);
+    }
+
+    @Test
+    void register_WhenSaveViolatesUniqueEmailConstraint_ThrowsConflict() {
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
+        User newUser = new User();
+
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(passwordEncoder.encode(request.password())).thenReturn("encoded");
+        when(userMapper.toEntity(eq(request), eq("encoded"), eq(UserRole.CUSTOMER), any(), any())).thenReturn(newUser);
+        when(userRepository.save(newUser))
+                .thenThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint \"uk_users_email\""));
+
+        TechShopException ex = assertThrows(TechShopException.class,
+                () -> userService.register(request));
+
+        assertEquals(409, ex.getStatusCode());
+        verify(userEventProducer, never()).sendUserRegisteredEvent(any());
     }
 }
