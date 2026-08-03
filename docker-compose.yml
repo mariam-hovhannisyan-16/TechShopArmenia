@@ -51,6 +51,9 @@ services:
       DB_PASSWORD: postgres
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
+      # Must match wherever the frontend is actually served - CORS is locked to this
+      # origin, so a mismatch here silently breaks every browser request to this API.
+      FRONTEND_URL: ${FRONTEND_URL:-http://13.53.171.79}
     depends_on:
       - postgres
       - kafka
@@ -67,6 +70,7 @@ services:
       DB_PORT: 5432
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
+      FRONTEND_URL: ${FRONTEND_URL:-http://13.53.171.79}
     depends_on:
       - postgres
 
@@ -84,6 +88,7 @@ services:
       DB_PASSWORD: postgres
       PRODUCT_SERVICE_URL: http://techshop-product:8084
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      FRONTEND_URL: ${FRONTEND_URL:-http://13.53.171.79}
     depends_on:
       - postgres
       - techshop-product
@@ -105,6 +110,7 @@ services:
       CART_SERVICE_URL: http://techshop-cart:8082
       USER_SERVICE_URL: http://techshop-user:8081
       PRODUCT_SERVICE_URL: http://techshop-product:8084
+      FRONTEND_URL: ${FRONTEND_URL:-http://13.53.171.79}
       IDRAM_SANDBOX_MODE: "true"
       IDRAM_SANDBOX_URL: https://sandbox.idram.am/payment
       IDRAM_MERCHANT_ID: sandbox-merchant
@@ -135,7 +141,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
+      FRONTEND_URL: ${FRONTEND_URL:-http://13.53.171.79}
     depends_on:
       - postgres
       - kafka
@@ -154,6 +160,7 @@ services:
       DB_PASSWORD: postgres
       PRODUCT_SERVICE_URL: http://techshop-product:8084
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      FRONTEND_URL: ${FRONTEND_URL:-http://13.53.171.79}
     depends_on:
       - postgres
       - techshop-product
@@ -173,6 +180,7 @@ services:
       DB_PASSWORD: postgres
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://13.53.171.79}
     depends_on:
       - postgres
       - kafka

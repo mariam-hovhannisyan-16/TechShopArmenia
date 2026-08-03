@@ -32,6 +32,7 @@ internal:
   api-key: ${INTERNAL_API_KEY:local-dev-internal-key-change-in-production}
 
 app:
+  frontend-url: ${FRONTEND_URL:http://localhost:4200}
   jwt:
     secret: ${JWT_SECRET:local-dev-secret-change-in-production}
 

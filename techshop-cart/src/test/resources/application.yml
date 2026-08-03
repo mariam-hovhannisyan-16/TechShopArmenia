@@ -22,6 +22,7 @@ services:
     url: http://localhost:0
 
 app:
+  frontend-url: http://localhost:4200
   jwt:
     secret: test-only-integration-secret-not-for-production-use-1234
 

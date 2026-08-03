@@ -24,6 +24,7 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 app:
+  frontend-url: http://localhost:4200
   jwt:
     secret: test-only-integration-secret-not-for-production-use-1234
     expiration-ms: 86400000

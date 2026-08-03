@@ -43,6 +43,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -75,6 +76,21 @@ class UserControllerTest {
 
     private Authentication asAdmin() {
         return new UsernamePasswordAuthenticationToken(USER_ID, null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+    }
+
+    @Test
+    void register_FromConfiguredFrontendOrigin_IsAllowedByCors() throws Exception {
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
+        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
+        AuthResponse authResponse = new AuthResponse("token", userResponse);
+        when(userService.register(any(RegisterRequest.class))).thenReturn(authResponse);
+
+        mockMvc.perform(post("/api/users/register")
+                        .header("Origin", "http://localhost:4200")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:4200"));
     }
 
     @Test
