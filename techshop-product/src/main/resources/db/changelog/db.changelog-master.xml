@@ -7,5 +7,6 @@
 
     <include file="db/changelog/changes/001-backfill-is-new-stock-nulls.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/002-create-price-history-table.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/003-update-product-image-urls.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

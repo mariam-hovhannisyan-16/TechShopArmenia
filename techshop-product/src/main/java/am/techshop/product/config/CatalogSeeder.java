@@ -34,17 +34,23 @@ public class CatalogSeeder implements ApplicationRunner {
         if (productRepository.count() == 0) {
             productRepository.saveAll(List.of(
                     seedProduct("iPhone 15, 128GB", "Apple iPhone 15 with 128GB storage.",
-                            new BigDecimal("450000.00"), 25, "Phones", "/images/products/iphone-15.jpg", true),
+                            new BigDecimal("450000.00"), 25, "Phones",
+                            "https://images.unsplash.com/photo-1736173155811-e8142fd553ee?w=900&q=82&fit=crop&auto=format", true),
                     seedProduct("Samsung Galaxy S24", "Samsung Galaxy S24 with 256GB storage.",
-                            new BigDecimal("420000.00"), 30, "Phones", "/images/products/galaxy-s24.jpg", true),
+                            new BigDecimal("420000.00"), 30, "Phones",
+                            "https://images.unsplash.com/photo-1706372124814-417e2f0c3fe0?w=900&q=82&fit=crop&auto=format", true),
                     seedProduct("MacBook Air M2", "Apple MacBook Air with M2 chip, 13-inch.",
-                            new BigDecimal("650000.00"), 15, "Laptops", "/images/products/macbook-air-m2.jpg", false),
+                            new BigDecimal("650000.00"), 15, "Laptops",
+                            "https://images.unsplash.com/photo-1651241680016-cc9e407e7dc3?w=900&q=82&fit=crop&auto=format", false),
                     seedProduct("LG 55\" 4K Smart TV", "LG 55-inch 4K UHD Smart TV.",
-                            new BigDecimal("380000.00"), 10, "TVs", "/images/products/lg-55-4k.jpg", false),
+                            new BigDecimal("380000.00"), 10, "TVs",
+                            "https://images.unsplash.com/photo-1689686998931-858488b0c62c?w=900&q=82&fit=crop&auto=format", false),
                     seedProduct("Sony WH-1000XM5", "Sony WH-1000XM5 noise-cancelling headphones.",
-                            new BigDecimal("165000.00"), 40, "Audio", "/images/products/sony-wh1000xm5.jpg", true),
+                            new BigDecimal("165000.00"), 40, "Audio",
+                            "https://images.unsplash.com/photo-1612858249816-5a91a9fb9886?w=900&q=82&fit=crop&auto=format", true),
                     seedProduct("Canon EOS R50", "Canon EOS R50 mirrorless camera with kit lens.",
-                            new BigDecimal("520000.00"), 8, "Cameras", "/images/products/canon-eos-r50.jpg", false)
+                            new BigDecimal("520000.00"), 8, "Cameras",
+                            "https://images.unsplash.com/photo-1500634245200-e5245c7574ef?w=900&q=82&fit=crop&auto=format", false)
             ));
         }
     }

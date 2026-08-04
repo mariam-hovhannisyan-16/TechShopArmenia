@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="003-update-product-image-urls" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="name"/>
+            </and>
+        </preConditions>
+        <comment>
+            The seeded products' image_url values were relative local paths
+            (/images/products/*.jpg) pointing at files no static server ever hosted.
+            Replaces them with real, absolute stock-photo URLs, matching the same
+            product-to-image pairing already used for this catalog in the frontend's
+            mock data.
+        </comment>
+
+        <update tableName="products">
+            <column name="image_url" value="https://images.unsplash.com/photo-1736173155811-e8142fd553ee?w=900&amp;q=82&amp;fit=crop&amp;auto=format"/>
+            <where>name = 'iPhone 15, 128GB'</where>
+        </update>
+
+        <update tableName="products">
+            <column name="image_url" value="https://images.unsplash.com/photo-1706372124814-417e2f0c3fe0?w=900&amp;q=82&amp;fit=crop&amp;auto=format"/>
+            <where>name = 'Samsung Galaxy S24'</where>
+        </update>
+
+        <update tableName="products">
+            <column name="image_url" value="https://images.unsplash.com/photo-1651241680016-cc9e407e7dc3?w=900&amp;q=82&amp;fit=crop&amp;auto=format"/>
+            <where>name = 'MacBook Air M2'</where>
+        </update>
+
+        <update tableName="products">
+            <column name="image_url" value="https://images.unsplash.com/photo-1689686998931-858488b0c62c?w=900&amp;q=82&amp;fit=crop&amp;auto=format"/>
+            <where>name = 'LG 55&quot; 4K Smart TV'</where>
+        </update>
+
+        <update tableName="products">
+            <column name="image_url" value="https://images.unsplash.com/photo-1612858249816-5a91a9fb9886?w=900&amp;q=82&amp;fit=crop&amp;auto=format"/>
+            <where>name = 'Sony WH-1000XM5'</where>
+        </update>
+
+        <update tableName="products">
+            <column name="image_url" value="https://images.unsplash.com/photo-1500634245200-e5245c7574ef?w=900&amp;q=82&amp;fit=crop&amp;auto=format"/>
+            <where>name = 'Canon EOS R50'</where>
+        </update>
+    </changeSet>
+
+</databaseChangeLog>
