@@ -8,6 +8,8 @@ import am.techshop.common.dto.response.ApiResponse;
 import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.dto.response.PricePredictionResponse;
 import am.techshop.common.dto.response.ProductResponse;
+import am.techshop.common.dto.response.SurpriseBoxResponse;
+import am.techshop.common.exception.TechShopException;
 import am.techshop.product.security.InternalApiKeyGuard;
 import am.techshop.product.service.ProductService;
 import jakarta.validation.Valid;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -67,6 +70,32 @@ public class ProductController {
     @GetMapping("/api/products/{id}/price-prediction")
     public ResponseEntity<ApiResponse<PricePredictionResponse>> getPricePrediction(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.ok(productService.getPricePrediction(id)));
+    }
+
+    @GetMapping("/api/products/surprise-box")
+    public ResponseEntity<ApiResponse<SurpriseBoxResponse>> getSurpriseBox(
+            @RequestParam(required = false) String budget) {
+        SurpriseBoxResponse box = productService.getSurpriseBox(parseBudget(budget));
+        String message = box.items().isEmpty()
+                ? "No products fit within this budget"
+                : "Surprise box created";
+        return ResponseEntity.ok(ApiResponse.ok(message, box));
+    }
+
+    private BigDecimal parseBudget(String budget) {
+        if (budget == null || budget.isBlank()) {
+            throw new TechShopException("budget query parameter is required", 400);
+        }
+        BigDecimal parsed;
+        try {
+            parsed = new BigDecimal(budget);
+        } catch (NumberFormatException ex) {
+            throw new TechShopException("Invalid budget value: %s".formatted(budget), 400);
+        }
+        if (parsed.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new TechShopException("Budget must be greater than 0", 400);
+        }
+        return parsed;
     }
 
     @DeleteMapping("/api/products/{id}")

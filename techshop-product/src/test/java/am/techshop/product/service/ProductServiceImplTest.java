@@ -5,6 +5,7 @@ import am.techshop.common.dto.response.ApiResponse;
 import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.dto.response.PricePredictionResponse;
 import am.techshop.common.dto.response.ProductResponse;
+import am.techshop.common.dto.response.SurpriseBoxResponse;
 import am.techshop.common.event.PriceDropEvent;
 import am.techshop.common.exception.ProductNotFoundException;
 import am.techshop.common.exception.TechShopException;
@@ -475,5 +476,81 @@ class ProductServiceImplTest {
         PricePredictionResponse result = productService.getPricePrediction(id);
 
         assertEquals(expected, result);
+    }
+
+    private Product product(long id, String category, double price, int stock) {
+        Product product = new Product();
+        product.setId(id);
+        product.setName("Product " + id);
+        product.setCategory(category);
+        product.setPrice(BigDecimal.valueOf(price));
+        product.setStock(stock);
+        return product;
+    }
+
+    private void stubGenericMapper() {
+        when(productMapper.toResponse(any(Product.class))).thenAnswer(invocation -> {
+            Product p = invocation.getArgument(0);
+            return new ProductResponse(p.getId(), p.getName(), null, p.getPrice(), p.getStock(),
+                    p.getCategory(), null, false, null);
+        });
+    }
+
+    @Test
+    void getSurpriseBox_WithReasonableBudget_ReturnsNonEmptyBoxWithinBudget() {
+        List<Product> available = List.of(
+                product(1, "Phones", 100, 5),
+                product(2, "Laptops", 200, 3),
+                product(3, "TVs", 150, 2),
+                product(4, "Audio", 80, 10));
+        when(productRepository.findByStockGreaterThan(0)).thenReturn(available);
+        stubGenericMapper();
+
+        SurpriseBoxResponse box = productService.getSurpriseBox(BigDecimal.valueOf(300));
+
+        assertFalse(box.items().isEmpty());
+        assertTrue(box.totalPrice().compareTo(BigDecimal.valueOf(300)) <= 0);
+        assertEquals(box.totalPrice(), BigDecimal.valueOf(300).subtract(box.remainingBudget()));
+    }
+
+    @Test
+    void getSurpriseBox_WithVeryLowBudget_ReturnsEmptyBoxGracefully() {
+        List<Product> available = List.of(
+                product(1, "Phones", 500, 5),
+                product(2, "Laptops", 600, 3),
+                product(3, "TVs", 700, 2));
+        when(productRepository.findByStockGreaterThan(0)).thenReturn(available);
+
+        SurpriseBoxResponse box = productService.getSurpriseBox(BigDecimal.valueOf(100));
+
+        assertTrue(box.items().isEmpty());
+        assertEquals(0, box.totalPrice().compareTo(BigDecimal.ZERO));
+        assertEquals(0, box.remainingBudget().compareTo(BigDecimal.valueOf(100)));
+    }
+
+    @Test
+    void getSurpriseBox_WhenMultipleAffordableCategoriesExist_PicksOneFromEachBeforeDoublingUp() {
+        List<Product> available = List.of(
+                product(1, "Phones", 100, 5),
+                product(2, "Laptops", 100, 5),
+                product(3, "TVs", 100, 5));
+        when(productRepository.findByStockGreaterThan(0)).thenReturn(available);
+        stubGenericMapper();
+
+        SurpriseBoxResponse box = productService.getSurpriseBox(BigDecimal.valueOf(300));
+
+        assertEquals(3, box.items().size());
+        assertEquals(3, box.items().stream().map(ProductResponse::category).distinct().count());
+        assertEquals(0, box.remainingBudget().compareTo(BigDecimal.ZERO));
+    }
+
+    @Test
+    void getSurpriseBox_WhenNoProductsInStock_ReturnsEmptyBox() {
+        when(productRepository.findByStockGreaterThan(0)).thenReturn(List.of());
+
+        SurpriseBoxResponse box = productService.getSurpriseBox(BigDecimal.valueOf(1000));
+
+        assertTrue(box.items().isEmpty());
+        assertEquals(0, box.remainingBudget().compareTo(BigDecimal.valueOf(1000)));
     }
 }

@@ -7,6 +7,7 @@ import am.techshop.common.dto.request.StockAdjustmentRequest;
 import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.dto.response.PricePredictionResponse;
 import am.techshop.common.dto.response.ProductResponse;
+import am.techshop.common.dto.response.SurpriseBoxResponse;
 import am.techshop.common.exception.ProductNotFoundException;
 import am.techshop.product.config.SecurityConfig;
 import am.techshop.product.security.InternalApiKeyGuard;
@@ -322,5 +323,56 @@ class ProductControllerTest {
 
         mockMvc.perform(get("/api/products/{id}/price-prediction", id))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getSurpriseBox_WithValidBudget_ReturnsBox() throws Exception {
+        ProductResponse item = new ProductResponse(1L, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, null);
+        SurpriseBoxResponse box = new SurpriseBoxResponse(List.of(item), BigDecimal.valueOf(100), BigDecimal.valueOf(50));
+
+        when(productService.getSurpriseBox(new BigDecimal("150"))).thenReturn(box);
+
+        mockMvc.perform(get("/api/products/surprise-box").param("budget", "150"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].id").value(1))
+                .andExpect(jsonPath("$.data.totalPrice").value(100))
+                .andExpect(jsonPath("$.data.remainingBudget").value(50));
+    }
+
+    @Test
+    void getSurpriseBox_WhenNothingFits_ReturnsEmptyBoxWithClearMessage() throws Exception {
+        SurpriseBoxResponse box = new SurpriseBoxResponse(List.of(), BigDecimal.ZERO, new BigDecimal("100"));
+        when(productService.getSurpriseBox(new BigDecimal("100"))).thenReturn(box);
+
+        mockMvc.perform(get("/api/products/surprise-box").param("budget", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("No products fit within this budget"))
+                .andExpect(jsonPath("$.data.items").isEmpty());
+    }
+
+    @Test
+    void getSurpriseBox_WhenBudgetMissing_ReturnsBadRequest() throws Exception {
+        mockMvc.perform(get("/api/products/surprise-box"))
+                .andExpect(status().isBadRequest());
+
+        verify(productService, never()).getSurpriseBox(any());
+    }
+
+    @Test
+    void getSurpriseBox_WhenBudgetNotNumeric_ReturnsBadRequest() throws Exception {
+        mockMvc.perform(get("/api/products/surprise-box").param("budget", "not-a-number"))
+                .andExpect(status().isBadRequest());
+
+        verify(productService, never()).getSurpriseBox(any());
+    }
+
+    @Test
+    void getSurpriseBox_WhenBudgetZeroOrNegative_ReturnsBadRequest() throws Exception {
+        mockMvc.perform(get("/api/products/surprise-box").param("budget", "0"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/products/surprise-box").param("budget", "-50"))
+                .andExpect(status().isBadRequest());
+
+        verify(productService, never()).getSurpriseBox(any());
     }
 }
