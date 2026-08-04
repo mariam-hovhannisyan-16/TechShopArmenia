@@ -75,13 +75,56 @@ jobs:
             set -e
             cd ~/TechShopArmenia
 
+            # The server's HEAD right now is exactly what's actually running
+            # in the containers - capture it before pulling so we can diff
+            # against it below. This is more reliable than trusting a SHA
+            # from the GitHub event context, since it reflects what was
+            # really deployed last time, not just what was pushed.
+            PREVIOUS_SHA=$(git rev-parse HEAD)
+
             # Pull the latest code that just merged to main.
             git pull
+
+            NEW_SHA=$(git rev-parse HEAD)
 
             # Rebuild the jars on the server so each module's target/*.jar
             # matches the freshly pulled source (Dockerfiles COPY these in).
             mvn --batch-mode package -DskipTests
 
+            CHANGED_FILES=$(git diff --name-only "$PREVIOUS_SHA" "$NEW_SHA")
+
+            # techshop-common is a shared library every module depends on,
+            # and the root pom.xml / docker-compose.yml affect the whole
+            # build, so treat changes to any of those as "rebuild everything".
+            REBUILD_ALL=false
+            if echo "$CHANGED_FILES" | grep -qE '^(techshop-common/|pom\.xml$|docker-compose\.yml$)'; then
+              REBUILD_ALL=true
+            fi
+
+            SERVICES=""
+            if [ "$REBUILD_ALL" = false ]; then
+              for dir in $(echo "$CHANGED_FILES" | grep -oE '^techshop-[a-z]+' | sort -u); do
+                case "$dir" in
+                  techshop-user|techshop-cart|techshop-product|techshop-order|techshop-notification|techshop-wishlist|techshop-chat)
+                    SERVICES="$SERVICES $dir"
+                    ;;
+                esac
+              done
+            fi
+
             # Rebuild only the images whose sources changed and restart
             # those containers; unaffected services are left running.
-            docker compose up -d --build
+            if [ "$REBUILD_ALL" = true ]; then
+              echo "Shared module or build config changed - rebuilding all services"
+              docker compose up -d --build
+            elif [ -n "$SERVICES" ]; then
+              # --no-deps is required here: several services declare
+              # depends_on relationships on each other (e.g. techshop-cart
+              # depends on techshop-product), and without it "up --build"
+              # cascades into rebuilding/restarting those dependencies too,
+              # even though their code didn't change.
+              echo "Rebuilding changed services only:$SERVICES"
+              docker compose up -d --build --no-deps $SERVICES
+            else
+              echo "No service module changed - skipping container rebuild"
+            fi
