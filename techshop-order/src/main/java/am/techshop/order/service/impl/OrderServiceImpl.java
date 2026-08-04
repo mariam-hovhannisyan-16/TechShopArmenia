@@ -223,12 +223,6 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    // Order rows themselves are kept (not deleted) for accounting/business records, but
-    // the directly-identifying PII embedded on each order is redacted once the account
-    // behind it is gone. userId is intentionally left in place - it's just a numeric
-    // reference to a now-deleted account, not PII, and keeps the record traceable for
-    // audit purposes. City/state/postal code/country are kept too since they're useful
-    // for tax/accounting jurisdiction and aren't identifying on their own.
     public void anonymizeOrdersForUser(Long userId) {
         List<Order> orders = orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
         orders.forEach(order -> {

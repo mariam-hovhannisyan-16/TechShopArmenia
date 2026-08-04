@@ -163,8 +163,6 @@ public class ProductServiceImpl implements ProductService {
         List<PriceHistory> history = priceHistoryRepository.findByProductIdAndChangedAtAfterOrderByChangedAtAsc(
                 id, LocalDateTime.now().minusDays(90));
         if (history.size() < PricePredictionService.MIN_HISTORY_RECORDS) {
-            // The 90-day window came up too sparse to judge a trend from - widen to the
-            // product's full price history instead of giving up immediately.
             history = priceHistoryRepository.findByProductIdOrderByChangedAtAsc(id);
         }
 
@@ -181,7 +179,6 @@ public class ProductServiceImpl implements ProductService {
         Set<String> usedCategories = new HashSet<>();
         BigDecimal remaining = budget;
 
-        // First pass: one item per category, for variety, while budget allows.
         for (Product product : available) {
             if (!usedCategories.contains(product.getCategory()) && product.getPrice().compareTo(remaining) <= 0) {
                 selected.add(product);
@@ -191,7 +188,6 @@ public class ProductServiceImpl implements ProductService {
             }
         }
 
-        // Second pass: fill whatever budget is left with anything else that still fits.
         for (Product product : available) {
             if (selectedIds.contains(product.getId())) {
                 continue;

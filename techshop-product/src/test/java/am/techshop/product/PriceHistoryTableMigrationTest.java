@@ -28,9 +28,6 @@ class PriceHistoryTableMigrationTest {
         String jdbcUrl = "jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=PostgreSQL";
 
         try (Connection connection = DriverManager.getConnection(jdbcUrl, "sa", "")) {
-            // The products table itself is Hibernate-managed (ddl-auto), not created by
-            // Liquibase, but the 001 changeset in this changelog assumes it exists - so
-            // it's created here first, matching every real environment this runs in.
             connection.createStatement().execute("""
                     CREATE TABLE products (
                         id BIGINT PRIMARY KEY,
@@ -45,13 +42,10 @@ class PriceHistoryTableMigrationTest {
                     "db/changelog/db.changelog-master.xml", new ClassLoaderResourceAccessor(), database);
             liquibase.update(new Contexts());
 
-            // old_price is nullable (a product's very first price has no "old" price to
-            // record) - this must succeed.
             connection.createStatement().execute(
                     "INSERT INTO price_history (id, product_id, new_price, changed_at) " +
                             "VALUES (1, 42, 90.00, CURRENT_TIMESTAMP)");
 
-            // new_price is required - this must fail.
             assertThrows(SQLException.class, () ->
                     connection.createStatement().execute(
                             "INSERT INTO price_history (id, product_id, changed_at) " +

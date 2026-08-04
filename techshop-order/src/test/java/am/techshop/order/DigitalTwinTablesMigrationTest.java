@@ -49,15 +49,12 @@ class DigitalTwinTablesMigrationTest {
                     "db/changelog/db.changelog-master.xml", new ClassLoaderResourceAccessor(), database);
             liquibase.update(new Contexts());
 
-            // A digital twin referencing a real order item, with a required column
-            // omitted (product_name), must fail.
             assertThrows(SQLException.class, () ->
                     connection.createStatement().execute(
                             "INSERT INTO product_digital_twin (id, order_item_id, user_id, product_id, purchase_date, warranty_end_date) " +
                                     "VALUES (1, 10, 1, 100, CURRENT_DATE, CURRENT_DATE)"),
                     "product_name should be required");
 
-            // A well-formed row must succeed and cascade-delete when its order item is removed.
             connection.createStatement().execute(
                     "INSERT INTO product_digital_twin (id, order_item_id, user_id, product_id, product_name, purchase_date, warranty_end_date) " +
                             "VALUES (1, 10, 1, 100, 'Phone', CURRENT_DATE, CURRENT_DATE)");
