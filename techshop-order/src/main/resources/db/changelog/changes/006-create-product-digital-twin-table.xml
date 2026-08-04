@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="006-create-product-digital-twin-table" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="product_digital_twin"/>
+            </not>
+        </preConditions>
+        <createTable tableName="product_digital_twin">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="order_item_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="product_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="product_name" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="purchase_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="warranty_end_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="notes" type="TEXT"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="product_digital_twin" baseColumnNames="order_item_id"
+                                  constraintName="fk_digital_twin_order_item"
+                                  referencedTableName="order_items" referencedColumnNames="id"
+                                  onDelete="CASCADE"/>
+
+        <createIndex tableName="product_digital_twin" indexName="idx_digital_twin_user_id">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

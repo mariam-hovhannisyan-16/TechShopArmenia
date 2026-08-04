@@ -10,5 +10,7 @@
     <include file="db/changelog/changes/003-create-order-status-history-table.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/004-add-payment-columns-to-orders.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/005-add-installment-plan-columns-to-orders.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/006-create-product-digital-twin-table.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/007-create-digital-twin-repair-entry-table.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>
