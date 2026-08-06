@@ -5,11 +5,13 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <!-- The users table itself has always been managed by Hibernate's ddl-auto
-         (now `validate`); Liquibase is only introduced here for this one
-         change, which Hibernate can't express: enforcing email uniqueness at
-         the database level. Both changesets operate on the table, not create
-         it, so they assume it already exists. -->
+    <!-- The users table used to be created by Hibernate's ddl-auto (previously
+         `update`, now `validate`). Liquibase now owns creation too, via a
+         guarded changeset that no-ops if the table already exists (on an
+         existing deployment where Hibernate created it previously), so this
+         changelog works unmodified on both a fresh database and an existing
+         one. -->
+    <include file="db/changelog/changes/000-create-users-table.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/001-dedupe-users-by-email.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/002-add-unique-constraint-on-users-email.xml" relativeToChangelogFile="false"/>
 

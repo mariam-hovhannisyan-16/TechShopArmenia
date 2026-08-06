@@ -7,6 +7,9 @@ target/
 ### Env ###
 .env
 
+### DB backups (scripts/backup-db.sh output - contains real data, never commit) ###
+/backups/
+
 ### IntelliJ IDEA ###
 .idea/modules.xml
 .idea/jarRepositories.xml

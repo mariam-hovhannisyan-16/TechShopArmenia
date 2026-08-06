@@ -68,4 +68,27 @@ class UsersEmailUniqueConstraintMigrationTest {
                     "the unique constraint added by the migration should reject a fresh duplicate");
         }
     }
+
+    @Test
+    void changelog_CreatesUsersTableFromScratchOnFreshDatabase() throws Exception {
+        String jdbcUrl = "jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=PostgreSQL";
+
+        try (Connection connection = DriverManager.getConnection(jdbcUrl, "sa", "")) {
+            Database database = DatabaseFactory.getInstance()
+                    .findCorrectDatabaseImplementation(new JdbcConnection(connection));
+            Liquibase liquibase = new Liquibase(
+                    "db/changelog/db.changelog-master.xml", new ClassLoaderResourceAccessor(), database);
+            liquibase.update(new Contexts());
+
+            connection.createStatement().execute(
+                    "INSERT INTO users (id, email, name, password, role, email_verified, created_at) "
+                            + "VALUES (1, 'fresh@test.com', 'Fresh User', 'hash', 'CUSTOMER', false, CURRENT_TIMESTAMP)");
+
+            assertThrows(SQLException.class, () ->
+                    connection.createStatement().execute(
+                            "INSERT INTO users (id, email, name, password, role, email_verified, created_at) "
+                                    + "VALUES (2, 'fresh@test.com', 'Dup User', 'hash', 'CUSTOMER', false, CURRENT_TIMESTAMP)"),
+                    "the users table created from scratch must still get the unique email constraint");
+        }
+    }
 }

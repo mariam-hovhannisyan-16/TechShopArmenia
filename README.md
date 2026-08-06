@@ -90,13 +90,56 @@ you're done so the stack goes back to a single source of truth.
 
 ### Schema migrations
 
-- `techshop-order`, `techshop-chat`, and `techshop-wishlist` use **Liquibase**
+- `techshop-order`, `techshop-chat`, `techshop-wishlist`, and `techshop-user` use **Liquibase**
   (`ddl-auto: validate` — Liquibase owns the schema, Hibernate only checks the entities match it).
-- `techshop-user`, `techshop-product`, `techshop-cart`, and `techshop-notification` use plain
-  **Hibernate `ddl-auto: update`**.
+  `techshop-user`'s changelog includes a guarded `createTable` changeset so it creates the
+  `users` table from scratch on a fresh database, in addition to the dedupe/unique-constraint
+  changesets that assume the table already exists on an older deployment.
+- `techshop-product` and `techshop-cart` use plain **Hibernate `ddl-auto: update`**; so does
+  `techshop-notification`.
 - `techshop-product` additionally ships a small Liquibase changelog
   (`techshop-product/src/main/resources/db/changelog`) that runs *before* Hibernate's own schema
   update, solely to backfill NULLs in `products.is_new`/`products.stock` on any database that
   predates those columns being non-nullable — Hibernate can add a `NOT NULL` constraint, but it
   can't backfill existing rows first, so without this step `ddl-auto: update` fails outright
   against a table with existing NULL values in those columns.
+
+### Health check
+
+`scripts/health-check.sh` checks that all 7 services are accepting connections and responding to
+HTTP requests (any status code counts as "up" - none of these services expose Spring Boot
+Actuator, so a 401/403 from an auth-protected endpoint is still a valid sign the service is
+running; only a connection failure or timeout counts as "down"). Run it manually:
+
+```bash
+./scripts/health-check.sh                    # checks localhost
+HOST=<server-ip-or-domain> ./scripts/health-check.sh   # checks a remote host
+```
+
+It exits non-zero if any service failed to respond, so it can be wired into cron with a mailer -
+see the comment at the top of the script for a ready-to-use crontab line.
+
+### Database backups
+
+There is currently no backup strategy beyond the Postgres data volume itself - if that volume is
+ever lost or corrupted, all data (users, orders, products, everything) goes with it. At minimum,
+back it up periodically with `scripts/backup-db.sh`, which runs `pg_dump` against each of the 7
+per-service databases and writes timestamped, gzipped dumps (kept for 14 days by default) to a
+local `backups/` directory - deliberately gitignored, since dumps contain real user data:
+
+```bash
+./scripts/backup-db.sh                        # dumps into ./backups
+BACKUP_DIR=/mnt/backups ./scripts/backup-db.sh # dump somewhere else, e.g. a mounted volume
+```
+
+Suggested crontab entry for a nightly backup at 3am on the server:
+
+```
+0 3 * * * cd /home/ubuntu/TechShopArmenia && ./scripts/backup-db.sh >> /var/log/techshop-backup.log 2>&1
+```
+
+This is a minimum-viable starting point, not a complete disaster-recovery plan: dumps are stored
+on the same host as the database they're backing up, so they don't protect against the server
+itself being lost (only against a bad migration, accidental data deletion, or Postgres-level
+corruption). Copying the `backups/` directory off-host (e.g. to S3) on the same schedule is the
+natural next step.

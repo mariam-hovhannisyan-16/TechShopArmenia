@@ -33,6 +33,8 @@ import am.techshop.order.repository.OrderRepository;
 import am.techshop.order.service.DigitalTwinService;
 import am.techshop.order.service.impl.OrderServiceImpl;
 import am.techshop.order.stock.StockReservationService;
+import feign.FeignException;
+import feign.RetryableException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -238,6 +240,37 @@ class OrderServiceImplTest {
         assertEquals(400, ex.getStatusCode());
         verify(orderRepository, never()).save(any());
         verify(stockReservationService, never()).reserve(any());
+    }
+
+    @Test
+    void checkout_WhenUserHasNoCart_ThrowsCartIsEmptyInsteadOfLeakingFeignException() {
+        when(cartClient.getCart(eq(USER_ID), any()))
+                .thenThrow(new FeignException.NotFound("Cart not found", request(), null, null));
+
+        TechShopException ex = assertThrows(TechShopException.class,
+                () -> orderService.checkout(USER_ID, new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null)));
+
+        assertEquals(400, ex.getStatusCode());
+        verify(orderRepository, never()).save(any());
+        verify(stockReservationService, never()).reserve(any());
+    }
+
+    @Test
+    void checkout_WhenCartServiceUnreachable_ThrowsServiceUnavailable() {
+        when(cartClient.getCart(eq(USER_ID), any()))
+                .thenThrow(new RetryableException(-1, "Connection refused", feign.Request.HttpMethod.GET, (Long) null, request()));
+
+        TechShopException ex = assertThrows(TechShopException.class,
+                () -> orderService.checkout(USER_ID, new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null)));
+
+        assertEquals(503, ex.getStatusCode());
+        verify(orderRepository, never()).save(any());
+        verify(stockReservationService, never()).reserve(any());
+    }
+
+    private static feign.Request request() {
+        return feign.Request.create(feign.Request.HttpMethod.GET, "/api/cart/1",
+                java.util.Map.of(), null, java.nio.charset.StandardCharsets.UTF_8, null);
     }
 
     @Test

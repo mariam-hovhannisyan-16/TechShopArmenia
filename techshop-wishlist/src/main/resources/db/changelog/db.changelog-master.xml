@@ -7,5 +7,6 @@
 
     <include file="db/changelog/changes/001-create-wishlist-table.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/002-create-wishlist-items-table.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/003-add-wishlist-items-product-id-index.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

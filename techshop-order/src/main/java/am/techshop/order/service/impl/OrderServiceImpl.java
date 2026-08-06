@@ -58,7 +58,7 @@ public class OrderServiceImpl implements OrderService {
     private String internalApiKey;
 
     public OrderResponse checkout(Long userId, CheckoutRequest request) {
-        CartResponse cart = cartClient.getCart(userId, internalApiKey).data();
+        CartResponse cart = fetchCart(userId);
 
         if (cart.items().isEmpty()) {
             throw new TechShopException("Cart is empty", 400);
@@ -181,6 +181,20 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new TechShopException("Order not found", 404));
         applyTransition(order, request.status(), request.note());
         return orderMapper.toResponse(orderRepository.save(order));
+    }
+
+    private CartResponse fetchCart(Long userId) {
+        try {
+            var response = cartClient.getCart(userId, internalApiKey);
+            if (response == null || response.data() == null) {
+                throw new TechShopException("Cart is empty", 400);
+            }
+            return response.data();
+        } catch (FeignException.NotFound ex) {
+            throw new TechShopException("Cart is empty", 400);
+        } catch (FeignException ex) {
+            throw new TechShopException("Cart service unavailable", 503);
+        }
     }
 
     private Order getOwnedOrder(Long userId, Long id) {
