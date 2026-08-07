@@ -42,22 +42,22 @@ public class CatalogSeeder implements ApplicationRunner {
                     storageOption("256GB", "40000.00"),
                     storageOption("512GB", "80000.00")));
 
+            String proDeepBlueUrl = "https://prod-cdn.prod.asbis.io/s3size/el:t/f:webp/rt:fill/w:900/plain/s3://cms/product/be/d2/bed2ebac62b52c2580a68b9e0d67d995/250915140029572558.webp";
             Product iphone17Pro = seedProduct("iPhone 17 Pro", "Apple iPhone 17 Pro with A19 Pro chip and titanium design.",
-                    new BigDecimal("620000.00"), 18, "Phones",
-                    "https://images.unsplash.com/photo-1759588071781-2c3ba9128497?w=900&q=82&fit=crop&auto=format", true);
+                    new BigDecimal("620000.00"), 18, "Phones", proDeepBlueUrl, true);
             applyIphone17ProVariants(iphone17Pro,
-                    "https://images.unsplash.com/photo-1609692814858-f7cd2f0afa4f?w=900&q=82&fit=crop&auto=format",
-                    "https://images.unsplash.com/photo-1759588071781-2c3ba9128497?w=900&q=82&fit=crop&auto=format",
-                    "https://images.unsplash.com/photo-1711967299865-c88350fddb70?w=900&q=82&fit=crop&auto=format");
+                    "https://prod-cdn.prod.asbis.io/s3size/el:t/f:webp/rt:fill/w:900/plain/s3://cms/product/8a/8a/8a8ae008f8b519511bfc41e8d16b6f81/250915140023667226.webp",
+                    "https://prod-cdn.prod.asbis.io/s3size/el:t/f:webp/rt:fill/w:900/plain/s3://cms/product/a9/6c/a96c19277c05e15cfeeacee84a370ba0/250915140025661602.webp",
+                    proDeepBlueUrl);
 
+            String proMaxDeepBlueUrl = "https://prod-cdn.prod.asbis.io/s3size/el:t/f:webp/rt:fill/w:900/plain/s3://cms/product/41/49/4149198f1713e718ba920b85acffb4f4/250915140038367093.webp";
             Product iphone17ProMax = seedProduct("iPhone 17 Pro Max",
                     "Apple iPhone 17 Pro Max with A19 Pro chip, titanium design, and the largest display in the lineup.",
-                    new BigDecimal("690000.00"), 14, "Phones",
-                    "https://images.unsplash.com/photo-1759588071838-d560be56b2a2?w=900&q=82&fit=crop&auto=format", true);
+                    new BigDecimal("690000.00"), 14, "Phones", proMaxDeepBlueUrl, true);
             applyIphone17ProVariants(iphone17ProMax,
-                    "https://images.unsplash.com/photo-1596558450268-9c27524ba856?w=900&q=82&fit=crop&auto=format",
-                    "https://images.unsplash.com/photo-1694570149728-b1011c2a772b?w=900&q=82&fit=crop&auto=format",
-                    "https://images.unsplash.com/photo-1604194868790-e98f6e9c5ed4?w=900&q=82&fit=crop&auto=format");
+                    "https://prod-cdn.prod.asbis.io/s3size/el:t/f:webp/rt:fill/w:900/plain/s3://cms/product/2d/22/2d22e5e521d6491cf0dd8c0c8a47f2eb/250915140013863146.webp",
+                    "https://prod-cdn.prod.asbis.io/s3size/el:t/f:webp/rt:fill/w:900/plain/s3://cms/product/a3/44/a34423b7b08300fde0625964a0130f66/250915140035204152.webp",
+                    proMaxDeepBlueUrl);
 
             productRepository.saveAll(List.of(
                     iphone15,
@@ -87,14 +87,14 @@ public class CatalogSeeder implements ApplicationRunner {
         return productMapper.toEntity(new ProductRequest(name, description, price, stock, category, imageUrl, isNew));
     }
 
-    private void applyIphone17ProVariants(Product product, String spaceGrayImageUrl, String silverImageUrl, String deepBlueImageUrl) {
+    private void applyIphone17ProVariants(Product product, String cosmicOrangeImageUrl, String silverImageUrl, String deepBlueImageUrl) {
         product.setStorageOptions(List.of(
                 storageOption("256GB", "0.00"),
                 storageOption("512GB", "50000.00"),
                 storageOption("1TB", "100000.00")));
         product.setSimOptions(List.of("Dual eSIM", "Nano-SIM & eSIM"));
         product.setColorVariants(List.of(
-                colorVariant("Space Gray", spaceGrayImageUrl),
+                colorVariant("Cosmic Orange", cosmicOrangeImageUrl),
                 colorVariant("Silver", silverImageUrl),
                 colorVariant("Deep Blue", deepBlueImageUrl)));
     }

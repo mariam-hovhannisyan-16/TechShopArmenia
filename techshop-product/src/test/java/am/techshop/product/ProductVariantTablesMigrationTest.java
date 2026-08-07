@@ -23,7 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * full products table (matching the real schema, unlike the other migration tests in this
  * package which only include the handful of columns their own changeset needs), confirming
  * changesets 004/005 create the three variant tables and seed iPhone 17 Pro / Pro Max with
- * the expected storage/sim/color rows, plus backfill iPhone 15's storage options.
+ * the expected storage/sim/color rows (as corrected by changeset 006 - "Cosmic Orange" instead
+ * of "Space Gray", ispace.am product photos instead of the original Unsplash picks), plus
+ * backfill iPhone 15's storage options.
  */
 class ProductVariantTablesMigrationTest {
 
@@ -60,21 +62,26 @@ class ProductVariantTablesMigrationTest {
             Long proId = productId(connection, "iPhone 17 Pro");
             assertEquals(List.of("256GB", "512GB", "1TB"), storageLabels(connection, proId));
             assertEquals(List.of("Dual eSIM", "Nano-SIM & eSIM"), simValues(connection, proId));
-            assertEquals(List.of("Space Gray", "Silver", "Deep Blue"), colorLabels(connection, proId));
+            assertEquals(List.of("Cosmic Orange", "Silver", "Deep Blue"), colorLabels(connection, proId));
 
             Long proMaxId = productId(connection, "iPhone 17 Pro Max");
             assertEquals(List.of("256GB", "512GB", "1TB"), storageLabels(connection, proMaxId));
             assertEquals(List.of("Dual eSIM", "Nano-SIM & eSIM"), simValues(connection, proMaxId));
-            assertEquals(List.of("Space Gray", "Silver", "Deep Blue"), colorLabels(connection, proMaxId));
+            assertEquals(List.of("Cosmic Orange", "Silver", "Deep Blue"), colorLabels(connection, proMaxId));
 
-            // Every color variant image must be a real, absolute Unsplash CDN URL - not a
+            // Every color variant image must be a real, absolute product photo CDN URL - not a
             // frontend-style placeholder/illustration path.
             for (Long id : List.of(proId, proMaxId)) {
                 for (String imageUrl : colorImageUrls(connection, id)) {
-                    assertTrue(imageUrl.startsWith("https://images.unsplash.com/photo-"),
-                            "color variant image should be a real Unsplash photo URL, was: " + imageUrl);
+                    assertTrue(imageUrl.startsWith("https://prod-cdn.prod.asbis.io/"),
+                            "color variant image should be a real ispace.am product photo URL, was: " + imageUrl);
                 }
             }
+
+            // The main product image and the "Deep Blue" color variant should be the same photo -
+            // Deep Blue is the default-selected color on the frontend.
+            assertEquals(mainImageUrl(connection, proId), colorImageUrl(connection, proId, "Deep Blue"));
+            assertEquals(mainImageUrl(connection, proMaxId), colorImageUrl(connection, proMaxId, "Deep Blue"));
 
             Long iphone15Id = productId(connection, "iPhone 15, 128GB");
             assertEquals(List.of("128GB", "256GB", "512GB"), storageLabels(connection, iphone15Id));
@@ -126,6 +133,23 @@ class ProductVariantTablesMigrationTest {
     private List<String> colorImageUrls(Connection connection, Long productId) throws Exception {
         return column(connection,
                 "SELECT image_url FROM product_color_variants WHERE product_id = " + productId + " ORDER BY sort_order");
+    }
+
+    private String mainImageUrl(Connection connection, Long productId) throws Exception {
+        try (ResultSet rs = connection.createStatement().executeQuery(
+                "SELECT image_url FROM products WHERE id = " + productId)) {
+            assertTrue(rs.next());
+            return rs.getString(1);
+        }
+    }
+
+    private String colorImageUrl(Connection connection, Long productId, String label) throws Exception {
+        try (ResultSet rs = connection.createStatement().executeQuery(
+                "SELECT image_url FROM product_color_variants WHERE product_id = " + productId
+                        + " AND label = '" + label.replace("'", "''") + "'")) {
+            assertTrue(rs.next(), "color variant " + label + " should exist");
+            return rs.getString(1);
+        }
     }
 
     private List<String> column(Connection connection, String sql) throws Exception {

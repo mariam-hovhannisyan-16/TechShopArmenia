@@ -10,5 +10,6 @@
     <include file="db/changelog/changes/003-update-product-image-urls.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/004-create-product-variant-tables.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/005-seed-iphone-17-products.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/006-fix-iphone-17-images.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

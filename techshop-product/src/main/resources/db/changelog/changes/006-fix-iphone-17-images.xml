@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- 005-seed-iphone-17-products.xml already ran in production, so its changesets can't be
+         edited in place (Liquibase would reject the checksum mismatch on the next deploy).
+         This is a follow-up correction, the same way 003-update-product-image-urls.xml corrected
+         003's own predecessors: the Unsplash color-variant photos it seeded didn't reliably show
+         the right product (lifestyle shots with unrelated props, inconsistent framing across the
+         three colors, one crop too tight to show the phone's body). Replaces them with a matched,
+         consistently-framed set of real product photos from an Armenian Apple retailer (ispace.am),
+         and renames the "Space Gray" option to "Cosmic Orange" - the photos are of that color, and
+         Space Gray never had a genuinely matching image to begin with. Also switches each product's
+         main image to the Deep Blue photo, matching the default-selected color already used by the
+         frontend. -->
+    <changeSet id="006-fix-iphone-17-pro-images" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_color_variants"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <sqlCheck expectedResult="1">SELECT COUNT(*) FROM products WHERE name = 'iPhone 17 Pro'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            UPDATE products
+            SET image_url = 'https://prod-cdn.prod.asbis.io/s3size/el:t/f:webp/rt:fill/w:900/plain/s3://cms/product/be/d2/bed2ebac62b52c2580a68b9e0d67d995/250915140029572558.webp'
+            WHERE name = 'iPhone 17 Pro';
+
+            UPDATE product_color_variants
+            SET label = 'Cosmic Orange',
+                image_url = 'https://prod-cdn.prod.asbis.io/s3size/el:t/f:webp/rt:fill/w:900/plain/s3://cms/product/8a/8a/8a8ae008f8b519511bfc41e8d16b6f81/250915140023667226.webp'
+            WHERE product_id = (SELECT id FROM products WHERE name = 'iPhone 17 Pro') AND label = 'Space Gray';
+
+            UPDATE product_color_variants
+            SET image_url = 'https://prod-cdn.prod.asbis.io/s3size/el:t/f:webp/rt:fill/w:900/plain/s3://cms/product/a9/6c/a96c19277c05e15cfeeacee84a370ba0/250915140025661602.webp'
+            WHERE product_id = (SELECT id FROM products WHERE name = 'iPhone 17 Pro') AND label = 'Silver';
+
+            UPDATE product_color_variants
+            SET image_url = 'https://prod-cdn.prod.asbis.io/s3size/el:t/f:webp/rt:fill/w:900/plain/s3://cms/product/be/d2/bed2ebac62b52c2580a68b9e0d67d995/250915140029572558.webp'
+            WHERE product_id = (SELECT id FROM products WHERE name = 'iPhone 17 Pro') AND label = 'Deep Blue';
+        </sql>
+    </changeSet>
+
+    <changeSet id="006-fix-iphone-17-pro-max-images" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_color_variants"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <sqlCheck expectedResult="1">SELECT COUNT(*) FROM products WHERE name = 'iPhone 17 Pro Max'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            UPDATE products
+            SET image_url = 'https://prod-cdn.prod.asbis.io/s3size/el:t/f:webp/rt:fill/w:900/plain/s3://cms/product/41/49/4149198f1713e718ba920b85acffb4f4/250915140038367093.webp'
+            WHERE name = 'iPhone 17 Pro Max';
+
+            UPDATE product_color_variants
+            SET label = 'Cosmic Orange',
+                image_url = 'https://prod-cdn.prod.asbis.io/s3size/el:t/f:webp/rt:fill/w:900/plain/s3://cms/product/2d/22/2d22e5e521d6491cf0dd8c0c8a47f2eb/250915140013863146.webp'
+            WHERE product_id = (SELECT id FROM products WHERE name = 'iPhone 17 Pro Max') AND label = 'Space Gray';
+
+            UPDATE product_color_variants
+            SET image_url = 'https://prod-cdn.prod.asbis.io/s3size/el:t/f:webp/rt:fill/w:900/plain/s3://cms/product/a3/44/a34423b7b08300fde0625964a0130f66/250915140035204152.webp'
+            WHERE product_id = (SELECT id FROM products WHERE name = 'iPhone 17 Pro Max') AND label = 'Silver';
+
+            UPDATE product_color_variants
+            SET image_url = 'https://prod-cdn.prod.asbis.io/s3size/el:t/f:webp/rt:fill/w:900/plain/s3://cms/product/41/49/4149198f1713e718ba920b85acffb4f4/250915140038367093.webp'
+            WHERE product_id = (SELECT id FROM products WHERE name = 'iPhone 17 Pro Max') AND label = 'Deep Blue';
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
