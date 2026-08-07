@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- These three tables back the Product entity's @ElementCollection fields
+         (storageOptions/simOptions/colorVariants), and each is guarded on `products`
+         already existing - unlike orders/users, `products` is Hibernate ddl-auto:update
+         owned, not Liquibase owned, so on a genuinely fresh database it does not exist
+         yet at this point (Liquibase always runs before Hibernate's schema update in
+         this service, same as 001/003 above). On a fresh install these changesets no-op
+         and Hibernate creates all three tables itself as part of creating `products`,
+         then CatalogSeeder seeds everything (including the iPhone 17 Pro/Pro Max rows
+         from 005-seed-iphone-17-products.xml) through JPA. On an existing/already-seeded
+         database `products` already exists, so these changesets run for real and 005's
+         seed-data changesets pick up from there. Each table uses the composite primary
+         key (product_id, sort_order) that Hibernate itself generates for an
+         @ElementCollection with @OrderColumn, so ddl-auto:update finds a schema that
+         already matches when these do run and makes no changes. -->
+    <changeSet id="004-create-product-storage-options-table" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="products"/>
+        </preConditions>
+        <createTable tableName="product_storage_options">
+            <column name="product_id" type="BIGINT">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="sort_order" type="INT">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="label" type="VARCHAR(255)"/>
+            <column name="price_delta" type="DECIMAL(19,2)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="product_storage_options" baseColumnNames="product_id"
+                                  constraintName="fk_storage_option_product"
+                                  referencedTableName="products" referencedColumnNames="id"
+                                  onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="004-create-product-sim-options-table" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="products"/>
+        </preConditions>
+        <createTable tableName="product_sim_options">
+            <column name="product_id" type="BIGINT">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="sort_order" type="INT">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="sim_value" type="VARCHAR(255)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="product_sim_options" baseColumnNames="product_id"
+                                  constraintName="fk_sim_option_product"
+                                  referencedTableName="products" referencedColumnNames="id"
+                                  onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="004-create-product-color-variants-table" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="products"/>
+        </preConditions>
+        <createTable tableName="product_color_variants">
+            <column name="product_id" type="BIGINT">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="sort_order" type="INT">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="label" type="VARCHAR(255)"/>
+            <column name="image_url" type="VARCHAR(255)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="product_color_variants" baseColumnNames="product_id"
+                                  constraintName="fk_color_variant_product"
+                                  referencedTableName="products" referencedColumnNames="id"
+                                  onDelete="CASCADE"/>
+    </changeSet>
+
+</databaseChangeLog>

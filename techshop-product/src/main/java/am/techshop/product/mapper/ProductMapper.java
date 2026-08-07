@@ -16,5 +16,8 @@ public interface ProductMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "discountPercentage", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "storageOptions", ignore = true)
+    @Mapping(target = "simOptions", ignore = true)
+    @Mapping(target = "colorVariants", ignore = true)
     Product toEntity(ProductRequest request);
 }

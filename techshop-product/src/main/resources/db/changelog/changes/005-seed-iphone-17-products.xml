@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- CatalogSeeder (the ApplicationRunner) only seeds when the products table is
+         completely empty, so it never reaches an already-seeded deployment. These two
+         new catalog products - and the storage-option backfill for the existing
+         iPhone 15 - go through Liquibase instead, the same way 003-update-product-image-urls.xml
+         already fixes up existing seeded rows. Each child-row insert looks its parent's id
+         back up by name (SELECT ... FROM products WHERE name = ...) rather than capturing
+         the generated id via a PL/pgSQL DO block, deliberately - this service's migration
+         tests run against H2 in PostgreSQL-compatibility mode, which doesn't support
+         PL/pgSQL procedural blocks, and product names are unique in practice for seed data. -->
+
+    <changeSet id="005-seed-iphone-17-pro" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <tableExists tableName="product_sim_options"/>
+                <tableExists tableName="product_color_variants"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'iPhone 17 Pro'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('iPhone 17 Pro', 'Apple iPhone 17 Pro with A19 Pro chip and titanium design.',
+                    620000.00, 18, 'Phones',
+                    'https://images.unsplash.com/photo-1759588071781-2c3ba9128497?w=900&amp;q=82&amp;fit=crop&amp;auto=format',
+                    true, NULL, CURRENT_TIMESTAMP);
+
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 0, '256GB', 0.00 FROM products WHERE name = 'iPhone 17 Pro';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 1, '512GB', 50000.00 FROM products WHERE name = 'iPhone 17 Pro';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 2, '1TB', 100000.00 FROM products WHERE name = 'iPhone 17 Pro';
+
+            INSERT INTO product_sim_options (product_id, sort_order, sim_value)
+            SELECT id, 0, 'Dual eSIM' FROM products WHERE name = 'iPhone 17 Pro';
+            INSERT INTO product_sim_options (product_id, sort_order, sim_value)
+            SELECT id, 1, 'Nano-SIM &amp; eSIM' FROM products WHERE name = 'iPhone 17 Pro';
+
+            INSERT INTO product_color_variants (product_id, sort_order, label, image_url)
+            SELECT id, 0, 'Space Gray', 'https://images.unsplash.com/photo-1609692814858-f7cd2f0afa4f?w=900&amp;q=82&amp;fit=crop&amp;auto=format' FROM products WHERE name = 'iPhone 17 Pro';
+            INSERT INTO product_color_variants (product_id, sort_order, label, image_url)
+            SELECT id, 1, 'Silver', 'https://images.unsplash.com/photo-1759588071781-2c3ba9128497?w=900&amp;q=82&amp;fit=crop&amp;auto=format' FROM products WHERE name = 'iPhone 17 Pro';
+            INSERT INTO product_color_variants (product_id, sort_order, label, image_url)
+            SELECT id, 2, 'Deep Blue', 'https://images.unsplash.com/photo-1711967299865-c88350fddb70?w=900&amp;q=82&amp;fit=crop&amp;auto=format' FROM products WHERE name = 'iPhone 17 Pro';
+        </sql>
+    </changeSet>
+
+    <changeSet id="005-seed-iphone-17-pro-max" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <tableExists tableName="product_sim_options"/>
+                <tableExists tableName="product_color_variants"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'iPhone 17 Pro Max'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('iPhone 17 Pro Max', 'Apple iPhone 17 Pro Max with A19 Pro chip, titanium design, and the largest display in the lineup.',
+                    690000.00, 14, 'Phones',
+                    'https://images.unsplash.com/photo-1759588071838-d560be56b2a2?w=900&amp;q=82&amp;fit=crop&amp;auto=format',
+                    true, NULL, CURRENT_TIMESTAMP);
+
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 0, '256GB', 0.00 FROM products WHERE name = 'iPhone 17 Pro Max';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 1, '512GB', 50000.00 FROM products WHERE name = 'iPhone 17 Pro Max';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 2, '1TB', 100000.00 FROM products WHERE name = 'iPhone 17 Pro Max';
+
+            INSERT INTO product_sim_options (product_id, sort_order, sim_value)
+            SELECT id, 0, 'Dual eSIM' FROM products WHERE name = 'iPhone 17 Pro Max';
+            INSERT INTO product_sim_options (product_id, sort_order, sim_value)
+            SELECT id, 1, 'Nano-SIM &amp; eSIM' FROM products WHERE name = 'iPhone 17 Pro Max';
+
+            INSERT INTO product_color_variants (product_id, sort_order, label, image_url)
+            SELECT id, 0, 'Space Gray', 'https://images.unsplash.com/photo-1596558450268-9c27524ba856?w=900&amp;q=82&amp;fit=crop&amp;auto=format' FROM products WHERE name = 'iPhone 17 Pro Max';
+            INSERT INTO product_color_variants (product_id, sort_order, label, image_url)
+            SELECT id, 1, 'Silver', 'https://images.unsplash.com/photo-1694570149728-b1011c2a772b?w=900&amp;q=82&amp;fit=crop&amp;auto=format' FROM products WHERE name = 'iPhone 17 Pro Max';
+            INSERT INTO product_color_variants (product_id, sort_order, label, image_url)
+            SELECT id, 2, 'Deep Blue', 'https://images.unsplash.com/photo-1604194868790-e98f6e9c5ed4?w=900&amp;q=82&amp;fit=crop&amp;auto=format' FROM products WHERE name = 'iPhone 17 Pro Max';
+        </sql>
+    </changeSet>
+
+    <changeSet id="005-backfill-iphone-15-storage-options" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM product_storage_options
+                    WHERE product_id IN (SELECT id FROM products WHERE name = 'iPhone 15, 128GB')
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 0, '128GB', 0.00 FROM products WHERE name = 'iPhone 15, 128GB';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 1, '256GB', 40000.00 FROM products WHERE name = 'iPhone 15, 128GB';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 2, '512GB', 80000.00 FROM products WHERE name = 'iPhone 15, 128GB';
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
