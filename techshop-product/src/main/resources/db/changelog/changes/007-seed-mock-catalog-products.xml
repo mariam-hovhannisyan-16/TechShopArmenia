@@ -1,0 +1,1381 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Backfills the rest of the catalog that previously only existed in the frontend's
+         mock/dev-fallback data (techshop-frontend's product.ts MOCK_PRODUCTS array), so
+         production serves the full 65-product assortment instead of the original 6 plus the
+         iPhone 17 Pro/Pro Max pair from 005/006. 5 of the 65 mock entries share an exact name
+         with a product already seeded here (Samsung Galaxy S24, MacBook Air M2, Sony WH-1000XM5,
+         iPhone 17 Pro, iPhone 17 Pro Max) and are deliberately skipped - the iPhone 17 pair in
+         particular already carries the verified per-color photos from 006, which are better than
+         the stale placeholder images still in the mock source at time of writing, so re-inserting
+         them would create name duplicates and regress those images. Each changeset follows the
+         same by-name idempotency pattern as 005: preConditions gate on the products/columns
+         existing and on the product not already existing by name, onFail="MARK_RAN" so this is a
+         no-op both on a genuinely fresh database (products doesn't exist yet - created later by
+         Hibernate, then CatalogSeeder seeds everything including these 60 products through JPA)
+         and against any other test/migration-path schema that doesn't have the full product
+         column set yet. Child rows are looked up by name rather than a captured generated id,
+         for the same H2 PL/pgSQL-support reason documented in 005. Mock entries have no
+         `category` field at all (the frontend never sets one); categories below are inferred
+         from product type, reusing the 5 existing category names where they fit
+         (Phones/Laptops/TVs/Audio/Cameras) and introducing Tablets/Gaming/Monitors/Accessories
+         for product types the existing taxonomy didn't cover - see the categories seed changeset
+         below, which adds only the categories that don't already exist in that table so the
+         frontend's category filter has something to match against. `is_new` mirrors the mock's
+         `badge: 'new'` flag; discount_percentage is NULL for all of them, same as every other
+         seeded product. -->
+
+    <changeSet id="007-seed-additional-categories" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="categories"/>
+        </preConditions>
+        <sql>
+            INSERT INTO categories (name) SELECT 'Tablets' WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Tablets');
+            INSERT INTO categories (name) SELECT 'Gaming' WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Gaming');
+            INSERT INTO categories (name) SELECT 'Monitors' WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Monitors');
+            INSERT INTO categories (name) SELECT 'Accessories' WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Accessories');
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1001" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'iPhone 15 Pro'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('iPhone 15 Pro', 'Ֆլագման սմարթֆոն 128GB հիշողությամբ', 650000.00, 12, 'Phones',
+                    'https://images.unsplash.com/photo-1616348436168-de43ad0db179?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 0, '128GB', 0.00 FROM products WHERE name = 'iPhone 15 Pro';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 1, '256GB', 50000.00 FROM products WHERE name = 'iPhone 15 Pro';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 2, '512GB', 100000.00 FROM products WHERE name = 'iPhone 15 Pro';
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1004" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'ASUS ROG Notebook'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('ASUS ROG Notebook', 'Հզոր laptop՝ բարձր արտադրողականությամբ պրոցեսորով', 760000.00, 4, 'Laptops',
+                    'https://images.unsplash.com/photo-1771015310937-6754da25e49a?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1006" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'AirPods Pro'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('AirPods Pro', 'Անլար earbud ականջակալներ', 115000.00, 30, 'Audio',
+                    'https://images.unsplash.com/photo-1606741965429-8d76ff50bb2f?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1007" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Samsung 55" QLED TV'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Samsung 55" QLED TV', 'Հեռուստացույց 4K լուծաչափով', 410000.00, 6, 'TVs',
+                    'https://images.unsplash.com/photo-1615986200762-a1ed9610d3b1?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1008" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'JBL Flip Portable Speaker'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('JBL Flip Portable Speaker', 'Փոխադրելի Bluetooth speaker', 78000.00, 10, 'Audio',
+                    'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1009" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Canon EOS Camera'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Canon EOS Camera', 'Ֆոտո camera սիրողականների համար', 410000.00, 7, 'Cameras',
+                    'https://images.unsplash.com/photo-1500634245200-e5245c7574ef?w=900&amp;q=82&amp;fit=crop&amp;auto=format', true, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1010" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'GoPro Hero 12'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('GoPro Hero 12', 'Video action camera', 235000.00, 15, 'Cameras',
+                    'https://images.unsplash.com/photo-1604942177421-df466b7410f6?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1011" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Samsung 27" Monitor'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Samsung 27" Monitor', 'Մոնիտոր՝ QHD լուծաչափով, բարձր թարմացման հաճախությամբ', 175000.00, 9, 'Monitors',
+                    'https://images.unsplash.com/photo-1666771410255-158c17cf8ff8?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1012" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'iPad Air'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('iPad Air', 'Պլանշետ՝ M1 չիպով և Apple Pencil աջակցությամբ', 420000.00, 11, 'Tablets',
+                    'https://images.unsplash.com/photo-1527698266440-12104e498b76?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 0, '128GB', -50000.00 FROM products WHERE name = 'iPad Air';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 1, '256GB', 0.00 FROM products WHERE name = 'iPad Air';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 2, '512GB', 50000.00 FROM products WHERE name = 'iPad Air';
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1013" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Apple Magic Keyboard'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Apple Magic Keyboard', 'Անլար ստեղնաշար աքսեսուար', 58000.00, 25, 'Accessories',
+                    'https://images.unsplash.com/photo-1510674485131-dc88d96369b4?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1014" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Sony PlayStation 5'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Sony PlayStation 5', 'Խաղային կոնսուլ 825GB կրիչով', 285000.00, 8, 'Gaming',
+                    'https://images.unsplash.com/photo-1607853202273-797f1c22a38e?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1015" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Microsoft Xbox Series X'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Microsoft Xbox Series X', 'Խաղային կոնսուլ 1TB կրիչով', 290000.00, 6, 'Gaming',
+                    'https://images.unsplash.com/photo-1621259182978-fbf93132d53d?w=900&amp;q=82&amp;fit=crop&amp;auto=format', true, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1016" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'DualSense Wireless Controller'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('DualSense Wireless Controller', 'Անլար խաղային վահանակ՝ հագեցած հպումային արձագանքով', 42000.00, 22, 'Gaming',
+                    'https://images.unsplash.com/photo-1649875951914-61057a5df533?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1017" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'HyperX Cloud Gaming Headset'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('HyperX Cloud Gaming Headset', 'Ականջակալ՝ մարտկոցի երկար կյանքով և հստակ ձայնով', 70000.00, 14, 'Audio',
+                    'https://images.unsplash.com/photo-1612858249784-5883876e0d52?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1018" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'ASUS TUF Gaming Curved Monitor'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('ASUS TUF Gaming Curved Monitor', 'Մոնիտոր՝ 165Hz թարմացման հաճախությամբ և կորացած էկրանով', 270000.00, 7, 'Monitors',
+                    'https://images.unsplash.com/photo-1666771410003-8437c4781d49?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1019" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Google Pixel 8'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Google Pixel 8', 'Android հեռախոս 128GB հիշողությամբ', 430000.00, 10, 'Phones',
+                    'https://images.unsplash.com/photo-1760604359549-8921b6139a1c?w=900&amp;q=82&amp;fit=crop&amp;auto=format', true, NULL, CURRENT_TIMESTAMP);
+
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 0, '128GB', 0.00 FROM products WHERE name = 'Google Pixel 8';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 1, '256GB', 50000.00 FROM products WHERE name = 'Google Pixel 8';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 2, '512GB', 100000.00 FROM products WHERE name = 'Google Pixel 8';
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1020" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Xiaomi 14'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Xiaomi 14', 'Android հեռախոս 256GB հիշողությամբ', 500000.00, 9, 'Phones',
+                    'https://images.unsplash.com/photo-1773414422122-96165e640180?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 0, '128GB', -50000.00 FROM products WHERE name = 'Xiaomi 14';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 1, '256GB', 0.00 FROM products WHERE name = 'Xiaomi 14';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 2, '512GB', 50000.00 FROM products WHERE name = 'Xiaomi 14';
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1021" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'OnePlus 12'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('OnePlus 12', 'Արագագործ հեռախոս 256GB հիշողությամբ', 495000.00, 7, 'Phones',
+                    'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 0, '128GB', -50000.00 FROM products WHERE name = 'OnePlus 12';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 1, '256GB', 0.00 FROM products WHERE name = 'OnePlus 12';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 2, '512GB', 50000.00 FROM products WHERE name = 'OnePlus 12';
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1022" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Samsung Galaxy A55'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Samsung Galaxy A55', 'Մատչելի Android սմարթֆոն', 235000.00, 15, 'Phones',
+                    'https://images.unsplash.com/photo-1653179767387-35ce2dbdbb5d?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 0, '128GB', 0.00 FROM products WHERE name = 'Samsung Galaxy A55';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 1, '256GB', 50000.00 FROM products WHERE name = 'Samsung Galaxy A55';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 2, '512GB', 100000.00 FROM products WHERE name = 'Samsung Galaxy A55';
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1023" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Dell XPS 13'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Dell XPS 13', 'Կոմպակտ laptop՝ 13" էկրանով', 715000.00, 6, 'Laptops',
+                    'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1024" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Lenovo ThinkPad X1 Carbon'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Lenovo ThinkPad X1 Carbon', 'Բիզնես laptop՝ թեթև կորպուսով', 840000.00, 5, 'Laptops',
+                    'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1025" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'HP Pavilion 15'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('HP Pavilion 15', 'Ամենօրյա օգտագործման laptop', 305000.00, 12, 'Laptops',
+                    'https://images.unsplash.com/photo-1663354027456-ce6a7e07d212?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1026" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Acer Aspire 5'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Acer Aspire 5', 'Մատչելի գնով laptop', 255000.00, 14, 'Laptops',
+                    'https://images.unsplash.com/photo-1693206578613-144dd540b892?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1027" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'LG OLED55 C3'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('LG OLED55 C3', 'OLED հեռուստացույց 4K լուծաչափով', 680000.00, 5, 'TVs',
+                    'https://images.unsplash.com/photo-1689686998931-858488b0c62c?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1028" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Sony Bravia 65" 4K'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Sony Bravia 65" 4K', 'Հեռուստացույց Google TV հարթակով', 700000.00, 4, 'TVs',
+                    'https://images.unsplash.com/photo-1461151304267-38535e780c79?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1029" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Xiaomi TV A2 50"'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Xiaomi TV A2 50"', 'Հեռուստացույց Android TV հարթակով', 260000.00, 9, 'TVs',
+                    'https://images.unsplash.com/photo-1780042731953-15dd1b3b5f00?w=900&amp;q=82&amp;fit=crop&amp;auto=format', true, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1030" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'TCL 43" Smart TV'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('TCL 43" Smart TV', 'Մատչելի հեռուստացույց խելացի հնարավորություններով', 135000.00, 11, 'TVs',
+                    'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1031" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Samsung Crystal UHD 50"'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Samsung Crystal UHD 50"', 'Հեռուստացույց Crystal UHD տեխնոլոգիայով', 280000.00, 8, 'TVs',
+                    'https://images.unsplash.com/photo-1552975084-6e027cd345c2?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1032" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Bose QuietComfort Ultra'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Bose QuietComfort Ultra', 'Անլար headphone՝ լավագույն աղմուկի մեկուսացումով', 215000.00, 10, 'Audio',
+                    'https://images.unsplash.com/photo-1570132251442-d38a55360c44?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1033" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'JBL Tune 760NC'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('JBL Tune 760NC', 'Ականջակալ՝ ակտիվ աղմուկի մեկուսացումով', 65000.00, 25, 'Audio',
+                    'https://images.unsplash.com/photo-1579065560489-989b0cc394ce?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1034" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Beats Studio Pro'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Beats Studio Pro', 'Անլար headphone Apple չիպով', 165000.00, 12, 'Audio',
+                    'https://images.pexels.com/photos/6023144/pexels-photo-6023144.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=900', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1035" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Nintendo Switch OLED'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Nintendo Switch OLED', 'Խաղային կոնսուլ՝ շարժական և կանգնակի ռեժիմներով', 205000.00, 13, 'Gaming',
+                    'https://images.unsplash.com/photo-1591182136289-67ff16828fd4?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1036" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Samsung Tab S9'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Samsung Tab S9', 'Պլանշետ S Pen գրիչով', 400000.00, 8, 'Tablets',
+                    'https://images.unsplash.com/photo-1661595677185-06202000a195?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 0, '128GB', -50000.00 FROM products WHERE name = 'Samsung Tab S9';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 1, '256GB', 0.00 FROM products WHERE name = 'Samsung Tab S9';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 2, '512GB', 50000.00 FROM products WHERE name = 'Samsung Tab S9';
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1037" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Lenovo Tab P11'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Lenovo Tab P11', 'Պլանշետ՝ մեծ մարտկոցով', 155000.00, 11, 'Tablets',
+                    'https://images.unsplash.com/photo-1675109322863-2f4eef9fe032?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 0, '128GB', 0.00 FROM products WHERE name = 'Lenovo Tab P11';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 1, '256GB', 50000.00 FROM products WHERE name = 'Lenovo Tab P11';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 2, '512GB', 100000.00 FROM products WHERE name = 'Lenovo Tab P11';
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1038" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Xiaomi Pad 6'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Xiaomi Pad 6', 'Պլանշետ՝ բարձր արագագործությամբ', 210000.00, 9, 'Tablets',
+                    'https://images.pexels.com/photos/35300031/pexels-photo-35300031.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=900', true, NULL, CURRENT_TIMESTAMP);
+
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 0, '128GB', -50000.00 FROM products WHERE name = 'Xiaomi Pad 6';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 1, '256GB', 0.00 FROM products WHERE name = 'Xiaomi Pad 6';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 2, '512GB', 50000.00 FROM products WHERE name = 'Xiaomi Pad 6';
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1039" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Huawei MatePad 11'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Huawei MatePad 11', 'Պլանշետ՝ ստիլուսի աջակցությամբ', 185000.00, 7, 'Tablets',
+                    'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 0, '128GB', 0.00 FROM products WHERE name = 'Huawei MatePad 11';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 1, '256GB', 50000.00 FROM products WHERE name = 'Huawei MatePad 11';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 2, '512GB', 100000.00 FROM products WHERE name = 'Huawei MatePad 11';
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1040" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Microsoft Surface Go 3'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Microsoft Surface Go 3', 'Պլանշետ՝ հանվող ստեղնաշարի աջակցությամբ', 250000.00, 6, 'Tablets',
+                    'https://images.unsplash.com/photo-1617780421749-ebd0ef657b2e?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 0, '128GB', 0.00 FROM products WHERE name = 'Microsoft Surface Go 3';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 1, '256GB', 50000.00 FROM products WHERE name = 'Microsoft Surface Go 3';
+            INSERT INTO product_storage_options (product_id, sort_order, label, price_delta)
+            SELECT id, 2, '512GB', 100000.00 FROM products WHERE name = 'Microsoft Surface Go 3';
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1041" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Logitech MX Master 3S'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Logitech MX Master 3S', 'Անլար mouse՝ բարձր ճշգրտությամբ', 58000.00, 20, 'Accessories',
+                    'https://images.unsplash.com/photo-1625750435936-f97e1748410b?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1042" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Anker 20W Charger'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Anker 20W Charger', 'Արագ charger՝ 20W հզորությամբ', 14000.00, 40, 'Accessories',
+                    'https://images.unsplash.com/photo-1705147290571-dde8fb73cf98?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1043" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'USB-C to USB-C Cable'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('USB-C to USB-C Cable', 'Cable՝ արագ լիցքավորման և տվյալների փոխանցման համար', 8000.00, 60, 'Accessories',
+                    'https://images.unsplash.com/photo-1619459072761-496c0812331b?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1044" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Protective Sleeve Case 15"'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Protective Sleeve Case 15"', 'Պաշտպանիչ պատյան 15 դյույմանոց սարքերի համար', 18000.00, 22, 'Accessories',
+                    'https://images.unsplash.com/photo-1657603571233-5e9860e96d00?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1045" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Wireless Charger Pad'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Wireless Charger Pad', 'Անլար charger՝ Qi տեխնոլոգիայով', 17000.00, 30, 'Accessories',
+                    'https://images.unsplash.com/photo-1591290619618-904f6dd935e3?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1046" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Sony Alpha a6400'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Sony Alpha a6400', 'Հայելային camera լուսանկարիչների համար', 510000.00, 5, 'Cameras',
+                    'https://images.unsplash.com/photo-1722842179244-b4a90215d04e?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1047" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Sonos Amp'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Sonos Amp', 'Ուժեղացուցիչ՝ խելացի ձայնային համակարգի համար', 380000.00, 6, 'Audio',
+                    'https://images.unsplash.com/photo-1743521442683-08ffd8ac9e14?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1048" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Apple iPhone 14'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Apple iPhone 14', 'Հզոր սմարթֆոն 128GB հիշողությամբ', 480000.00, 11, 'Phones',
+                    'https://images.unsplash.com/photo-1574755393849-623942496936?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1049" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Huawei P60 Pro'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Huawei P60 Pro', 'Հզոր հեռախոս գերժամանակակից տեսախցիկով', 470000.00, 6, 'Phones',
+                    'https://images.unsplash.com/photo-1546706887-a24528987a75?w=900&amp;q=82&amp;fit=crop&amp;auto=format', true, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1050" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'MacBook Pro M3'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('MacBook Pro M3', 'Հզոր laptop՝ 14" Liquid Retina XDR էկրանով', 1150000.00, 4, 'Laptops',
+                    'https://images.unsplash.com/photo-1629131726692-1accd0c53ce0?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1051" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'ASUS Zenbook 14'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('ASUS Zenbook 14', 'Նրբագեղ laptop՝ թեթև և հզոր', 455000.00, 10, 'Laptops',
+                    'https://images.unsplash.com/photo-1693206816304-642a705045a1?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1052" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Hisense 55" ULED TV'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Hisense 55" ULED TV', 'Հեռուստացույց ULED տեխնոլոգիայով', 340000.00, 8, 'TVs',
+                    'https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1053" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Panasonic 43" 4K TV'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Panasonic 43" 4K TV', 'Մատչելի 4K հեռուստացույց', 195000.00, 10, 'TVs',
+                    'https://images.unsplash.com/photo-1567690187548-f07b1d7bf5a9?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1054" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Sennheiser Momentum 4'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Sennheiser Momentum 4', 'Անլար headphone բարձրորակ ձայնով', 185000.00, 9, 'Audio',
+                    'https://images.unsplash.com/photo-1754142654796-cafbcb9f633b?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1055" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Samsung Buds2 Pro'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Samsung Buds2 Pro', 'Անլար earbud ականջակալներ', 95000.00, 18, 'Audio',
+                    'https://images.pexels.com/photos/19320592/pexels-photo-19320592.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=900', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1056" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Xbox Wireless Controller'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Xbox Wireless Controller', 'Անլար խաղային վահանակ Xbox կոնսուլների համար', 39000.00, 24, 'Gaming',
+                    'https://images.unsplash.com/photo-1615556626922-68da0c9f4350?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1057" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Steam Deck'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Steam Deck', 'Խաղային կոնսուլ՝ ներկառուցված էկրանով', 340000.00, 5, 'Gaming',
+                    'https://images.pexels.com/photos/12670693/pexels-photo-12670693.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=900', true, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1058" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Apple iPad 10th Gen'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Apple iPad 10th Gen', 'Պլանշետ՝ A14 չիպով', 245000.00, 13, 'Tablets',
+                    'https://images.unsplash.com/photo-1659748097081-3d2c4c92fec7?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1059" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Amazon Fire HD 10'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Amazon Fire HD 10', 'Պլանշետ՝ մատչելի գնով', 95000.00, 20, 'Tablets',
+                    'https://images.unsplash.com/photo-1629131704989-c74179b0ce16?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1060" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Logitech G502 Mouse'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Logitech G502 Mouse', 'Ճշգրիտ mouse՝ բազմաթիվ ծրագրավորվող կոճակներով', 46000.00, 26, 'Accessories',
+                    'https://images.unsplash.com/photo-1762180463317-b5e7886b38c1?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1061" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'Anker Power Bank 10000mAh'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('Anker Power Bank 10000mAh', 'Շարժական charger՝ 10000mAh հզորությամբ', 23000.00, 35, 'Accessories',
+                    'https://images.unsplash.com/photo-1706275399494-fb26bbc5da63?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1062" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'MacBook Air M1'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('MacBook Air M1', 'Թեթև laptop՝ 13" էկրանով, մատչելի Apple chip-ով', 730000.00, 8, 'Laptops',
+                    'https://images.unsplash.com/photo-1484788984921-03950022c9ef?w=900&amp;q=82&amp;fit=crop&amp;auto=format', false, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+
+    <changeSet id="007-seed-1063" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <tableExists tableName="product_storage_options"/>
+                <columnExists tableName="products" columnName="name"/>
+                <columnExists tableName="products" columnName="description"/>
+                <columnExists tableName="products" columnName="price"/>
+                <columnExists tableName="products" columnName="category"/>
+                <columnExists tableName="products" columnName="image_url"/>
+                <columnExists tableName="products" columnName="discount_percentage"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM products WHERE name = 'MacBook Pro M4'</sqlCheck>
+            </and>
+        </preConditions>
+        <sql>
+            INSERT INTO products (name, description, price, stock, category, image_url, is_new, discount_percentage, created_at)
+            VALUES ('MacBook Pro M4', 'Հզոր laptop՝ 14" Liquid Retina XDR էկրանով, M4 սերնդի չիպով', 1280000.00, 4, 'Laptops',
+                    'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=900&amp;q=82&amp;fit=crop&amp;auto=format', true, NULL, CURRENT_TIMESTAMP);
+        </sql>
+    </changeSet>
+</databaseChangeLog>
