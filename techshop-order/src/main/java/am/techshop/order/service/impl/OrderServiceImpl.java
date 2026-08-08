@@ -23,7 +23,6 @@ import am.techshop.order.payment.PaymentProvider;
 import am.techshop.order.payment.PaymentProviderFactory;
 import am.techshop.order.payment.PaymentVerificationResult;
 import am.techshop.order.repository.OrderRepository;
-import am.techshop.order.service.DigitalTwinService;
 import am.techshop.order.service.OrderService;
 import am.techshop.order.stock.StockReservationService;
 import feign.FeignException;
@@ -52,7 +51,6 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final PaymentProviderFactory paymentProviderFactory;
     private final StockReservationService stockReservationService;
-    private final DigitalTwinService digitalTwinService;
 
     @Value("${internal.api-key}")
     private String internalApiKey;
@@ -216,9 +214,6 @@ public class OrderServiceImpl implements OrderService {
                     "Cannot transition order from %s to %s".formatted(order.getStatus(), newStatus), 409);
         }
         order.transitionTo(newStatus, note);
-        if (newStatus == OrderStatus.PAID) {
-            digitalTwinService.createDigitalTwinsForOrder(order);
-        }
         if (newStatus == OrderStatus.CANCELLED || newStatus == OrderStatus.REFUNDED) {
             stockReservationService.restore(order);
         }

@@ -30,7 +30,6 @@ import am.techshop.order.payment.PaymentProvider;
 import am.techshop.order.payment.PaymentProviderFactory;
 import am.techshop.order.payment.PaymentVerificationResult;
 import am.techshop.order.repository.OrderRepository;
-import am.techshop.order.service.DigitalTwinService;
 import am.techshop.order.service.impl.OrderServiceImpl;
 import am.techshop.order.stock.StockReservationService;
 import feign.FeignException;
@@ -88,9 +87,6 @@ class OrderServiceImplTest {
 
     @Mock
     private PaymentProvider paymentProvider;
-
-    @Mock
-    private DigitalTwinService digitalTwinService;
 
     @InjectMocks
     private OrderServiceImpl orderService;
@@ -422,25 +418,6 @@ class OrderServiceImplTest {
         assertEquals(PaymentStatus.PAID, order.getPaymentStatus());
         assertEquals(1, order.getStatusHistory().size());
         verify(orderEventProducer).sendOrderStatusChangedEvent(any(OrderStatusChangedEvent.class));
-        verify(digitalTwinService).createDigitalTwinsForOrder(order);
-    }
-
-    @Test
-    void payOrder_WhenVerificationFails_DoesNotCreateDigitalTwins() {
-        Order order = new Order();
-        order.setId(1L);
-        order.setUserId(USER_ID);
-        order.setStatus(OrderStatus.PENDING);
-        order.setPaymentMethod(PaymentMethod.IDRAM);
-        order.setPaymentReference("IDRAM-ref");
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        lenient().when(orderRepository.save(order)).thenReturn(order);
-        when(paymentProviderFactory.resolve(PaymentMethod.IDRAM)).thenReturn(paymentProvider);
-        when(paymentProvider.verifyPayment("IDRAM-ref")).thenReturn(new PaymentVerificationResult(PaymentStatus.FAILED, "declined"));
-
-        assertThrows(TechShopException.class, () -> orderService.payOrder(USER_ID, 1L));
-
-        verify(digitalTwinService, never()).createDigitalTwinsForOrder(any());
     }
 
     @Test

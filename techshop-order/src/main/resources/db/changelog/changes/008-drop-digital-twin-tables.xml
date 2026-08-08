@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Removes the Digital Twin / product passport feature (006/007) entirely, backend and
+         data. digital_twin_repair_entry is dropped first since it holds the FK to
+         product_digital_twin (fk_repair_entry_digital_twin); dropping the parent first would
+         fail against a real FK-enforcing database. Both drops are guarded by tableExists so
+         this is a no-op on a fresh install (006/007 already no-op there via their own
+         preConditions, since Liquibase runs before Hibernate creates `products`/`order_items`)
+         and a real DROP against any already-migrated environment, dev or production, that has
+         the tables and possibly rows in them. Not reversible without a fresh createTable, same
+         as any other DROP - do not edit 006/007 in place to "undo" them, since those changesets
+         already ran in production and Liquibase would reject the checksum mismatch. -->
+    <changeSet id="008-drop-digital-twin-repair-entry-table" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="digital_twin_repair_entry"/>
+        </preConditions>
+        <dropTable tableName="digital_twin_repair_entry" cascadeConstraints="true"/>
+    </changeSet>
+
+    <changeSet id="008-drop-product-digital-twin-table" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="product_digital_twin"/>
+        </preConditions>
+        <dropTable tableName="product_digital_twin" cascadeConstraints="true"/>
+    </changeSet>
+
+</databaseChangeLog>

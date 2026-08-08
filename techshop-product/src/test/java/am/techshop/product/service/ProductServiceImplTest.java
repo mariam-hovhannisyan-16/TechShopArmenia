@@ -3,9 +3,7 @@ package am.techshop.product.service;
 import am.techshop.common.dto.request.ProductRequest;
 import am.techshop.common.dto.response.ApiResponse;
 import am.techshop.common.dto.response.PageResponse;
-import am.techshop.common.dto.response.PricePredictionResponse;
 import am.techshop.common.dto.response.ProductResponse;
-import am.techshop.common.dto.response.SurpriseBoxResponse;
 import am.techshop.common.event.PriceDropEvent;
 import am.techshop.common.exception.ProductNotFoundException;
 import am.techshop.common.exception.TechShopException;
@@ -17,7 +15,6 @@ import am.techshop.product.mapper.ProductMapper;
 import am.techshop.product.repository.CategoryRepository;
 import am.techshop.product.repository.PriceHistoryRepository;
 import am.techshop.product.repository.ProductRepository;
-import am.techshop.product.service.PricePredictionService;
 import am.techshop.product.service.impl.ProductServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +35,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -62,9 +58,6 @@ class ProductServiceImplTest {
 
     @Mock
     private PriceHistoryRepository priceHistoryRepository;
-
-    @Mock
-    private PricePredictionService pricePredictionService;
 
     @InjectMocks
     private ProductServiceImpl productService;
@@ -427,130 +420,4 @@ class ProductServiceImplTest {
         inOrder.verify(productRepository).save(product);
     }
 
-    @Test
-    void getPricePrediction_WhenProductNotFound_ThrowsException() {
-        Long id = 1L;
-        when(productRepository.existsById(id)).thenReturn(false);
-
-        assertThrows(ProductNotFoundException.class,
-                () -> productService.getPricePrediction(id));
-
-        verify(pricePredictionService, never()).getPrediction(anyLong(), any());
-    }
-
-    @Test
-    void getPricePrediction_WhenLast90DaysHaveEnoughRecords_UsesThatWindow() {
-        Long id = 1L;
-        List<PriceHistory> recentHistory = List.of(
-                new PriceHistory(1L, id, BigDecimal.valueOf(100), BigDecimal.valueOf(90), LocalDateTime.now().minusDays(10)),
-                new PriceHistory(2L, id, BigDecimal.valueOf(90), BigDecimal.valueOf(80), LocalDateTime.now().minusDays(5)),
-                new PriceHistory(3L, id, BigDecimal.valueOf(80), BigDecimal.valueOf(70), LocalDateTime.now().minusDays(1)));
-        PricePredictionResponse expected = new PricePredictionResponse("Գինը հավանաբար կնվազի", null, LocalDateTime.now());
-
-        when(productRepository.existsById(id)).thenReturn(true);
-        when(priceHistoryRepository.findByProductIdAndChangedAtAfterOrderByChangedAtAsc(eq(id), any())).thenReturn(recentHistory);
-        when(pricePredictionService.getPrediction(id, recentHistory)).thenReturn(expected);
-
-        PricePredictionResponse result = productService.getPricePrediction(id);
-
-        assertEquals(expected, result);
-        verify(priceHistoryRepository, never()).findByProductIdOrderByChangedAtAsc(any());
-    }
-
-    @Test
-    void getPricePrediction_WhenLast90DaysWindowTooSparse_FallsBackToFullHistory() {
-        Long id = 1L;
-        List<PriceHistory> sparseWindow = List.of(
-                new PriceHistory(1L, id, BigDecimal.valueOf(100), BigDecimal.valueOf(90), LocalDateTime.now().minusDays(1)));
-        List<PriceHistory> fullHistory = List.of(
-                new PriceHistory(1L, id, BigDecimal.valueOf(120), BigDecimal.valueOf(110), LocalDateTime.now().minusDays(200)),
-                new PriceHistory(2L, id, BigDecimal.valueOf(110), BigDecimal.valueOf(100), LocalDateTime.now().minusDays(100)),
-                new PriceHistory(3L, id, BigDecimal.valueOf(100), BigDecimal.valueOf(90), LocalDateTime.now().minusDays(1)));
-        PricePredictionResponse expected = new PricePredictionResponse("Գինը կայուն է", null, LocalDateTime.now());
-
-        when(productRepository.existsById(id)).thenReturn(true);
-        when(priceHistoryRepository.findByProductIdAndChangedAtAfterOrderByChangedAtAsc(eq(id), any())).thenReturn(sparseWindow);
-        when(priceHistoryRepository.findByProductIdOrderByChangedAtAsc(id)).thenReturn(fullHistory);
-        when(pricePredictionService.getPrediction(id, fullHistory)).thenReturn(expected);
-
-        PricePredictionResponse result = productService.getPricePrediction(id);
-
-        assertEquals(expected, result);
-    }
-
-    private Product product(long id, String category, double price, int stock) {
-        Product product = new Product();
-        product.setId(id);
-        product.setName("Product " + id);
-        product.setCategory(category);
-        product.setPrice(BigDecimal.valueOf(price));
-        product.setStock(stock);
-        return product;
-    }
-
-    private void stubGenericMapper() {
-        when(productMapper.toResponse(any(Product.class))).thenAnswer(invocation -> {
-            Product p = invocation.getArgument(0);
-            return new ProductResponse(p.getId(), p.getName(), null, p.getPrice(), p.getStock(),
-                    p.getCategory(), null, false, null);
-        });
-    }
-
-    @Test
-    void getSurpriseBox_WithReasonableBudget_ReturnsNonEmptyBoxWithinBudget() {
-        List<Product> available = List.of(
-                product(1, "Phones", 100, 5),
-                product(2, "Laptops", 200, 3),
-                product(3, "TVs", 150, 2),
-                product(4, "Audio", 80, 10));
-        when(productRepository.findByStockGreaterThan(0)).thenReturn(available);
-        stubGenericMapper();
-
-        SurpriseBoxResponse box = productService.getSurpriseBox(BigDecimal.valueOf(300));
-
-        assertFalse(box.items().isEmpty());
-        assertTrue(box.totalPrice().compareTo(BigDecimal.valueOf(300)) <= 0);
-        assertEquals(box.totalPrice(), BigDecimal.valueOf(300).subtract(box.remainingBudget()));
-    }
-
-    @Test
-    void getSurpriseBox_WithVeryLowBudget_ReturnsEmptyBoxGracefully() {
-        List<Product> available = List.of(
-                product(1, "Phones", 500, 5),
-                product(2, "Laptops", 600, 3),
-                product(3, "TVs", 700, 2));
-        when(productRepository.findByStockGreaterThan(0)).thenReturn(available);
-
-        SurpriseBoxResponse box = productService.getSurpriseBox(BigDecimal.valueOf(100));
-
-        assertTrue(box.items().isEmpty());
-        assertEquals(0, box.totalPrice().compareTo(BigDecimal.ZERO));
-        assertEquals(0, box.remainingBudget().compareTo(BigDecimal.valueOf(100)));
-    }
-
-    @Test
-    void getSurpriseBox_WhenMultipleAffordableCategoriesExist_PicksOneFromEachBeforeDoublingUp() {
-        List<Product> available = List.of(
-                product(1, "Phones", 100, 5),
-                product(2, "Laptops", 100, 5),
-                product(3, "TVs", 100, 5));
-        when(productRepository.findByStockGreaterThan(0)).thenReturn(available);
-        stubGenericMapper();
-
-        SurpriseBoxResponse box = productService.getSurpriseBox(BigDecimal.valueOf(300));
-
-        assertEquals(3, box.items().size());
-        assertEquals(3, box.items().stream().map(ProductResponse::category).distinct().count());
-        assertEquals(0, box.remainingBudget().compareTo(BigDecimal.ZERO));
-    }
-
-    @Test
-    void getSurpriseBox_WhenNoProductsInStock_ReturnsEmptyBox() {
-        when(productRepository.findByStockGreaterThan(0)).thenReturn(List.of());
-
-        SurpriseBoxResponse box = productService.getSurpriseBox(BigDecimal.valueOf(1000));
-
-        assertTrue(box.items().isEmpty());
-        assertEquals(0, box.remainingBudget().compareTo(BigDecimal.valueOf(1000)));
-    }
 }
