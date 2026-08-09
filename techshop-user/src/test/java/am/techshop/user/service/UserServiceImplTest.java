@@ -1,5 +1,6 @@
 package am.techshop.user.service;
 
+import am.techshop.common.dto.request.ChangePasswordRequest;
 import am.techshop.common.dto.request.DeleteAccountRequest;
 import am.techshop.common.dto.request.LoginRequest;
 import am.techshop.common.dto.request.RegisterRequest;
@@ -558,6 +559,54 @@ class UserServiceImplTest {
         userService.deleteAccount(userId, request);
 
         verify(userRepository).delete(user);
+    }
+
+    @Test
+    void changePassword_WhenCurrentPasswordCorrect_EncodesAndSavesNewPassword() {
+        Long userId = 1L;
+        User user = new User();
+        user.setId(userId);
+        user.setPassword("encoded-old");
+        ChangePasswordRequest request = new ChangePasswordRequest("old-password", "new-password");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("old-password", "encoded-old")).thenReturn(true);
+        when(passwordEncoder.encode("new-password")).thenReturn("encoded-new");
+
+        userService.changePassword(userId, request);
+
+        assertEquals("encoded-new", user.getPassword());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void changePassword_WhenCurrentPasswordIncorrect_ThrowsAndDoesNotSave() {
+        Long userId = 1L;
+        User user = new User();
+        user.setId(userId);
+        user.setPassword("encoded-old");
+        ChangePasswordRequest request = new ChangePasswordRequest("wrong-password", "new-password");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong-password", "encoded-old")).thenReturn(false);
+
+        TechShopException ex = assertThrows(TechShopException.class,
+                () -> userService.changePassword(userId, request));
+
+        assertEquals(400, ex.getStatusCode());
+        assertEquals("encoded-old", user.getPassword());
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void changePassword_WhenUserNotFound_ThrowsException() {
+        Long userId = 404L;
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class,
+                () -> userService.changePassword(userId, new ChangePasswordRequest("old", "new-password")));
+
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test

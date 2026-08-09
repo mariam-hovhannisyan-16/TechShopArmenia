@@ -1,5 +1,6 @@
 package am.techshop.user.service.impl;
 
+import am.techshop.common.dto.request.ChangePasswordRequest;
 import am.techshop.common.dto.request.DeleteAccountRequest;
 import am.techshop.common.dto.request.LoginRequest;
 import am.techshop.common.dto.request.RegisterRequest;
@@ -211,6 +212,19 @@ public class UserServiceImpl implements UserService {
 
         userRepository.delete(user);
         notifyUserDeleted(userId);
+    }
+
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new TechShopException("Current password is incorrect", 400);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
     }
 
     private void notifyUserDeleted(Long userId) {

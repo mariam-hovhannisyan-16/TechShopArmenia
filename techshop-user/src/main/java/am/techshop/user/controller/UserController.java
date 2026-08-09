@@ -1,5 +1,6 @@
 package am.techshop.user.controller;
 
+import am.techshop.common.dto.request.ChangePasswordRequest;
 import am.techshop.common.dto.request.DeleteAccountRequest;
 import am.techshop.common.dto.request.ForgotPasswordRequest;
 import am.techshop.common.dto.request.LoginRequest;
@@ -130,5 +131,13 @@ public class UserController {
             @RequestBody @Valid DeleteAccountRequest request) {
         userService.deleteAccount(CurrentUser.id(authentication), request);
         return ResponseEntity.ok(ApiResponse.ok("Account deleted successfully", null));
+    }
+
+    @PutMapping("/api/users/me/password")
+    public ResponseEntity<ApiResponse<Void>> changeMyPassword(
+            Authentication authentication,
+            @RequestBody @Valid ChangePasswordRequest request) {
+        userService.changePassword(CurrentUser.id(authentication), request);
+        return ResponseEntity.ok(ApiResponse.ok("Password changed successfully", null));
     }
 }

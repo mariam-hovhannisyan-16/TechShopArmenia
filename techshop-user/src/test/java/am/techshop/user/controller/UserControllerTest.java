@@ -1,5 +1,6 @@
 package am.techshop.user.controller;
 
+import am.techshop.common.dto.request.ChangePasswordRequest;
 import am.techshop.common.dto.request.DeleteAccountRequest;
 import am.techshop.common.dto.request.ForgotPasswordRequest;
 import am.techshop.common.dto.request.LoginRequest;
@@ -354,5 +355,58 @@ class UserControllerTest {
         // The endpoint takes no user id from the request itself - it can only ever
         // act on the id embedded in the caller's own authenticated JWT.
         verify(userService, never()).deleteAccount(eq(2L), any());
+    }
+
+    @Test
+    void changeMyPassword_WhenAuthenticatedWithCorrectCurrentPassword_ReturnsOk() throws Exception {
+        ChangePasswordRequest request = new ChangePasswordRequest("oldpassword", "newpassword");
+        doNothing().when(userService).changePassword(eq(USER_ID), any(ChangePasswordRequest.class));
+
+        mockMvc.perform(put("/api/users/me/password")
+                        .with(authentication(asUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password changed successfully"));
+
+        verify(userService).changePassword(USER_ID, request);
+    }
+
+    @Test
+    void changeMyPassword_WhenCurrentPasswordIncorrect_ReturnsBadRequest() throws Exception {
+        ChangePasswordRequest request = new ChangePasswordRequest("wrong-password", "newpassword");
+        doThrow(new TechShopException("Current password is incorrect", 400))
+                .when(userService).changePassword(eq(USER_ID), any(ChangePasswordRequest.class));
+
+        mockMvc.perform(put("/api/users/me/password")
+                        .with(authentication(asUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void changeMyPassword_WithoutAuthentication_ReturnsUnauthorized() throws Exception {
+        ChangePasswordRequest request = new ChangePasswordRequest("oldpassword", "newpassword");
+
+        mockMvc.perform(put("/api/users/me/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+
+        verify(userService, never()).changePassword(any(), any());
+    }
+
+    @Test
+    void changeMyPassword_WithTooShortNewPassword_ReturnsBadRequest() throws Exception {
+        ChangePasswordRequest request = new ChangePasswordRequest("oldpassword", "abc");
+
+        mockMvc.perform(put("/api/users/me/password")
+                        .with(authentication(asUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verify(userService, never()).changePassword(any(), any());
     }
 }
