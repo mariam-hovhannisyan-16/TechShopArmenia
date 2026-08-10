@@ -352,8 +352,6 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        // The endpoint takes no user id from the request itself - it can only ever
-        // act on the id embedded in the caller's own authenticated JWT.
         verify(userService, never()).deleteAccount(eq(2L), any());
     }
 

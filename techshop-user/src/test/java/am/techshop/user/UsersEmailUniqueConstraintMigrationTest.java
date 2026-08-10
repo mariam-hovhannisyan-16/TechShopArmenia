@@ -37,9 +37,6 @@ class UsersEmailUniqueConstraintMigrationTest {
                     )
                     """);
 
-            // Seed the exact scenario found on the live server: several rows sharing
-            // one email (from retried/racing registration attempts), plus a normal,
-            // never-duplicated row.
             connection.createStatement().execute("INSERT INTO users (id, email) VALUES (5, 'duplicated@test.com')");
             connection.createStatement().execute("INSERT INTO users (id, email) VALUES (6, 'duplicated@test.com')");
             connection.createStatement().execute("INSERT INTO users (id, email) VALUES (8, 'duplicated@test.com')");

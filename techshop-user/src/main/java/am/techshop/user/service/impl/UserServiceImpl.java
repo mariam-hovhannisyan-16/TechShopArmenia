@@ -64,9 +64,6 @@ public class UserServiceImpl implements UserService {
         try {
             savedUser = userRepository.save(user);
         } catch (DataIntegrityViolationException ex) {
-            // The existsByEmail check above is racy (check-then-insert); the unique
-            // constraint on users.email is the real guard, and a violation here means
-            // a concurrent request won the race for this email.
             throw new TechShopException("Email already in use", 409);
         }
         String token = jwtService.generateToken(savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name());
