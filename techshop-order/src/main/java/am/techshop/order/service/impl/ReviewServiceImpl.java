@@ -31,11 +31,6 @@ import java.util.List;
 @Transactional
 public class ReviewServiceImpl implements ReviewService {
 
-    /**
-     * Order statuses that count as a "verified purchase": payment has definitively gone
-     * through and the order hasn't been reversed. REFUNDED is deliberately excluded - if the
-     * purchase was undone, it shouldn't back a review either.
-     */
     private static final List<OrderStatus> VERIFIED_PURCHASE_STATUSES =
             List.of(OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED);
 
