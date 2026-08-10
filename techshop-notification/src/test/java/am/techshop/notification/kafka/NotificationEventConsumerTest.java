@@ -1,6 +1,7 @@
 package am.techshop.notification.kafka;
 
 import am.techshop.common.dto.response.InstallmentPlanResponse;
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
 import am.techshop.common.event.ChatReplyEvent;
@@ -40,12 +41,12 @@ class NotificationEventConsumerTest {
                 "Ameriabank", BigDecimal.valueOf(0.12), 12, BigDecimal.valueOf(20), BigDecimal.valueOf(16.80));
         OrderStatusChangedEvent event = new OrderStatusChangedEvent(
                 42L, 1L, "mariam@test.com", "Mariam", OrderStatus.PAID, "Payment verified", BigDecimal.valueOf(200),
-                PaymentMethod.INSTALLMENT, installmentPlan);
+                PaymentMethod.INSTALLMENT, installmentPlan, Language.RU);
 
         consumer.handleOrderStatusChanged(event);
 
         verify(dispatcher).dispatchOrderStatusChanged(1L, "mariam@test.com", "Mariam", 42L,
-                OrderStatus.PAID, "Payment verified", BigDecimal.valueOf(200), PaymentMethod.INSTALLMENT, installmentPlan);
+                OrderStatus.PAID, "Payment verified", BigDecimal.valueOf(200), PaymentMethod.INSTALLMENT, installmentPlan, Language.RU);
     }
 
     @Test

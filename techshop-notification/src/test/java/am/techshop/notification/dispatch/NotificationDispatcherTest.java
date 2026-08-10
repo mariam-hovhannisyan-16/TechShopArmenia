@@ -1,5 +1,6 @@
 package am.techshop.notification.dispatch;
 
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
 import am.techshop.notification.entity.Notification;
@@ -16,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -82,15 +84,45 @@ class NotificationDispatcherTest {
         stubNotificationCreation();
 
         dispatcher.dispatchOrderStatusChanged(1L, "mariam@test.com", "Mariam", 42L,
-                OrderStatus.PAID, "Payment verified", BigDecimal.valueOf(200), PaymentMethod.IDRAM, null);
+                OrderStatus.PAID, "Payment verified", BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.EN);
 
         verify(emailService).sendOrderStatusChanged(
-                "mariam@test.com", "Mariam", 42L, OrderStatus.PAID, BigDecimal.valueOf(200), PaymentMethod.IDRAM, null);
+                "mariam@test.com", "Mariam", 42L, OrderStatus.PAID, BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.EN);
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
         assertTrue(captor.getValue().getMessage().contains("42"));
-        assertTrue(captor.getValue().getMessage().contains("PAID"));
+        assertTrue(captor.getValue().getMessage().contains("Paid"));
+    }
+
+    @Test
+    void dispatchOrderStatusChanged_WhenArmenian_WritesInAppMessageInArmenian() {
+        stubNotificationCreation();
+
+        dispatcher.dispatchOrderStatusChanged(1L, "mariam@test.com", "Mariam", 42L,
+                OrderStatus.PAID, "Payment verified via IDRAM", BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.HY);
+
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).save(captor.capture());
+        String message = captor.getValue().getMessage();
+        assertTrue(message.contains("Ձեր՝ #42 պատվերի կարգավիճակը փոխվել է"));
+        assertTrue(message.contains("Վճարված"));
+        assertTrue(message.contains("Նշում"));
+        assertTrue(message.contains("Idram"));
+        assertFalse(message.contains("has been created"), "Armenian message should not contain leftover English copy");
+    }
+
+    @Test
+    void dispatchOrderStatusChanged_WhenRussian_WritesInAppMessageInRussian() {
+        stubNotificationCreation();
+
+        dispatcher.dispatchOrderStatusChanged(1L, "mariam@test.com", "Mariam", 42L,
+                OrderStatus.SHIPPED, null, BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.RU);
+
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).save(captor.capture());
+        String message = captor.getValue().getMessage();
+        assertEquals("Статус вашего заказа №42 изменён на: Отправлен.", message);
     }
 
     @Test
@@ -102,7 +134,7 @@ class NotificationDispatcherTest {
         verify(emailService, never()).sendVerificationEmail(any(), any(), any());
         verify(emailService, never()).sendWelcome(any(), any());
         verify(emailService, never()).sendPasswordResetEmail(any(), any(), any());
-        verify(emailService, never()).sendOrderStatusChanged(any(), any(), any(), any(), any(), any(), any());
+        verify(emailService, never()).sendOrderStatusChanged(any(), any(), any(), any(), any(), any(), any(), any());
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
@@ -116,7 +148,7 @@ class NotificationDispatcherTest {
 
         dispatcher.dispatchPriceDrop(1L, "iPhone 15", BigDecimal.valueOf(400000));
 
-        verify(emailService, never()).sendOrderStatusChanged(any(), any(), any(), any(), any(), any(), any());
+        verify(emailService, never()).sendOrderStatusChanged(any(), any(), any(), any(), any(), any(), any(), any());
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
@@ -129,7 +161,7 @@ class NotificationDispatcherTest {
         stubNotificationCreation();
 
         dispatcher.dispatchOrderStatusChanged(1L, "mariam@test.com", "Mariam", 42L,
-                OrderStatus.PENDING, "Order created from cart", BigDecimal.valueOf(200), PaymentMethod.IDRAM, null);
+                OrderStatus.PENDING, "Order created from cart", BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.EN);
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());

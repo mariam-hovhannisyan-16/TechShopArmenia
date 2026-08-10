@@ -17,4 +17,9 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             "FROM OrderItem oi WHERE oi.order.status IN :statuses " +
             "GROUP BY oi.productId, oi.productName ORDER BY SUM(oi.quantity) DESC")
     List<Object[]> findTopSellingProducts(@Param("statuses") List<OrderStatus> statuses, Pageable pageable);
+
+    @Query("SELECT COUNT(oi) > 0 FROM OrderItem oi " +
+            "WHERE oi.order.userId = :userId AND oi.productId = :productId AND oi.order.status IN :statuses")
+    boolean existsVerifiedPurchase(@Param("userId") Long userId, @Param("productId") Long productId,
+                                    @Param("statuses") List<OrderStatus> statuses);
 }

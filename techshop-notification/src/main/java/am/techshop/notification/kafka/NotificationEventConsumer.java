@@ -25,7 +25,7 @@ public class NotificationEventConsumer {
     public void handleOrderStatusChanged(OrderStatusChangedEvent event) {
         dispatcher.dispatchOrderStatusChanged(event.userId(), event.userEmail(), event.userName(),
                 event.orderId(), event.status(), event.note(), event.totalPrice(),
-                event.paymentMethod(), event.installmentPlan());
+                event.paymentMethod(), event.installmentPlan(), event.language());
     }
 
     @KafkaListener(topics = "user-registered", groupId = "notification-group",

@@ -3,6 +3,7 @@ package am.techshop.product.controller;
 import am.techshop.common.dto.request.DiscountUpdateRequest;
 import am.techshop.common.dto.request.PriceUpdateRequest;
 import am.techshop.common.dto.request.ProductRequest;
+import am.techshop.common.dto.request.RatingUpdateRequest;
 import am.techshop.common.dto.request.StockAdjustmentRequest;
 import am.techshop.common.dto.response.ApiResponse;
 import am.techshop.common.dto.response.PageResponse;
@@ -90,5 +91,15 @@ public class ProductController {
             @PathVariable Long id,
             @RequestBody @Valid DiscountUpdateRequest request) {
         return ResponseEntity.ok(ApiResponse.ok("Discount updated", productService.updateDiscount(id, request.discountPercentage())));
+    }
+
+    @PatchMapping("/api/products/{id}/rating")
+    public ResponseEntity<ApiResponse<ProductResponse>> updateRating(
+            @PathVariable Long id,
+            @RequestBody @Valid RatingUpdateRequest request,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey) {
+        internalApiKeyGuard.verify(apiKey);
+        return ResponseEntity.ok(ApiResponse.ok(
+                "Rating updated", productService.updateRating(id, request.rating(), request.reviewCount())));
     }
 }

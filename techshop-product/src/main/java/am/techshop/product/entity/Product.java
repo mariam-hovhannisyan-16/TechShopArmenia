@@ -45,6 +45,10 @@ public class Product {
 
     private Integer discountPercentage;
 
+    private BigDecimal rating = BigDecimal.ZERO;
+
+    private Integer reviewCount = 0;
+
     @ElementCollection
     @CollectionTable(name = "product_storage_options", joinColumns = @JoinColumn(name = "product_id"))
     @OrderColumn(name = "sort_order")

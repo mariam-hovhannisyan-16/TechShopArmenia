@@ -1,8 +1,10 @@
 package am.techshop.notification.dispatch;
 
 import am.techshop.common.dto.response.InstallmentPlanResponse;
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
+import am.techshop.notification.i18n.OrderMessages;
 import am.techshop.notification.mapper.NotificationMapper;
 import am.techshop.notification.repository.NotificationRepository;
 import am.techshop.notification.service.EmailService;
@@ -52,10 +54,11 @@ public class NotificationDispatcher {
 
     public void dispatchOrderStatusChanged(Long userId, String email, String name, Long orderId,
                                             OrderStatus status, String note, BigDecimal totalPrice,
-                                            PaymentMethod paymentMethod, InstallmentPlanResponse installmentPlan) {
+                                            PaymentMethod paymentMethod, InstallmentPlanResponse installmentPlan,
+                                            Language language) {
         deliver(NotificationType.ORDER_STATUS_CHANGED, userId,
-                () -> emailService.sendOrderStatusChanged(email, name, orderId, status, totalPrice, paymentMethod, installmentPlan),
-                () -> orderStatusMessage(orderId, status, note));
+                () -> emailService.sendOrderStatusChanged(email, name, orderId, status, totalPrice, paymentMethod, installmentPlan, language),
+                () -> orderStatusMessage(orderId, status, note, language));
     }
 
     public void dispatchChatReply(Long userId, String messagePreview) {
@@ -68,12 +71,11 @@ public class NotificationDispatcher {
                 () -> "%s just dropped to %s AMD — it's on your wishlist!".formatted(productName, newPrice));
     }
 
-    private String orderStatusMessage(Long orderId, OrderStatus status, String note) {
-        String base = status == OrderStatus.PENDING
-                ? "Your order #%s has been created.".formatted(orderId)
-                : "Your order #%s status changed to %s.".formatted(orderId, status);
+    private String orderStatusMessage(Long orderId, OrderStatus status, String note, Language language) {
+        String base = OrderMessages.inAppBaseMessage(orderId, status, language);
         if (note != null && !note.isBlank()) {
-            return base + " Note: " + note;
+            return base + " " + OrderMessages.inAppNoteLabel(language) + ": "
+                    + OrderMessages.translateSystemNote(note, language);
         }
         return base;
     }

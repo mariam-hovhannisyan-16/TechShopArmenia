@@ -16,4 +16,5 @@ public interface ProductService {
     ProductResponse adjustStock(Long id, int quantityDelta);
     ProductResponse updatePrice(Long id, BigDecimal price);
     ProductResponse updateDiscount(Long id, Integer discountPercentage);
+    ProductResponse updateRating(Long id, BigDecimal rating, Integer reviewCount);
 }

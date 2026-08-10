@@ -47,6 +47,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/orders/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/stats").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/orders/checkout").hasRole("CUSTOMER")
+                        .requestMatchers(HttpMethod.GET, "/api/reviews").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/reviews").hasRole("CUSTOMER")
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception

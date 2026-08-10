@@ -1,6 +1,7 @@
 package am.techshop.notification.service;
 
 import am.techshop.common.dto.response.InstallmentPlanResponse;
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
 import jakarta.mail.Session;
@@ -53,7 +54,7 @@ class EmailServiceTest {
         setDevMode(true);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 1L, OrderStatus.PENDING, BigDecimal.TEN,
-                PaymentMethod.IDRAM, null);
+                PaymentMethod.IDRAM, null, Language.HY);
 
         verify(mailSender, never()).send(any(SimpleMailMessage.class));
     }
@@ -63,7 +64,7 @@ class EmailServiceTest {
         setDevMode(false);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 1L, OrderStatus.PAID, BigDecimal.TEN,
-                PaymentMethod.IDRAM, null);
+                PaymentMethod.IDRAM, null, Language.HY);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
@@ -76,17 +77,17 @@ class EmailServiceTest {
         doThrow(new MailSendException("SMTP unavailable")).when(mailSender).send(any(SimpleMailMessage.class));
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 1L, OrderStatus.PAID, BigDecimal.TEN,
-                PaymentMethod.IDRAM, null);
+                PaymentMethod.IDRAM, null, Language.HY);
 
         verify(mailSender).send(any(SimpleMailMessage.class));
     }
 
     @Test
-    void sendOrderStatusChanged_WhenPending_UsesCreatedSubjectAndBody() {
+    void sendOrderStatusChanged_WhenPendingAndEnglish_UsesEnglishCreatedSubjectAndBody() {
         setDevMode(false);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.PENDING, BigDecimal.valueOf(150),
-                PaymentMethod.IDRAM, null);
+                PaymentMethod.IDRAM, null, Language.EN);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
@@ -96,25 +97,59 @@ class EmailServiceTest {
     }
 
     @Test
-    void sendOrderStatusChanged_WhenNotPending_UsesStatusUpdateSubjectAndBody() {
+    void sendOrderStatusChanged_WhenNotPendingAndEnglish_UsesEnglishStatusUpdateSubjectAndBody() {
         setDevMode(false);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.SHIPPED, BigDecimal.valueOf(150),
-                PaymentMethod.IDRAM, null);
+                PaymentMethod.IDRAM, null, Language.EN);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
         SimpleMailMessage sent = captor.getValue();
         assertEquals("Order #7 status update — TechShopArmenia", sent.getSubject());
-        assertTrue(Objects.requireNonNull(sent.getText()).contains("Your order #7 status is now: SHIPPED."));
+        assertTrue(Objects.requireNonNull(sent.getText()).contains("Your order #7 status is now: Shipped."));
     }
 
     @Test
-    void sendOrderStatusChanged_WithRegularPaymentMethod_IncludesPaymentMethodLine() {
+    void sendOrderStatusChanged_WhenArmenian_UsesArmenianSubjectAndBody() {
+        setDevMode(false);
+
+        emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.PENDING, BigDecimal.valueOf(150),
+                PaymentMethod.IDRAM, null, Language.HY);
+
+        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(captor.capture());
+        SimpleMailMessage sent = captor.getValue();
+        assertEquals("Ձեր պատվերն ընդունված է — TechShop AM", sent.getSubject());
+        String text = Objects.requireNonNull(sent.getText());
+        assertTrue(text.contains("Բարև, Mariam,"));
+        assertTrue(text.contains("Ձեր՝ #7 պատվերը հաջողությամբ ընդունվել է:"));
+        assertFalse(text.contains("Your order"), "Armenian email should not contain leftover English copy");
+    }
+
+    @Test
+    void sendOrderStatusChanged_WhenRussian_UsesRussianSubjectAndBody() {
+        setDevMode(false);
+
+        emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.SHIPPED, BigDecimal.valueOf(150),
+                PaymentMethod.IDRAM, null, Language.RU);
+
+        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(captor.capture());
+        SimpleMailMessage sent = captor.getValue();
+        assertEquals("Обновление статуса заказа №7 — TechShopArmenia", sent.getSubject());
+        String text = Objects.requireNonNull(sent.getText());
+        assertTrue(text.contains("Здравствуйте, Mariam,"));
+        assertTrue(text.contains("Статус вашего заказа №7 сейчас: Отправлен."));
+        assertFalse(text.contains("Your order"), "Russian email should not contain leftover English copy");
+    }
+
+    @Test
+    void sendOrderStatusChanged_WithRegularPaymentMethod_IncludesPaymentMethodLineInRequestedLanguage() {
         setDevMode(false);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.PAID, BigDecimal.valueOf(150),
-                PaymentMethod.IDRAM, null);
+                PaymentMethod.IDRAM, null, Language.HY);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
@@ -122,27 +157,27 @@ class EmailServiceTest {
     }
 
     @Test
-    void sendOrderStatusChanged_WithTelcellPaymentMethod_IncludesPaymentMethodLine() {
+    void sendOrderStatusChanged_WithTelcellPaymentMethodInEnglish_IncludesEnglishPaymentMethodLine() {
         setDevMode(false);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.PAID, BigDecimal.valueOf(150),
-                PaymentMethod.TELCELL, null);
+                PaymentMethod.TELCELL, null, Language.EN);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
-        assertTrue(Objects.requireNonNull(captor.getValue().getText()).contains("Վճարման եղանակ՝ Telcell"));
+        assertTrue(Objects.requireNonNull(captor.getValue().getText()).contains("Payment method: Telcell"));
     }
 
     @Test
-    void sendOrderStatusChanged_WithRoketLinePaymentMethod_IncludesPaymentMethodLine() {
+    void sendOrderStatusChanged_WithRoketLinePaymentMethodInRussian_IncludesRussianPaymentMethodLine() {
         setDevMode(false);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.PAID, BigDecimal.valueOf(150),
-                PaymentMethod.ROKET_LINE, null);
+                PaymentMethod.ROKET_LINE, null, Language.RU);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
-        assertTrue(Objects.requireNonNull(captor.getValue().getText()).contains("Վճարման եղանակ՝ Roket Line"));
+        assertTrue(Objects.requireNonNull(captor.getValue().getText()).contains("Способ оплаты: Roket Line"));
     }
 
     @Test
@@ -152,7 +187,7 @@ class EmailServiceTest {
                 "Ameriabank", BigDecimal.valueOf(0.12), 12, BigDecimal.valueOf(20), BigDecimal.valueOf(112.00));
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.PAID, BigDecimal.valueOf(150),
-                PaymentMethod.INSTALLMENT, plan);
+                PaymentMethod.INSTALLMENT, plan, Language.HY);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());

@@ -1,5 +1,6 @@
 package am.techshop.order.entity;
 
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
 import am.techshop.common.enums.PaymentStatus;
@@ -83,6 +84,10 @@ public class Order {
 
     @Column(name = "notes")
     private String notes;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "language", length = 2)
+    private Language language;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method")

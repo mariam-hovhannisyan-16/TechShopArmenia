@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Backs Product.rating/reviewCount: a cached snapshot of the verified-purchase review
+         aggregate that techshop-order owns and recomputes from its own Review rows on every
+         review write. `products` is Hibernate ddl-auto:update owned here (not Liquibase owned -
+         see 004's comment), so on a genuinely fresh database it doesn't exist yet at this point
+         and this changeset no-ops via the tableExists precondition; Hibernate then creates both
+         columns itself (with the entity's Java-side defaults) as part of creating `products`.
+         On an existing/already-seeded database this runs for real, and defaultValue backfills
+         every existing product to 0/0.00 in the same ADD COLUMN statement - matching "no reviews
+         yet" rather than leaving them NULL. -->
+    <changeSet id="008-add-rating-columns-to-products" author="mariam">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="products"/>
+                <not>
+                    <columnExists tableName="products" columnName="rating"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="products">
+            <column name="rating" type="DECIMAL(3,2)" defaultValueNumeric="0.00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="review_count" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

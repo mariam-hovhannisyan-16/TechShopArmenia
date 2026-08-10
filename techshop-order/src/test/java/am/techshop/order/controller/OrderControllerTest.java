@@ -6,6 +6,7 @@ import am.techshop.common.dto.request.OrderStatusUpdateRequest;
 import am.techshop.common.dto.response.OrderResponse;
 import am.techshop.common.dto.response.OrderStatisticsResponse;
 import am.techshop.common.dto.response.PageResponse;
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
 import am.techshop.common.enums.PaymentStatus;
@@ -82,7 +83,7 @@ class OrderControllerTest {
 
     @Test
     void checkout_ReturnsCreatedOrder() throws Exception {
-        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), "Ring the bell", PaymentMethod.IDRAM, null);
+        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), "Ring the bell", PaymentMethod.IDRAM, null, Language.HY);
         when(orderService.checkout(USER_ID, request)).thenReturn(sampleOrder(OrderStatus.PENDING));
 
         mockMvc.perform(post("/api/orders/checkout")
@@ -95,7 +96,7 @@ class OrderControllerTest {
 
     @Test
     void checkout_AsAdmin_ReturnsForbidden() throws Exception {
-        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null);
+        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null, Language.HY);
 
         mockMvc.perform(post("/api/orders/checkout")
                         .with(authentication(asAdmin()))
@@ -108,7 +109,7 @@ class OrderControllerTest {
 
     @Test
     void checkout_WithoutAuthentication_ReturnsUnauthorized() throws Exception {
-        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null);
+        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null, Language.HY);
 
         mockMvc.perform(post("/api/orders/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -119,7 +120,7 @@ class OrderControllerTest {
     @Test
     void checkout_WithInvalidAddress_ReturnsBadRequest() throws Exception {
         AddressRequest blankAddress = new AddressRequest("", "", "", null, "", null, "", "");
-        CheckoutRequest request = new CheckoutRequest(blankAddress, blankAddress, null, PaymentMethod.IDRAM, null);
+        CheckoutRequest request = new CheckoutRequest(blankAddress, blankAddress, null, PaymentMethod.IDRAM, null, Language.HY);
 
         mockMvc.perform(post("/api/orders/checkout")
                         .with(authentication(asUser()))
@@ -130,7 +131,7 @@ class OrderControllerTest {
 
     @Test
     void checkout_WithoutPaymentMethod_ReturnsBadRequest() throws Exception {
-        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), null, null, null);
+        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), null, null, null, Language.HY);
 
         mockMvc.perform(post("/api/orders/checkout")
                         .with(authentication(asUser()))

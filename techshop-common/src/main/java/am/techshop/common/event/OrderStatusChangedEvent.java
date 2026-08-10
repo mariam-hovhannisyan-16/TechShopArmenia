@@ -1,6 +1,7 @@
 package am.techshop.common.event;
 
 import am.techshop.common.dto.response.InstallmentPlanResponse;
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
 
@@ -15,5 +16,6 @@ public record OrderStatusChangedEvent(
         String note,
         BigDecimal totalPrice,
         PaymentMethod paymentMethod,
-        InstallmentPlanResponse installmentPlan
+        InstallmentPlanResponse installmentPlan,
+        Language language
 ) {}

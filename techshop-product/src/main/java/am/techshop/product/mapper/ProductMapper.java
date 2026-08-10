@@ -19,5 +19,7 @@ public interface ProductMapper {
     @Mapping(target = "storageOptions", ignore = true)
     @Mapping(target = "simOptions", ignore = true)
     @Mapping(target = "colorVariants", ignore = true)
+    @Mapping(target = "rating", ignore = true)
+    @Mapping(target = "reviewCount", ignore = true)
     Product toEntity(ProductRequest request);
 }

@@ -13,5 +13,7 @@
     <include file="db/changelog/changes/006-create-product-digital-twin-table.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/007-create-digital-twin-repair-entry-table.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/008-drop-digital-twin-tables.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/009-add-language-to-orders.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/010-create-reviews-table.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

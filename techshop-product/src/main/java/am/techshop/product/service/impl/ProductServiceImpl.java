@@ -145,4 +145,13 @@ public class ProductServiceImpl implements ProductService {
         product.setDiscountPercentage(discountPercentage);
         return productMapper.toResponse(productRepository.save(product));
     }
+
+    public ProductResponse updateRating(Long id, BigDecimal rating, Integer reviewCount) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
+
+        product.setRating(rating);
+        product.setReviewCount(reviewCount);
+        return productMapper.toResponse(productRepository.save(product));
+    }
 }

@@ -12,6 +12,7 @@ import am.techshop.common.dto.response.OrderResponse;
 import am.techshop.common.dto.response.OrderStatusHistoryResponse;
 import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.dto.response.UserResponse;
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
 import am.techshop.common.enums.PaymentStatus;
@@ -107,7 +108,7 @@ class OrderServiceImplTest {
         CartItemResponse cartItem = new CartItemResponse(1L, "Phone", BigDecimal.valueOf(100), 2, BigDecimal.valueOf(200));
         CartResponse cart = new CartResponse(1L, USER_ID, List.of(cartItem), BigDecimal.valueOf(200));
         UserResponse user = new UserResponse(USER_ID, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
-        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), "Leave at door", PaymentMethod.IDRAM, null);
+        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), "Leave at door", PaymentMethod.IDRAM, null, Language.HY);
 
         when(cartClient.getCart(eq(USER_ID), any())).thenReturn(new ApiResponse<>(true, "Success", cart));
         when(userClient.getUser(eq(USER_ID), any())).thenReturn(new ApiResponse<>(true, "Success", user));
@@ -148,7 +149,7 @@ class OrderServiceImplTest {
         CartItemResponse cartItem = new CartItemResponse(1L, "Phone", BigDecimal.valueOf(100), 2, BigDecimal.valueOf(200));
         CartResponse cart = new CartResponse(1L, USER_ID, List.of(cartItem), BigDecimal.valueOf(200));
         UserResponse user = new UserResponse(USER_ID, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
-        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), "Leave at door", PaymentMethod.ROKET_LINE, null);
+        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), "Leave at door", PaymentMethod.ROKET_LINE, null, Language.HY);
 
         when(cartClient.getCart(eq(USER_ID), any())).thenReturn(new ApiResponse<>(true, "Success", cart));
         when(userClient.getUser(eq(USER_ID), any())).thenReturn(new ApiResponse<>(true, "Success", user));
@@ -189,7 +190,7 @@ class OrderServiceImplTest {
         CartResponse cart = new CartResponse(1L, USER_ID, List.of(cartItem), BigDecimal.valueOf(200));
         UserResponse user = new UserResponse(USER_ID, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
         InstallmentDetailsRequest installmentDetails = new InstallmentDetailsRequest("Ameriabank", 12, BigDecimal.valueOf(20));
-        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), "Leave at door", PaymentMethod.INSTALLMENT, installmentDetails);
+        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), "Leave at door", PaymentMethod.INSTALLMENT, installmentDetails, Language.HY);
         InstallmentPlanResponse planResponse = new InstallmentPlanResponse("Ameriabank", BigDecimal.valueOf(0.12), 12, BigDecimal.valueOf(20), BigDecimal.valueOf(16.80));
 
         when(cartClient.getCart(eq(USER_ID), any())).thenReturn(new ApiResponse<>(true, "Success", cart));
@@ -231,7 +232,7 @@ class OrderServiceImplTest {
         when(cartClient.getCart(eq(USER_ID), any())).thenReturn(new ApiResponse<>(true, "Success", cart));
 
         TechShopException ex = assertThrows(TechShopException.class,
-                () -> orderService.checkout(USER_ID, new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null)));
+                () -> orderService.checkout(USER_ID, new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null, Language.HY)));
 
         assertEquals(400, ex.getStatusCode());
         verify(orderRepository, never()).save(any());
@@ -244,7 +245,7 @@ class OrderServiceImplTest {
                 .thenThrow(new FeignException.NotFound("Cart not found", request(), null, null));
 
         TechShopException ex = assertThrows(TechShopException.class,
-                () -> orderService.checkout(USER_ID, new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null)));
+                () -> orderService.checkout(USER_ID, new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null, Language.HY)));
 
         assertEquals(400, ex.getStatusCode());
         verify(orderRepository, never()).save(any());
@@ -257,7 +258,7 @@ class OrderServiceImplTest {
                 .thenThrow(new RetryableException(-1, "Connection refused", feign.Request.HttpMethod.GET, (Long) null, request()));
 
         TechShopException ex = assertThrows(TechShopException.class,
-                () -> orderService.checkout(USER_ID, new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null)));
+                () -> orderService.checkout(USER_ID, new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null, Language.HY)));
 
         assertEquals(503, ex.getStatusCode());
         verify(orderRepository, never()).save(any());
@@ -280,7 +281,7 @@ class OrderServiceImplTest {
                 .when(stockReservationService).reserve(cart.items());
 
         TechShopException ex = assertThrows(TechShopException.class,
-                () -> orderService.checkout(USER_ID, new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null)));
+                () -> orderService.checkout(USER_ID, new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null, Language.HY)));
 
         assertEquals(409, ex.getStatusCode());
         verify(orderRepository, never()).save(any());
@@ -304,7 +305,7 @@ class OrderServiceImplTest {
                 .thenThrow(new TechShopException("Unsupported payment method: TELCELL", 400));
 
         TechShopException ex = assertThrows(TechShopException.class,
-                () -> orderService.checkout(USER_ID, new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.TELCELL, null)));
+                () -> orderService.checkout(USER_ID, new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.TELCELL, null, Language.HY)));
 
         assertEquals(400, ex.getStatusCode());
         verify(orderRepository, never()).save(any());

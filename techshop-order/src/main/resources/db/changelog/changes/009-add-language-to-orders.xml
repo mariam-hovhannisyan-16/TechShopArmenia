@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Backs Order.language: the customer's UI language at checkout time, used to write
+         order-confirmation/status-change notifications (email + in-app) in the right language
+         instead of always hardcoding English/Armenian. defaultValueComputed backfills every
+         existing order to 'HY' (the platform's default language, same fallback the frontend's
+         LanguageService uses) in the same ADD COLUMN statement, so this is safe against
+         production data with no separate UPDATE pass needed. -->
+    <changeSet id="009-add-language-to-orders" author="techshop">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="orders" columnName="language"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="orders">
+            <column name="language" type="VARCHAR(2)" defaultValue="HY">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

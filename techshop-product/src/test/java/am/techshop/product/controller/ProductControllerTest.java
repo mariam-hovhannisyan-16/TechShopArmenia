@@ -3,6 +3,7 @@ package am.techshop.product.controller;
 import am.techshop.common.dto.request.DiscountUpdateRequest;
 import am.techshop.common.dto.request.PriceUpdateRequest;
 import am.techshop.common.dto.request.ProductRequest;
+import am.techshop.common.dto.request.RatingUpdateRequest;
 import am.techshop.common.dto.request.StockAdjustmentRequest;
 import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.dto.response.ProductResponse;
@@ -285,4 +286,44 @@ class ProductControllerTest {
         verify(productService, never()).updateDiscount(any(), any());
     }
 
+    @Test
+    void updateRating_WithCorrectInternalApiKey_ReturnsUpdatedProduct() throws Exception {
+        Long id = 1L;
+        RatingUpdateRequest request = new RatingUpdateRequest(new BigDecimal("4.50"), 2);
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, null);
+
+        when(productService.updateRating(id, new BigDecimal("4.50"), 2)).thenReturn(response);
+
+        mockMvc.perform(patch("/api/products/{id}/rating", id)
+                        .header("X-Internal-Api-Key", "local-dev-internal-key-change-in-production")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Rating updated"));
+    }
+
+    @Test
+    void updateRating_WithWrongInternalApiKey_ReturnsForbidden() throws Exception {
+        RatingUpdateRequest request = new RatingUpdateRequest(new BigDecimal("4.50"), 2);
+
+        mockMvc.perform(patch("/api/products/{id}/rating", 1L)
+                        .header("X-Internal-Api-Key", "wrong-key")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        verify(productService, never()).updateRating(any(), any(), any());
+    }
+
+    @Test
+    void updateRating_WithoutInternalApiKey_ReturnsForbidden() throws Exception {
+        RatingUpdateRequest request = new RatingUpdateRequest(new BigDecimal("4.50"), 2);
+
+        mockMvc.perform(patch("/api/products/{id}/rating", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        verify(productService, never()).updateRating(any(), any(), any());
+    }
 }

@@ -1,9 +1,11 @@
 package am.techshop.notification.service;
 
 import am.techshop.common.dto.response.InstallmentPlanResponse;
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
 import am.techshop.notification.email.EmailTemplates;
+import am.techshop.notification.i18n.OrderMessages;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,49 +76,41 @@ public class EmailService {
     }
 
     public void sendOrderStatusChanged(String to, String userName, Long orderId, OrderStatus status, BigDecimal totalPrice,
-                                        PaymentMethod paymentMethod, InstallmentPlanResponse installmentPlan) {
+                                        PaymentMethod paymentMethod, InstallmentPlanResponse installmentPlan, Language language) {
         boolean justCreated = status == OrderStatus.PENDING;
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
         message.setSubject(justCreated
-                ? "Your order has been received — TechShopArmenia"
-                : "Order #%s status update — TechShopArmenia".formatted(orderId));
+                ? OrderMessages.emailSubjectCreated(language)
+                : OrderMessages.emailSubjectStatusUpdate(orderId, language));
         message.setText(
                 """
-                Hello %s,
+                %s
 
-                %s%sTotal amount: %s AMD
+                %s%s%s
 
-                Thank you for shopping at TechShopArmenia!""".formatted(
-                                userName,
+                %s""".formatted(
+                                OrderMessages.emailGreeting(userName, language),
                                 justCreated
-                                        ? "Your order #%s has been successfully received.\n".formatted(orderId)
-                                        : "Your order #%s status is now: %s.\n".formatted(orderId, status),
-                                paymentMethodSummary(paymentMethod, installmentPlan),
-                                totalPrice)
+                                        ? OrderMessages.emailBodyCreated(orderId, language)
+                                        : OrderMessages.emailBodyStatusUpdate(orderId, status, language),
+                                paymentMethodSummary(paymentMethod, installmentPlan, language),
+                                OrderMessages.emailTotalLine(totalPrice, language),
+                                OrderMessages.emailThanks(language))
         );
         send(message);
     }
 
-    private String paymentMethodSummary(PaymentMethod paymentMethod, InstallmentPlanResponse installmentPlan) {
+    private String paymentMethodSummary(PaymentMethod paymentMethod, InstallmentPlanResponse installmentPlan, Language language) {
         if (paymentMethod == null) {
             return "";
         }
         if (paymentMethod == PaymentMethod.INSTALLMENT && installmentPlan != null) {
-            return "Դուք ընտրել եք ապառիկ վճարում %s-ի միջոցով, %d ամսով, ամսական %s դրամ\n"
-                    .formatted(installmentPlan.bankName(), installmentPlan.durationMonths(), installmentPlan.monthlyPayment());
+            return OrderMessages.emailInstallmentLine(
+                    installmentPlan.bankName(), installmentPlan.durationMonths(), installmentPlan.monthlyPayment(), language);
         }
-        return "Վճարման եղանակ՝ %s\n".formatted(paymentMethodDisplayName(paymentMethod));
-    }
-
-    private String paymentMethodDisplayName(PaymentMethod paymentMethod) {
-        return switch (paymentMethod) {
-            case IDRAM -> "Idram";
-            case TELCELL -> "Telcell";
-            case ROKET_LINE -> "Roket Line";
-            case INSTALLMENT -> "ապառիկ վճարում";
-        };
+        return OrderMessages.emailPaymentMethodLine(paymentMethod, language);
     }
 
     private void send(SimpleMailMessage message) {

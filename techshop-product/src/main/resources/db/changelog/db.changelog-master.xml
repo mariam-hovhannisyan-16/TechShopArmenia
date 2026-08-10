@@ -12,5 +12,6 @@
     <include file="db/changelog/changes/005-seed-iphone-17-products.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/006-fix-iphone-17-images.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/007-seed-mock-catalog-products.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/008-add-rating-columns-to-products.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

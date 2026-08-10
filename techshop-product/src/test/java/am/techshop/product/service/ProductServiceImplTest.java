@@ -397,6 +397,33 @@ class ProductServiceImplTest {
     }
 
     @Test
+    void updateRating_WhenExists_SetsRatingAndReviewCount() {
+        Long id = 1L;
+        Product product = new Product();
+        product.setId(id);
+        product.setName("Phone");
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 10, "Phones", null, false, null);
+
+        when(productRepository.findById(id)).thenReturn(Optional.of(product));
+        when(productRepository.save(product)).thenReturn(product);
+        when(productMapper.toResponse(product)).thenReturn(response);
+
+        productService.updateRating(id, new BigDecimal("4.33"), 3);
+
+        assertEquals(0, new BigDecimal("4.33").compareTo(product.getRating()));
+        assertEquals(3, product.getReviewCount());
+    }
+
+    @Test
+    void updateRating_WhenNotFound_ThrowsException() {
+        Long id = 1L;
+        when(productRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(ProductNotFoundException.class,
+                () -> productService.updateRating(id, BigDecimal.ZERO, 0));
+    }
+
+    @Test
     void updatePrice_LogsHistoryRowBeforeApplyingTheChange() {
         Long id = 1L;
         Product product = new Product();

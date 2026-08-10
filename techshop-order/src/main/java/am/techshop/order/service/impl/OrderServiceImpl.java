@@ -226,7 +226,8 @@ public class OrderServiceImpl implements OrderService {
             orderEventProducer.sendOrderStatusChangedEvent(new OrderStatusChangedEvent(
                     order.getId(), order.getUserId(), user.email(), user.name(),
                     order.getStatus(), note, order.getTotalPrice(),
-                    order.getPaymentMethod(), orderMapper.toInstallmentPlanResponse(order.getInstallmentPlan())));
+                    order.getPaymentMethod(), orderMapper.toInstallmentPlanResponse(order.getInstallmentPlan()),
+                    order.getLanguage()));
         } catch (Exception ex) {
             log.warn("Failed to publish status-changed notification for order {}: {}", order.getId(), ex.getMessage());
         }

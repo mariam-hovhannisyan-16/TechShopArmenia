@@ -5,6 +5,7 @@ import am.techshop.common.dto.request.CheckoutRequest;
 import am.techshop.common.dto.request.InstallmentDetailsRequest;
 import am.techshop.common.dto.response.InstallmentPlanResponse;
 import am.techshop.common.dto.response.OrderResponse;
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.PaymentMethod;
 import am.techshop.order.entity.InstallmentPlan;
 import am.techshop.order.entity.Order;
@@ -26,7 +27,7 @@ class OrderMapperTest {
     @Test
     void toEntity_WithInstallmentDetails_MapsMonthsToDurationMonthsAndLeavesRateAndMonthlyPaymentUnset() {
         InstallmentDetailsRequest installmentDetails = new InstallmentDetailsRequest("Ameriabank", 12, BigDecimal.valueOf(50000));
-        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.INSTALLMENT, installmentDetails);
+        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.INSTALLMENT, installmentDetails, Language.HY);
 
         Order order = mapper.toEntity(request, 1L, BigDecimal.valueOf(450000), mapper.toAddress(sampleAddress()), mapper.toAddress(sampleAddress()));
 
@@ -39,7 +40,7 @@ class OrderMapperTest {
 
     @Test
     void toEntity_WithoutInstallmentDetails_LeavesInstallmentPlanNull() {
-        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null);
+        CheckoutRequest request = new CheckoutRequest(sampleAddress(), sampleAddress(), null, PaymentMethod.IDRAM, null, Language.HY);
 
         Order order = mapper.toEntity(request, 1L, BigDecimal.valueOf(100), mapper.toAddress(sampleAddress()), mapper.toAddress(sampleAddress()));
 

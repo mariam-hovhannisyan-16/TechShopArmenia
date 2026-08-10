@@ -1,5 +1,6 @@
 package am.techshop.order.client;
 
+import am.techshop.common.dto.request.RatingUpdateRequest;
 import am.techshop.common.dto.request.StockAdjustmentRequest;
 import am.techshop.common.dto.response.ApiResponse;
 import am.techshop.common.dto.response.ProductResponse;
@@ -16,5 +17,11 @@ public interface ProductClient {
     ApiResponse<ProductResponse> adjustStock(
             @PathVariable Long id,
             @RequestBody StockAdjustmentRequest request,
+            @RequestHeader("X-Internal-Api-Key") String apiKey);
+
+    @PatchMapping("/api/products/{id}/rating")
+    ApiResponse<ProductResponse> updateRating(
+            @PathVariable Long id,
+            @RequestBody RatingUpdateRequest request,
             @RequestHeader("X-Internal-Api-Key") String apiKey);
 }

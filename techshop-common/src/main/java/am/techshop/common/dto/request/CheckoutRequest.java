@@ -1,5 +1,6 @@
 package am.techshop.common.dto.request;
 
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.PaymentMethod;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -21,5 +22,12 @@ public record CheckoutRequest(
         PaymentMethod paymentMethod,
 
         @Valid
-        InstallmentDetailsRequest installmentDetails
-) {}
+        InstallmentDetailsRequest installmentDetails,
+        Language language
+) {
+    public CheckoutRequest {
+        if (language == null) {
+            language = Language.HY;
+        }
+    }
+}
