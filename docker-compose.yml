@@ -42,8 +42,8 @@ services:
 
   techshop-user:
     build:
-      context: ./techshop-user
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: techshop-user/Dockerfile
     container_name: techshop-user
     ports:
       - "8081:8081"
