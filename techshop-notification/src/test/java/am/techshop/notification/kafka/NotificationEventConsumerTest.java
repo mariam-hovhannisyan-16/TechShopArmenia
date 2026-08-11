@@ -20,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.mockito.Mockito.verify;
 
@@ -39,14 +40,16 @@ class NotificationEventConsumerTest {
     void handleOrderStatusChanged_DelegatesToDispatcher() {
         InstallmentPlanResponse installmentPlan = new InstallmentPlanResponse(
                 "Ameriabank", BigDecimal.valueOf(0.12), 12, BigDecimal.valueOf(20), BigDecimal.valueOf(16.80));
+        List<String> productNames = List.of("iPhone 15, 128GB");
         OrderStatusChangedEvent event = new OrderStatusChangedEvent(
                 42L, 1L, "mariam@test.com", "Mariam", OrderStatus.PAID, "Payment verified", BigDecimal.valueOf(200),
-                PaymentMethod.INSTALLMENT, installmentPlan, Language.RU);
+                PaymentMethod.INSTALLMENT, installmentPlan, Language.RU, productNames);
 
         consumer.handleOrderStatusChanged(event);
 
         verify(dispatcher).dispatchOrderStatusChanged(1L, "mariam@test.com", "Mariam", 42L,
-                OrderStatus.PAID, "Payment verified", BigDecimal.valueOf(200), PaymentMethod.INSTALLMENT, installmentPlan, Language.RU);
+                OrderStatus.PAID, "Payment verified", BigDecimal.valueOf(200), PaymentMethod.INSTALLMENT, installmentPlan, Language.RU,
+                productNames);
     }
 
     @Test

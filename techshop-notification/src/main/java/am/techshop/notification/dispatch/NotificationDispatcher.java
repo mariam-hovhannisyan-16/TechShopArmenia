@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -55,10 +56,10 @@ public class NotificationDispatcher {
     public void dispatchOrderStatusChanged(Long userId, String email, String name, Long orderId,
                                             OrderStatus status, String note, BigDecimal totalPrice,
                                             PaymentMethod paymentMethod, InstallmentPlanResponse installmentPlan,
-                                            Language language) {
+                                            Language language, List<String> productNames) {
         deliver(NotificationType.ORDER_STATUS_CHANGED, userId,
-                () -> emailService.sendOrderStatusChanged(email, name, orderId, status, totalPrice, paymentMethod, installmentPlan, language),
-                () -> orderStatusMessage(orderId, status, note, language));
+                () -> emailService.sendOrderStatusChanged(email, name, orderId, status, totalPrice, paymentMethod, installmentPlan, language, productNames),
+                () -> orderStatusMessage(orderId, status, note, language, productNames));
     }
 
     public void dispatchChatReply(Long userId, String messagePreview) {
@@ -71,8 +72,8 @@ public class NotificationDispatcher {
                 () -> "%s just dropped to %s AMD — it's on your wishlist!".formatted(productName, newPrice));
     }
 
-    private String orderStatusMessage(Long orderId, OrderStatus status, String note, Language language) {
-        String base = OrderMessages.inAppBaseMessage(orderId, status, language);
+    private String orderStatusMessage(Long orderId, OrderStatus status, String note, Language language, List<String> productNames) {
+        String base = OrderMessages.inAppBaseMessage(orderId, status, language, productNames);
         if (note != null && !note.isBlank()) {
             return base + " " + OrderMessages.inAppNoteLabel(language) + ": "
                     + OrderMessages.translateSystemNote(note, language);

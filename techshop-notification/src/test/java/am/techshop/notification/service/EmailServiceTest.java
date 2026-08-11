@@ -19,6 +19,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 
@@ -54,7 +55,7 @@ class EmailServiceTest {
         setDevMode(true);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 1L, OrderStatus.PENDING, BigDecimal.TEN,
-                PaymentMethod.IDRAM, null, Language.HY);
+                PaymentMethod.IDRAM, null, Language.HY, null);
 
         verify(mailSender, never()).send(any(SimpleMailMessage.class));
     }
@@ -64,7 +65,7 @@ class EmailServiceTest {
         setDevMode(false);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 1L, OrderStatus.PAID, BigDecimal.TEN,
-                PaymentMethod.IDRAM, null, Language.HY);
+                PaymentMethod.IDRAM, null, Language.HY, null);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
@@ -77,7 +78,7 @@ class EmailServiceTest {
         doThrow(new MailSendException("SMTP unavailable")).when(mailSender).send(any(SimpleMailMessage.class));
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 1L, OrderStatus.PAID, BigDecimal.TEN,
-                PaymentMethod.IDRAM, null, Language.HY);
+                PaymentMethod.IDRAM, null, Language.HY, null);
 
         verify(mailSender).send(any(SimpleMailMessage.class));
     }
@@ -87,7 +88,7 @@ class EmailServiceTest {
         setDevMode(false);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.PENDING, BigDecimal.valueOf(150),
-                PaymentMethod.IDRAM, null, Language.EN);
+                PaymentMethod.IDRAM, null, Language.EN, null);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
@@ -101,7 +102,7 @@ class EmailServiceTest {
         setDevMode(false);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.SHIPPED, BigDecimal.valueOf(150),
-                PaymentMethod.IDRAM, null, Language.EN);
+                PaymentMethod.IDRAM, null, Language.EN, null);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
@@ -115,7 +116,7 @@ class EmailServiceTest {
         setDevMode(false);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.PENDING, BigDecimal.valueOf(150),
-                PaymentMethod.IDRAM, null, Language.HY);
+                PaymentMethod.IDRAM, null, Language.HY, null);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
@@ -132,7 +133,7 @@ class EmailServiceTest {
         setDevMode(false);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.SHIPPED, BigDecimal.valueOf(150),
-                PaymentMethod.IDRAM, null, Language.RU);
+                PaymentMethod.IDRAM, null, Language.RU, null);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
@@ -149,7 +150,7 @@ class EmailServiceTest {
         setDevMode(false);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.PAID, BigDecimal.valueOf(150),
-                PaymentMethod.IDRAM, null, Language.HY);
+                PaymentMethod.IDRAM, null, Language.HY, null);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
@@ -161,7 +162,7 @@ class EmailServiceTest {
         setDevMode(false);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.PAID, BigDecimal.valueOf(150),
-                PaymentMethod.TELCELL, null, Language.EN);
+                PaymentMethod.TELCELL, null, Language.EN, null);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
@@ -173,7 +174,7 @@ class EmailServiceTest {
         setDevMode(false);
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.PAID, BigDecimal.valueOf(150),
-                PaymentMethod.ROKET_LINE, null, Language.RU);
+                PaymentMethod.ROKET_LINE, null, Language.RU, null);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
@@ -187,13 +188,40 @@ class EmailServiceTest {
                 "Ameriabank", BigDecimal.valueOf(0.12), 12, BigDecimal.valueOf(20), BigDecimal.valueOf(112.00));
 
         emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.PAID, BigDecimal.valueOf(150),
-                PaymentMethod.INSTALLMENT, plan, Language.HY);
+                PaymentMethod.INSTALLMENT, plan, Language.HY, null);
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());
         String text = Objects.requireNonNull(captor.getValue().getText());
         assertTrue(text.contains("Դուք ընտրել եք ապառիկ վճարում Ameriabank-ի միջոցով, 12 ամսով, ամսական 112.0 դրամ"));
         assertFalse(text.contains("Վճարման եղանակ՝"));
+    }
+
+    @Test
+    void sendOrderStatusChanged_WithSingleProduct_IncludesProductNameInEnglishBody() {
+        setDevMode(false);
+
+        emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.SHIPPED, BigDecimal.valueOf(150),
+                PaymentMethod.IDRAM, null, Language.EN, List.of("iPhone 15, 128GB"));
+
+        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(captor.capture());
+        assertTrue(Objects.requireNonNull(captor.getValue().getText())
+                .contains("Your order #7 (iPhone 15, 128GB) status is now: Shipped."));
+    }
+
+    @Test
+    void sendOrderStatusChanged_WithManyProducts_TruncatesToFirstPlusCountInRussianBody() {
+        setDevMode(false);
+
+        emailService.sendOrderStatusChanged("mariam@test.com", "Mariam", 7L, OrderStatus.SHIPPED, BigDecimal.valueOf(150),
+                PaymentMethod.IDRAM, null, Language.RU,
+                List.of("iPhone 15, 128GB", "AirPods Pro", "USB-C Cable", "Чехол"));
+
+        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(captor.capture());
+        assertTrue(Objects.requireNonNull(captor.getValue().getText())
+                .contains("Статус вашего заказа №7 (iPhone 15, 128GB и ещё 3 товара) сейчас: Отправлен."));
     }
 
     @Test

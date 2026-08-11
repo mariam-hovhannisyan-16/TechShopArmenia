@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -84,10 +85,10 @@ class NotificationDispatcherTest {
         stubNotificationCreation();
 
         dispatcher.dispatchOrderStatusChanged(1L, "mariam@test.com", "Mariam", 42L,
-                OrderStatus.PAID, "Payment verified", BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.EN);
+                OrderStatus.PAID, "Payment verified", BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.EN, null);
 
         verify(emailService).sendOrderStatusChanged(
-                "mariam@test.com", "Mariam", 42L, OrderStatus.PAID, BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.EN);
+                "mariam@test.com", "Mariam", 42L, OrderStatus.PAID, BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.EN, null);
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
@@ -100,7 +101,7 @@ class NotificationDispatcherTest {
         stubNotificationCreation();
 
         dispatcher.dispatchOrderStatusChanged(1L, "mariam@test.com", "Mariam", 42L,
-                OrderStatus.PAID, "Payment verified via IDRAM", BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.HY);
+                OrderStatus.PAID, "Payment verified via IDRAM", BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.HY, null);
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
@@ -117,12 +118,50 @@ class NotificationDispatcherTest {
         stubNotificationCreation();
 
         dispatcher.dispatchOrderStatusChanged(1L, "mariam@test.com", "Mariam", 42L,
-                OrderStatus.SHIPPED, null, BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.RU);
+                OrderStatus.SHIPPED, null, BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.RU, null);
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
         String message = captor.getValue().getMessage();
         assertEquals("Статус вашего заказа №42 изменён на: Отправлен.", message);
+    }
+
+    @Test
+    void dispatchOrderStatusChanged_WhenSingleProduct_IncludesProductNameInArmenianMessage() {
+        stubNotificationCreation();
+
+        dispatcher.dispatchOrderStatusChanged(1L, "mariam@test.com", "Mariam", 42L,
+                OrderStatus.DELIVERED, null, BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.HY,
+                List.of("iPhone 15, 128GB"));
+
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).save(captor.capture());
+        assertEquals("Ձեր՝ #42 պատվերի (iPhone 15, 128GB) կարգավիճակը փոխվել է. Հասցվել է:", captor.getValue().getMessage());
+    }
+
+    @Test
+    void dispatchOrderStatusChanged_WhenManyProducts_TruncatesToFirstPlusCountInEnglishMessage() {
+        stubNotificationCreation();
+
+        dispatcher.dispatchOrderStatusChanged(1L, "mariam@test.com", "Mariam", 42L,
+                OrderStatus.SHIPPED, null, BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.EN,
+                List.of("iPhone 15, 128GB", "AirPods Pro", "USB-C Cable"));
+
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).save(captor.capture());
+        assertEquals("Your order #42 (iPhone 15, 128GB and 2 more) status changed to Shipped.", captor.getValue().getMessage());
+    }
+
+    @Test
+    void dispatchOrderStatusChanged_WhenNoProducts_OmitsParensFromMessage() {
+        stubNotificationCreation();
+
+        dispatcher.dispatchOrderStatusChanged(1L, "mariam@test.com", "Mariam", 42L,
+                OrderStatus.SHIPPED, null, BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.EN, List.of());
+
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).save(captor.capture());
+        assertEquals("Your order #42 status changed to Shipped.", captor.getValue().getMessage());
     }
 
     @Test
@@ -134,7 +173,7 @@ class NotificationDispatcherTest {
         verify(emailService, never()).sendVerificationEmail(any(), any(), any());
         verify(emailService, never()).sendWelcome(any(), any());
         verify(emailService, never()).sendPasswordResetEmail(any(), any(), any());
-        verify(emailService, never()).sendOrderStatusChanged(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(emailService, never()).sendOrderStatusChanged(any(), any(), any(), any(), any(), any(), any(), any(), any());
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
@@ -148,7 +187,7 @@ class NotificationDispatcherTest {
 
         dispatcher.dispatchPriceDrop(1L, "iPhone 15", BigDecimal.valueOf(400000));
 
-        verify(emailService, never()).sendOrderStatusChanged(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(emailService, never()).sendOrderStatusChanged(any(), any(), any(), any(), any(), any(), any(), any(), any());
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
@@ -161,7 +200,7 @@ class NotificationDispatcherTest {
         stubNotificationCreation();
 
         dispatcher.dispatchOrderStatusChanged(1L, "mariam@test.com", "Mariam", 42L,
-                OrderStatus.PENDING, "Order created from cart", BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.EN);
+                OrderStatus.PENDING, "Order created from cart", BigDecimal.valueOf(200), PaymentMethod.IDRAM, null, Language.EN, null);
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());

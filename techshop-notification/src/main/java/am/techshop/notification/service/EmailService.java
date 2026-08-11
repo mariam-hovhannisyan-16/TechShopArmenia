@@ -16,6 +16,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Objects;
 
 @Slf4j
@@ -76,7 +77,8 @@ public class EmailService {
     }
 
     public void sendOrderStatusChanged(String to, String userName, Long orderId, OrderStatus status, BigDecimal totalPrice,
-                                        PaymentMethod paymentMethod, InstallmentPlanResponse installmentPlan, Language language) {
+                                        PaymentMethod paymentMethod, InstallmentPlanResponse installmentPlan, Language language,
+                                        List<String> productNames) {
         boolean justCreated = status == OrderStatus.PENDING;
 
         SimpleMailMessage message = new SimpleMailMessage();
@@ -93,8 +95,8 @@ public class EmailService {
                 %s""".formatted(
                                 OrderMessages.emailGreeting(userName, language),
                                 justCreated
-                                        ? OrderMessages.emailBodyCreated(orderId, language)
-                                        : OrderMessages.emailBodyStatusUpdate(orderId, status, language),
+                                        ? OrderMessages.emailBodyCreated(orderId, language, productNames)
+                                        : OrderMessages.emailBodyStatusUpdate(orderId, status, language, productNames),
                                 paymentMethodSummary(paymentMethod, installmentPlan, language),
                                 OrderMessages.emailTotalLine(totalPrice, language),
                                 OrderMessages.emailThanks(language))

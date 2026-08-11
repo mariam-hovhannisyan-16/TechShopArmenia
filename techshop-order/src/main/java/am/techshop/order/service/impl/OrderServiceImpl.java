@@ -16,6 +16,7 @@ import am.techshop.order.client.CartClient;
 import am.techshop.order.client.UserClient;
 import am.techshop.order.entity.Address;
 import am.techshop.order.entity.Order;
+import am.techshop.order.entity.OrderItem;
 import am.techshop.order.kafka.OrderEventProducer;
 import am.techshop.order.mapper.OrderMapper;
 import am.techshop.order.payment.PaymentInitiationResult;
@@ -223,11 +224,12 @@ public class OrderServiceImpl implements OrderService {
     private void publishStatusChanged(Order order, String note) {
         try {
             UserResponse user = userClient.getUser(order.getUserId(), internalApiKey).data();
+            List<String> productNames = order.getItems().stream().map(OrderItem::getProductName).toList();
             orderEventProducer.sendOrderStatusChangedEvent(new OrderStatusChangedEvent(
                     order.getId(), order.getUserId(), user.email(), user.name(),
                     order.getStatus(), note, order.getTotalPrice(),
                     order.getPaymentMethod(), orderMapper.toInstallmentPlanResponse(order.getInstallmentPlan()),
-                    order.getLanguage()));
+                    order.getLanguage(), productNames));
         } catch (Exception ex) {
             log.warn("Failed to publish status-changed notification for order {}: {}", order.getId(), ex.getMessage());
         }

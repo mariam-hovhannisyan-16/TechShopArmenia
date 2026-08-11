@@ -6,6 +6,7 @@ import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record OrderStatusChangedEvent(
         Long orderId,
@@ -17,5 +18,6 @@ public record OrderStatusChangedEvent(
         BigDecimal totalPrice,
         PaymentMethod paymentMethod,
         InstallmentPlanResponse installmentPlan,
-        Language language
+        Language language,
+        List<String> productNames
 ) {}
