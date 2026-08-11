@@ -57,7 +57,7 @@ public class UserServiceImpl implements UserService {
         String verificationToken = UUID.randomUUID().toString();
 
         User user = userMapper.toEntity(request, passwordEncoder.encode(request.password()),
-                request.role() != null ? request.role() : UserRole.CUSTOMER,
+                UserRole.CUSTOMER,
                 verificationToken, LocalDateTime.now().plusHours(VERIFICATION_TOKEN_TTL_HOURS));
 
         User savedUser;

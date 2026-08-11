@@ -34,7 +34,7 @@ class RegisterRoleIntegrationTest {
     }
 
     @Test
-    void register_WithAdminRoleInRequestBody_PersistsUserWithAdminRole() throws Exception {
+    void register_WithAdminRoleInRequestBody_PersistsUserWithCustomerRole() throws Exception {
         String body = """
                 {
                   "name": "Admin User",
@@ -51,6 +51,6 @@ class RegisterRoleIntegrationTest {
 
         Optional<User> saved = userRepository.findByEmail("admin-role-test@test.com");
         assertTrue(saved.isPresent());
-        assertEquals(UserRole.ADMIN, saved.get().getRole());
+        assertEquals(UserRole.CUSTOMER, saved.get().getRole());
     }
 }

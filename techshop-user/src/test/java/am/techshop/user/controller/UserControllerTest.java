@@ -108,19 +108,6 @@ class UserControllerTest {
     }
 
     @Test
-    void register_WithAdminRole_PassesRoleThrough() throws Exception {
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", UserRole.ADMIN);
-        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.ADMIN, LocalDateTime.now(), true);
-        AuthResponse authResponse = new AuthResponse("token", userResponse);
-        when(userService.register(request)).thenReturn(authResponse);
-        mockMvc.perform(post("/api/users/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.user.role").value("ADMIN"));
-    }
-
-    @Test
     void login_ReturnsToken() throws Exception {
         LoginRequest request = new LoginRequest("mariam@test.com", "password");
         UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);

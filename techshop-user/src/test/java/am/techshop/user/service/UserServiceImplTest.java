@@ -114,42 +114,42 @@ class UserServiceImplTest {
     }
 
     @Test
-    void register_WhenRoleProvided_UsesRequestedRole() {
+    void register_WhenRoleProvided_IgnoresRequestedRoleAndUsesCustomer() {
         RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", UserRole.ADMIN);
         User newUser = new User();
         User savedUser = new User();
         savedUser.setId(1L);
         savedUser.setName("Mariam");
         savedUser.setEmail("mariam@test.com");
-        savedUser.setRole(UserRole.ADMIN);
-        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.ADMIN, LocalDateTime.now(), true);
+        savedUser.setRole(UserRole.CUSTOMER);
+        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("encoded");
-        when(userMapper.toEntity(eq(request), eq("encoded"), eq(UserRole.ADMIN), any(), any())).thenReturn(newUser);
+        when(userMapper.toEntity(eq(request), eq("encoded"), eq(UserRole.CUSTOMER), any(), any())).thenReturn(newUser);
         when(userRepository.save(newUser)).thenReturn(savedUser);
         when(jwtService.generateToken(any(), any(), any())).thenReturn("token");
         when(userMapper.toResponse(savedUser)).thenReturn(userResponse);
 
         userService.register(request);
 
-        verify(userMapper).toEntity(eq(request), eq("encoded"), eq(UserRole.ADMIN), any(), any());
+        verify(userMapper).toEntity(eq(request), eq("encoded"), eq(UserRole.CUSTOMER), any(), any());
     }
 
     @Test
     void register_WhenEventPublishFails_StillReturnsAuthResponse() {
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", UserRole.ADMIN);
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
         User newUser = new User();
         User savedUser = new User();
         savedUser.setId(1L);
         savedUser.setName("Mariam");
         savedUser.setEmail("mariam@test.com");
-        savedUser.setRole(UserRole.ADMIN);
-        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.ADMIN, LocalDateTime.now(), true);
+        savedUser.setRole(UserRole.CUSTOMER);
+        UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("encoded");
-        when(userMapper.toEntity(eq(request), eq("encoded"), eq(UserRole.ADMIN), any(), any())).thenReturn(newUser);
+        when(userMapper.toEntity(eq(request), eq("encoded"), eq(UserRole.CUSTOMER), any(), any())).thenReturn(newUser);
         when(userRepository.save(newUser)).thenReturn(savedUser);
         when(jwtService.generateToken(any(), any(), any())).thenReturn("token");
         when(userMapper.toResponse(savedUser)).thenReturn(userResponse);
@@ -160,7 +160,7 @@ class UserServiceImplTest {
 
         assertNotNull(result);
         assertEquals("token", result.token());
-        assertEquals(UserRole.ADMIN, result.user().role());
+        assertEquals(UserRole.CUSTOMER, result.user().role());
     }
 
     @Test
