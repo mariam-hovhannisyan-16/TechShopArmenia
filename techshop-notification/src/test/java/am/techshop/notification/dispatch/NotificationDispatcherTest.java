@@ -185,14 +185,14 @@ class NotificationDispatcherTest {
     void dispatchPriceDrop_SavesInAppNotificationOnly() {
         stubNotificationCreation();
 
-        dispatcher.dispatchPriceDrop(1L, "iPhone 15", BigDecimal.valueOf(400000));
+        dispatcher.dispatchPriceDrop(1L, "iPhone 15", BigDecimal.valueOf(450000), BigDecimal.valueOf(400000));
 
         verify(emailService, never()).sendOrderStatusChanged(any(), any(), any(), any(), any(), any(), any(), any(), any());
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
-        assertTrue(captor.getValue().getMessage().contains("iPhone 15"));
-        assertTrue(captor.getValue().getMessage().contains("400000"));
+        assertEquals("iPhone 15-ի գինը իջել է. 450000 → 400000", captor.getValue().getMessage());
+        assertEquals(1L, captor.getValue().getUserId());
     }
 
     @Test

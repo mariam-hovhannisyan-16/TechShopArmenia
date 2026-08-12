@@ -6,5 +6,6 @@ public record PriceDropEvent(
         Long userId,
         Long productId,
         String productName,
+        BigDecimal oldPrice,
         BigDecimal newPrice
 ) {}

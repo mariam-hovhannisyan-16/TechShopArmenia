@@ -6,6 +6,7 @@ import am.techshop.common.dto.request.LoginRequest;
 import am.techshop.common.dto.request.RegisterRequest;
 import am.techshop.common.dto.request.ResetPasswordRequest;
 import am.techshop.common.dto.response.AuthResponse;
+import am.techshop.common.dto.response.NotificationPreferencesResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.enums.UserRole;
 import am.techshop.common.event.AdminUserRegisteredEvent;
@@ -249,5 +250,26 @@ public class UserServiceImpl implements UserService {
         } catch (Exception ex) {
             log.warn("Failed to publish user-deleted event for user {}: {}", userId, ex.getMessage());
         }
+    }
+
+    public NotificationPreferencesResponse getNotificationPreferences(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+        return new NotificationPreferencesResponse(user.isNotifyPriceDrops());
+    }
+
+    @Transactional
+    public NotificationPreferencesResponse updateNotificationPreferences(Long userId, boolean notifyPriceDrops) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+        user.setNotifyPriceDrops(notifyPriceDrops);
+        User savedUser = userRepository.save(user);
+        return new NotificationPreferencesResponse(savedUser.isNotifyPriceDrops());
+    }
+
+    public List<Long> filterPriceDropEnabledUserIds(List<Long> userIds) {
+        return userRepository.findByIdInAndNotifyPriceDropsTrue(userIds).stream()
+                .map(User::getId)
+                .toList();
     }
 }

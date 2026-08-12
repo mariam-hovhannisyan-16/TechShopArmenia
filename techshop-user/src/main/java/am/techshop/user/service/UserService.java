@@ -6,6 +6,7 @@ import am.techshop.common.dto.request.LoginRequest;
 import am.techshop.common.dto.request.RegisterRequest;
 import am.techshop.common.dto.request.ResetPasswordRequest;
 import am.techshop.common.dto.response.AuthResponse;
+import am.techshop.common.dto.response.NotificationPreferencesResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.enums.UserRole;
 
@@ -24,4 +25,7 @@ public interface UserService {
     UserResponse updateUserRole(Long id, UserRole role);
     void deleteAccount(Long userId, DeleteAccountRequest request);
     void changePassword(Long userId, ChangePasswordRequest request);
+    NotificationPreferencesResponse getNotificationPreferences(Long userId);
+    NotificationPreferencesResponse updateNotificationPreferences(Long userId, boolean notifyPriceDrops);
+    List<Long> filterPriceDropEnabledUserIds(List<Long> userIds);
 }

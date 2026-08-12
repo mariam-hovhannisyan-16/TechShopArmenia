@@ -31,6 +31,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -115,12 +116,12 @@ class UserServiceImplTest {
         when(userRepository.save(newUser)).thenReturn(savedUser);
         when(jwtService.generateToken(any(), any(), any())).thenReturn("token");
         when(userMapper.toResponse(savedUser)).thenReturn(userResponse);
-        when(userRepository.findByRole(UserRole.ADMIN)).thenReturn(java.util.List.of(admin1, admin2));
+        when(userRepository.findByRole(UserRole.ADMIN)).thenReturn(List.of(admin1, admin2));
 
         userService.register(request);
 
         verify(userEventProducer).sendAdminUserRegisteredEvent(
-                new AdminUserRegisteredEvent("Mariam", "mariam@test.com", java.util.List.of(1L, 2L)));
+                new AdminUserRegisteredEvent("Mariam", "mariam@test.com", List.of(1L, 2L)));
     }
 
     @Test
@@ -140,7 +141,7 @@ class UserServiceImplTest {
         when(userRepository.save(newUser)).thenReturn(savedUser);
         when(jwtService.generateToken(any(), any(), any())).thenReturn("token");
         when(userMapper.toResponse(savedUser)).thenReturn(userResponse);
-        when(userRepository.findByRole(UserRole.ADMIN)).thenReturn(java.util.List.of());
+        when(userRepository.findByRole(UserRole.ADMIN)).thenReturn(List.of());
 
         userService.register(request);
 
@@ -682,5 +683,64 @@ class UserServiceImplTest {
 
         assertEquals(409, ex.getStatusCode());
         verify(userEventProducer, never()).sendUserRegisteredEvent(any());
+    }
+
+    @Test
+    void getNotificationPreferences_WhenUserExists_ReturnsPreferences() {
+        Long userId = 1L;
+        User user = new User();
+        user.setId(userId);
+        user.setNotifyPriceDrops(false);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        var result = userService.getNotificationPreferences(userId);
+
+        assertFalse(result.notifyPriceDrops());
+    }
+
+    @Test
+    void getNotificationPreferences_WhenUserNotFound_ThrowsException() {
+        Long userId = 404L;
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> userService.getNotificationPreferences(userId));
+    }
+
+    @Test
+    void updateNotificationPreferences_WhenUserExists_UpdatesAndReturnsPreferences() {
+        Long userId = 1L;
+        User user = new User();
+        user.setId(userId);
+        user.setNotifyPriceDrops(true);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+
+        var result = userService.updateNotificationPreferences(userId, false);
+
+        assertFalse(user.isNotifyPriceDrops());
+        assertFalse(result.notifyPriceDrops());
+    }
+
+    @Test
+    void updateNotificationPreferences_WhenUserNotFound_ThrowsException() {
+        Long userId = 404L;
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> userService.updateNotificationPreferences(userId, false));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void filterPriceDropEnabledUserIds_ReturnsOnlyOptedInUserIds() {
+        User optedIn = new User();
+        optedIn.setId(1L);
+        User alsoOptedIn = new User();
+        alsoOptedIn.setId(3L);
+        when(userRepository.findByIdInAndNotifyPriceDropsTrue(List.of(1L, 2L, 3L)))
+                .thenReturn(List.of(optedIn, alsoOptedIn));
+
+        List<Long> result = userService.filterPriceDropEnabledUserIds(List.of(1L, 2L, 3L));
+
+        assertEquals(List.of(1L, 3L), result);
     }
 }

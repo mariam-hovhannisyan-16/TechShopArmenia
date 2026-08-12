@@ -4,12 +4,14 @@ import am.techshop.common.dto.request.ChangePasswordRequest;
 import am.techshop.common.dto.request.DeleteAccountRequest;
 import am.techshop.common.dto.request.ForgotPasswordRequest;
 import am.techshop.common.dto.request.LoginRequest;
+import am.techshop.common.dto.request.NotificationPreferencesUpdateRequest;
 import am.techshop.common.dto.request.RegisterRequest;
 import am.techshop.common.dto.request.ResendVerificationRequest;
 import am.techshop.common.dto.request.ResetPasswordRequest;
 import am.techshop.common.dto.request.RoleUpdateRequest;
 import am.techshop.common.dto.response.ApiResponse;
 import am.techshop.common.dto.response.AuthResponse;
+import am.techshop.common.dto.response.NotificationPreferencesResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.exception.TechShopException;
 import am.techshop.common.security.CurrentUser;
@@ -23,6 +25,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -139,5 +142,30 @@ public class UserController {
             @RequestBody @Valid ChangePasswordRequest request) {
         userService.changePassword(CurrentUser.id(authentication), request);
         return ResponseEntity.ok(ApiResponse.ok("Password changed successfully", null));
+    }
+
+    @GetMapping("/api/users/me/preferences")
+    public ResponseEntity<ApiResponse<NotificationPreferencesResponse>> getMyNotificationPreferences(
+            Authentication authentication) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                userService.getNotificationPreferences(CurrentUser.id(authentication))));
+    }
+
+    @PatchMapping("/api/users/me/preferences")
+    public ResponseEntity<ApiResponse<NotificationPreferencesResponse>> updateMyNotificationPreferences(
+            Authentication authentication,
+            @RequestBody @Valid NotificationPreferencesUpdateRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Preferences updated",
+                userService.updateNotificationPreferences(CurrentUser.id(authentication), request.notifyPriceDrops())));
+    }
+
+    @GetMapping("/api/users/internal/price-drop-enabled")
+    public ResponseEntity<ApiResponse<List<Long>>> getPriceDropEnabledUserIds(
+            @RequestParam List<Long> ids,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey) {
+        if (!isValidInternalKey(apiKey)) {
+            throw new TechShopException("Forbidden", 403);
+        }
+        return ResponseEntity.ok(ApiResponse.ok(userService.filterPriceDropEnabledUserIds(ids)));
     }
 }

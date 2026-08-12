@@ -43,6 +43,8 @@ public class User {
 
     private boolean emailVerified = false;
 
+    private boolean notifyPriceDrops = true;
+
     private String verificationToken;
 
     private LocalDateTime verificationTokenExpiresAt;

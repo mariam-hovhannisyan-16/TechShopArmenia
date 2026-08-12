@@ -68,9 +68,9 @@ public class NotificationDispatcher {
                 () -> "New reply in your support conversation: %s".formatted(messagePreview));
     }
 
-    public void dispatchPriceDrop(Long userId, String productName, BigDecimal newPrice) {
+    public void dispatchPriceDrop(Long userId, String productName, BigDecimal oldPrice, BigDecimal newPrice) {
         deliver(NotificationType.PRICE_DROP, userId, null,
-                () -> "%s just dropped to %s AMD — it's on your wishlist!".formatted(productName, newPrice));
+                () -> "%s-ի գինը իջել է. %s → %s".formatted(productName, oldPrice.toPlainString(), newPrice.toPlainString()));
     }
 
     public void dispatchAdminNewUser(List<Long> adminIds, String newUserName, String newUserEmail) {

@@ -77,9 +77,13 @@ services:
       DB_PORT: 5432
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      WISHLIST_SERVICE_URL: http://techshop-wishlist:8086
+      USER_SERVICE_URL: http://techshop-user:8081
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
     depends_on:
       - postgres
+      - kafka
 
   techshop-cart:
     build:

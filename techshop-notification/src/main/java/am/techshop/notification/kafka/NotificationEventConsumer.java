@@ -56,7 +56,7 @@ public class NotificationEventConsumer {
     @KafkaListener(topics = "price-drop", groupId = "notification-group",
             properties = {"spring.json.value.default.type=am.techshop.common.event.PriceDropEvent"})
     public void handlePriceDrop(PriceDropEvent event) {
-        dispatcher.dispatchPriceDrop(event.userId(), event.productName(), event.newPrice());
+        dispatcher.dispatchPriceDrop(event.userId(), event.productName(), event.oldPrice(), event.newPrice());
     }
 
     @KafkaListener(topics = "admin-user-registered", groupId = "notification-group",

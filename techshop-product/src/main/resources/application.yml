@@ -39,6 +39,8 @@ app:
 services:
   wishlist:
     url: ${WISHLIST_SERVICE_URL:http://localhost:8086}
+  user:
+    url: ${USER_SERVICE_URL:http://localhost:8081}
 
 server:
   port: ${SERVER_PORT:8084}

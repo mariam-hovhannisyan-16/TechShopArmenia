@@ -91,11 +91,11 @@ class NotificationEventConsumerTest {
 
     @Test
     void handlePriceDrop_DelegatesToDispatcher() {
-        PriceDropEvent event = new PriceDropEvent(1L, 7L, "Phone", BigDecimal.valueOf(150));
+        PriceDropEvent event = new PriceDropEvent(1L, 7L, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(150));
 
         consumer.handlePriceDrop(event);
 
-        verify(dispatcher).dispatchPriceDrop(1L, "Phone", BigDecimal.valueOf(150));
+        verify(dispatcher).dispatchPriceDrop(1L, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(150));
     }
 
     @Test

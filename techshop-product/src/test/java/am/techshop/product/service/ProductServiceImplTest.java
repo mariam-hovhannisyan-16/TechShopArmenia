@@ -7,6 +7,7 @@ import am.techshop.common.dto.response.ProductResponse;
 import am.techshop.common.event.PriceDropEvent;
 import am.techshop.common.exception.ProductNotFoundException;
 import am.techshop.common.exception.TechShopException;
+import am.techshop.product.client.UserClient;
 import am.techshop.product.client.WishlistClient;
 import am.techshop.product.entity.PriceHistory;
 import am.techshop.product.entity.Product;
@@ -52,6 +53,9 @@ class ProductServiceImplTest {
 
     @Mock
     private WishlistClient wishlistClient;
+
+    @Mock
+    private UserClient userClient;
 
     @Mock
     private ProductEventProducer productEventProducer;
@@ -253,7 +257,7 @@ class ProductServiceImplTest {
     }
 
     @Test
-    void updatePrice_WhenPriceDrops_NotifiesEachWishlistSubscriber() {
+    void updatePrice_WhenPriceDrops_NotifiesEachOptedInWishlistSubscriber() {
         Long id = 1L;
         Product product = new Product();
         product.setId(id);
@@ -266,11 +270,58 @@ class ProductServiceImplTest {
         when(productMapper.toResponse(product)).thenReturn(response);
         when(wishlistClient.getSubscribers(eq(id), any()))
                 .thenReturn(new ApiResponse<>(true, "Success", List.of(10L, 20L)));
+        when(userClient.getPriceDropEnabledUserIds(eq(List.of(10L, 20L)), any()))
+                .thenReturn(new ApiResponse<>(true, "Success", List.of(10L, 20L)));
 
         productService.updatePrice(id, BigDecimal.valueOf(150));
 
-        verify(productEventProducer).sendPriceDropEvent(new PriceDropEvent(10L, id, "Phone", BigDecimal.valueOf(150)));
-        verify(productEventProducer).sendPriceDropEvent(new PriceDropEvent(20L, id, "Phone", BigDecimal.valueOf(150)));
+        verify(productEventProducer).sendPriceDropEvent(new PriceDropEvent(10L, id, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(150)));
+        verify(productEventProducer).sendPriceDropEvent(new PriceDropEvent(20L, id, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(150)));
+    }
+
+    @Test
+    void updatePrice_WhenSubscriberOptedOutOfPriceDropNotifications_DoesNotNotifyThem() {
+        Long id = 1L;
+        Product product = new Product();
+        product.setId(id);
+        product.setName("Phone");
+        product.setPrice(BigDecimal.valueOf(200));
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(150), 10, "Phones", null, false, null);
+
+        when(productRepository.findById(id)).thenReturn(Optional.of(product));
+        when(productRepository.save(product)).thenReturn(product);
+        when(productMapper.toResponse(product)).thenReturn(response);
+        when(wishlistClient.getSubscribers(eq(id), any()))
+                .thenReturn(new ApiResponse<>(true, "Success", List.of(10L, 20L)));
+        when(userClient.getPriceDropEnabledUserIds(eq(List.of(10L, 20L)), any()))
+                .thenReturn(new ApiResponse<>(true, "Success", List.of(10L)));
+
+        productService.updatePrice(id, BigDecimal.valueOf(150));
+
+        verify(productEventProducer).sendPriceDropEvent(new PriceDropEvent(10L, id, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(150)));
+        verify(productEventProducer, never()).sendPriceDropEvent(argThat(event -> event.userId().equals(20L)));
+    }
+
+    @Test
+    void updatePrice_WhenNoSubscribersOptedIn_DoesNotPublishAnyEvent() {
+        Long id = 1L;
+        Product product = new Product();
+        product.setId(id);
+        product.setName("Phone");
+        product.setPrice(BigDecimal.valueOf(200));
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(150), 10, "Phones", null, false, null);
+
+        when(productRepository.findById(id)).thenReturn(Optional.of(product));
+        when(productRepository.save(product)).thenReturn(product);
+        when(productMapper.toResponse(product)).thenReturn(response);
+        when(wishlistClient.getSubscribers(eq(id), any()))
+                .thenReturn(new ApiResponse<>(true, "Success", List.of(10L)));
+        when(userClient.getPriceDropEnabledUserIds(eq(List.of(10L)), any()))
+                .thenReturn(new ApiResponse<>(true, "Success", List.of()));
+
+        productService.updatePrice(id, BigDecimal.valueOf(150));
+
+        verify(productEventProducer, never()).sendPriceDropEvent(any());
     }
 
     @Test
@@ -394,6 +445,68 @@ class ProductServiceImplTest {
 
         assertThrows(ProductNotFoundException.class,
                 () -> productService.updateDiscount(id, 20));
+    }
+
+    @Test
+    void updateDiscount_WhenDiscountIncreases_NotifiesWishlistSubscribersOfEffectivePriceDrop() {
+        Long id = 1L;
+        Product product = new Product();
+        product.setId(id);
+        product.setName("Phone");
+        product.setPrice(BigDecimal.valueOf(200));
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(200), 10, "Phones", null, false, 20);
+
+        when(productRepository.findById(id)).thenReturn(Optional.of(product));
+        when(productRepository.save(product)).thenReturn(product);
+        when(productMapper.toResponse(product)).thenReturn(response);
+        when(wishlistClient.getSubscribers(eq(id), any()))
+                .thenReturn(new ApiResponse<>(true, "Success", List.of(10L)));
+        when(userClient.getPriceDropEnabledUserIds(eq(List.of(10L)), any()))
+                .thenReturn(new ApiResponse<>(true, "Success", List.of(10L)));
+
+        productService.updateDiscount(id, 20);
+
+        verify(productEventProducer).sendPriceDropEvent(
+                new PriceDropEvent(10L, id, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(160)));
+    }
+
+    @Test
+    void updateDiscount_WhenDiscountRemoved_EffectivePriceIncreases_DoesNotNotify() {
+        Long id = 1L;
+        Product product = new Product();
+        product.setId(id);
+        product.setName("Phone");
+        product.setPrice(BigDecimal.valueOf(200));
+        product.setDiscountPercentage(20);
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(200), 10, "Phones", null, false, null);
+
+        when(productRepository.findById(id)).thenReturn(Optional.of(product));
+        when(productRepository.save(product)).thenReturn(product);
+        when(productMapper.toResponse(product)).thenReturn(response);
+
+        productService.updateDiscount(id, null);
+
+        verify(wishlistClient, never()).getSubscribers(any(), any());
+        verify(productEventProducer, never()).sendPriceDropEvent(any());
+    }
+
+    @Test
+    void updateDiscount_WhenUnchanged_DoesNotNotify() {
+        Long id = 1L;
+        Product product = new Product();
+        product.setId(id);
+        product.setName("Phone");
+        product.setPrice(BigDecimal.valueOf(200));
+        product.setDiscountPercentage(20);
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(200), 10, "Phones", null, false, 20);
+
+        when(productRepository.findById(id)).thenReturn(Optional.of(product));
+        when(productRepository.save(product)).thenReturn(product);
+        when(productMapper.toResponse(product)).thenReturn(response);
+
+        productService.updateDiscount(id, 20);
+
+        verify(productEventProducer, never()).sendPriceDropEvent(any());
     }
 
     @Test

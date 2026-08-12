@@ -6,6 +6,7 @@ import am.techshop.common.dto.response.ProductResponse;
 import am.techshop.common.event.PriceDropEvent;
 import am.techshop.common.exception.ProductNotFoundException;
 import am.techshop.common.exception.TechShopException;
+import am.techshop.product.client.UserClient;
 import am.techshop.product.client.WishlistClient;
 import am.techshop.product.entity.PriceHistory;
 import am.techshop.product.entity.Product;
@@ -41,6 +42,7 @@ public class ProductServiceImpl implements ProductService {
     private final CategoryRepository categoryRepository;
     private final ProductMapper productMapper;
     private final WishlistClient wishlistClient;
+    private final UserClient userClient;
     private final ProductEventProducer productEventProducer;
     private final PriceHistoryRepository priceHistoryRepository;
 
@@ -115,35 +117,65 @@ public class ProductServiceImpl implements ProductService {
         BigDecimal oldPrice = product.getPrice();
         priceHistoryRepository.save(new PriceHistory(null, id, oldPrice, price, LocalDateTime.now()));
 
+        BigDecimal oldEffectivePrice = oldPrice == null ? null : effectivePrice(oldPrice, product.getDiscountPercentage());
+
         product.setPrice(price);
         ProductResponse response = productMapper.toResponse(productRepository.save(product));
 
-        if (oldPrice != null && price.compareTo(oldPrice) < 0) {
-            notifyPriceDropSubscribers(product, price);
+        if (oldEffectivePrice != null) {
+            BigDecimal newEffectivePrice = effectivePrice(price, product.getDiscountPercentage());
+            if (newEffectivePrice.compareTo(oldEffectivePrice) < 0) {
+                notifyPriceDropSubscribers(product, oldEffectivePrice, newEffectivePrice);
+            }
         }
 
         return response;
-    }
-
-    private void notifyPriceDropSubscribers(Product product, BigDecimal newPrice) {
-        try {
-            List<Long> subscriberIds = wishlistClient.getSubscribers(product.getId(), internalApiKey).data();
-            if (subscriberIds == null) {
-                return;
-            }
-            subscriberIds.forEach(userId -> productEventProducer.sendPriceDropEvent(
-                    new PriceDropEvent(userId, product.getId(), product.getName(), newPrice)));
-        } catch (Exception ex) {
-            log.warn("Failed to notify wishlist subscribers of price drop for product {}: {}", product.getId(), ex.getMessage());
-        }
     }
 
     public ProductResponse updateDiscount(Long id, Integer discountPercentage) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
 
+        BigDecimal oldEffectivePrice = effectivePrice(product.getPrice(), product.getDiscountPercentage());
+
         product.setDiscountPercentage(discountPercentage);
-        return productMapper.toResponse(productRepository.save(product));
+        ProductResponse response = productMapper.toResponse(productRepository.save(product));
+
+        if (oldEffectivePrice != null) {
+            BigDecimal newEffectivePrice = effectivePrice(product.getPrice(), discountPercentage);
+            if (newEffectivePrice.compareTo(oldEffectivePrice) < 0) {
+                notifyPriceDropSubscribers(product, oldEffectivePrice, newEffectivePrice);
+            }
+        }
+
+        return response;
+    }
+
+    private static BigDecimal effectivePrice(BigDecimal price, Integer discountPercentage) {
+        if (price == null) {
+            return null;
+        }
+        if (discountPercentage == null || discountPercentage == 0) {
+            return price;
+        }
+        return price.multiply(BigDecimal.valueOf(100 - discountPercentage)).divide(BigDecimal.valueOf(100));
+    }
+
+    private void notifyPriceDropSubscribers(Product product, BigDecimal oldPrice, BigDecimal newPrice) {
+        try {
+            List<Long> subscriberIds = wishlistClient.getSubscribers(product.getId(), internalApiKey).data();
+            if (subscriberIds == null || subscriberIds.isEmpty()) {
+                return;
+            }
+            List<Long> optedInIds = userClient.getPriceDropEnabledUserIds(subscriberIds, internalApiKey).data();
+            if (optedInIds == null || optedInIds.isEmpty()) {
+                return;
+            }
+            optedInIds.forEach(userId -> productEventProducer.sendPriceDropEvent(
+                    new PriceDropEvent(userId, product.getId(), product.getName(), oldPrice, newPrice)));
+        } catch (Exception ex) {
+            log.warn("Failed to notify wishlist subscribers of price drop for product {}: {}", product.getId(), ex.getMessage());
+        }
     }
 
     public ProductResponse updateRating(Long id, BigDecimal rating, Integer reviewCount) {

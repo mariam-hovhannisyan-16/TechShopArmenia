@@ -4,11 +4,13 @@ import am.techshop.common.dto.request.ChangePasswordRequest;
 import am.techshop.common.dto.request.DeleteAccountRequest;
 import am.techshop.common.dto.request.ForgotPasswordRequest;
 import am.techshop.common.dto.request.LoginRequest;
+import am.techshop.common.dto.request.NotificationPreferencesUpdateRequest;
 import am.techshop.common.dto.request.RegisterRequest;
 import am.techshop.common.dto.request.ResendVerificationRequest;
 import am.techshop.common.dto.request.ResetPasswordRequest;
 import am.techshop.common.dto.request.RoleUpdateRequest;
 import am.techshop.common.dto.response.AuthResponse;
+import am.techshop.common.dto.response.NotificationPreferencesResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.enums.UserRole;
 import am.techshop.common.exception.TechShopException;
@@ -33,6 +35,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -42,6 +45,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -393,5 +397,92 @@ class UserControllerTest {
                 .andExpect(status().isBadRequest());
 
         verify(userService, never()).changePassword(any(), any());
+    }
+
+    @Test
+    void getMyNotificationPreferences_WhenAuthenticated_ReturnsPreferences() throws Exception {
+        when(userService.getNotificationPreferences(USER_ID)).thenReturn(new NotificationPreferencesResponse(true));
+
+        mockMvc.perform(get("/api/users/me/preferences")
+                        .with(authentication(asUser())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.notifyPriceDrops").value(true));
+    }
+
+    @Test
+    void getMyNotificationPreferences_WithoutAuthentication_ReturnsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/users/me/preferences"))
+                .andExpect(status().isUnauthorized());
+
+        verify(userService, never()).getNotificationPreferences(any());
+    }
+
+    @Test
+    void updateMyNotificationPreferences_WhenAuthenticated_UpdatesAndReturnsPreferences() throws Exception {
+        NotificationPreferencesUpdateRequest request = new NotificationPreferencesUpdateRequest(false);
+        when(userService.updateNotificationPreferences(USER_ID, false)).thenReturn(new NotificationPreferencesResponse(false));
+
+        mockMvc.perform(patch("/api/users/me/preferences")
+                        .with(authentication(asUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.notifyPriceDrops").value(false));
+
+        verify(userService).updateNotificationPreferences(USER_ID, false);
+    }
+
+    @Test
+    void updateMyNotificationPreferences_WithoutAuthentication_ReturnsUnauthorized() throws Exception {
+        NotificationPreferencesUpdateRequest request = new NotificationPreferencesUpdateRequest(false);
+
+        mockMvc.perform(patch("/api/users/me/preferences")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+
+        verify(userService, never()).updateNotificationPreferences(any(), anyBoolean());
+    }
+
+    @Test
+    void updateMyNotificationPreferences_WithMissingField_ReturnsBadRequest() throws Exception {
+        mockMvc.perform(patch("/api/users/me/preferences")
+                        .with(authentication(asUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verify(userService, never()).updateNotificationPreferences(any(), anyBoolean());
+    }
+
+    @Test
+    void getPriceDropEnabledUserIds_WithValidInternalKey_ReturnsFilteredIds() throws Exception {
+        when(userService.filterPriceDropEnabledUserIds(List.of(1L, 2L, 3L))).thenReturn(List.of(1L, 3L));
+
+        mockMvc.perform(get("/api/users/internal/price-drop-enabled")
+                        .param("ids", "1", "2", "3")
+                        .header("X-Internal-Api-Key", "test-internal-key"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0]").value(1))
+                .andExpect(jsonPath("$.data[1]").value(3));
+    }
+
+    @Test
+    void getPriceDropEnabledUserIds_WithInvalidInternalKey_ReturnsForbidden() throws Exception {
+        mockMvc.perform(get("/api/users/internal/price-drop-enabled")
+                        .param("ids", "1", "2")
+                        .header("X-Internal-Api-Key", "wrong-key"))
+                .andExpect(status().isForbidden());
+
+        verify(userService, never()).filterPriceDropEnabledUserIds(any());
+    }
+
+    @Test
+    void getPriceDropEnabledUserIds_WithoutInternalKey_ReturnsForbidden() throws Exception {
+        mockMvc.perform(get("/api/users/internal/price-drop-enabled")
+                        .param("ids", "1", "2"))
+                .andExpect(status().isForbidden());
+
+        verify(userService, never()).filterPriceDropEnabledUserIds(any());
     }
 }
