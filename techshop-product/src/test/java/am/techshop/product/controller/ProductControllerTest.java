@@ -5,6 +5,7 @@ import am.techshop.common.dto.request.PriceUpdateRequest;
 import am.techshop.common.dto.request.ProductRequest;
 import am.techshop.common.dto.request.RatingUpdateRequest;
 import am.techshop.common.dto.request.StockAdjustmentRequest;
+import am.techshop.common.dto.request.StockUpdateRequest;
 import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.dto.response.ProductResponse;
 import am.techshop.product.config.SecurityConfig;
@@ -198,6 +199,60 @@ class ProductControllerTest {
                 .andExpect(status().isForbidden());
 
         verify(productService, never()).adjustStock(any(), anyInt());
+    }
+
+    @Test
+    void updateStock_WhenCalledByAdmin_ReturnsUpdatedProduct() throws Exception {
+        Long id = 1L;
+        StockUpdateRequest request = new StockUpdateRequest(8);
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(150), 8, "Phones", null, false, null);
+
+        when(productService.updateStock(id, 8)).thenReturn(response);
+
+        mockMvc.perform(put("/api/products/{id}/stock", id)
+                        .with(authentication(asAdmin()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.stock").value(8));
+    }
+
+    @Test
+    void updateStock_WhenCalledByRegularUser_ReturnsForbidden() throws Exception {
+        StockUpdateRequest request = new StockUpdateRequest(8);
+
+        mockMvc.perform(put("/api/products/{id}/stock", 1L)
+                        .with(authentication(asUser()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        verify(productService, never()).updateStock(any(), anyInt());
+    }
+
+    @Test
+    void updateStock_WithoutAuthentication_ReturnsUnauthorized() throws Exception {
+        StockUpdateRequest request = new StockUpdateRequest(8);
+
+        mockMvc.perform(put("/api/products/{id}/stock", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+
+        verify(productService, never()).updateStock(any(), anyInt());
+    }
+
+    @Test
+    void updateStock_WithNegativeQuantity_ReturnsBadRequest() throws Exception {
+        StockUpdateRequest request = new StockUpdateRequest(-1);
+
+        mockMvc.perform(put("/api/products/{id}/stock", 1L)
+                        .with(authentication(asAdmin()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verify(productService, never()).updateStock(any(), anyInt());
     }
 
     @Test

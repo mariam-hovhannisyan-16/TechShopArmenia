@@ -229,6 +229,34 @@ class ProductServiceImplTest {
     }
 
     @Test
+    void updateStock_WhenExists_SetsAbsoluteStock() {
+        Long id = 1L;
+        Product product = new Product();
+        product.setId(id);
+        product.setName("Phone");
+        product.setStock(3);
+        ProductResponse response = new ProductResponse(id, "Phone", "Desc", BigDecimal.valueOf(100), 8, "Phones", null, false, null);
+
+        when(productRepository.findById(id)).thenReturn(Optional.of(product));
+        when(productRepository.save(product)).thenReturn(product);
+        when(productMapper.toResponse(product)).thenReturn(response);
+
+        ProductResponse result = productService.updateStock(id, 8);
+
+        assertEquals(8, product.getStock());
+        assertEquals(8, result.stock());
+    }
+
+    @Test
+    void updateStock_WhenNotFound_ThrowsException() {
+        Long id = 1L;
+        when(productRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(ProductNotFoundException.class,
+                () -> productService.updateStock(id, 8));
+    }
+
+    @Test
     void updatePrice_WhenExists_UpdatesPrice() {
         Long id = 1L;
         Product product = new Product();

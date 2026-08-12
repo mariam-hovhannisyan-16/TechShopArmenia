@@ -1,0 +1,685 @@
+<title>TechShop — Pre-Submission Audit</title>
+<style>
+  :root {
+    --bg: #f4f4f1;
+    --surface: #ffffff;
+    --surface-sunken: #ebebe7;
+    --ink: #1b1e24;
+    --ink-muted: #5c6270;
+    --ink-faint: #8a8f9c;
+    --rule: #dcdcd6;
+    --accent: #3548c4;
+    --accent-soft: #e8eafa;
+    --good: #1c7a4d;
+    --good-soft: #e4f3ea;
+    --warn: #9a5b00;
+    --warn-soft: #fbf0dd;
+    --bad: #b0342c;
+    --bad-soft: #fbe9e7;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, "Liberation Mono", monospace;
+    --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #14161c;
+    --surface: #1b1e27;
+    --surface-sunken: #12141a;
+    --ink: #e9eaef;
+    --ink-muted: #a4aab8;
+    --ink-faint: #6c7280;
+    --rule: #2b2f3b;
+    --accent: #7c8cf0;
+    --accent-soft: #232a4d;
+    --good: #4fbf87;
+    --good-soft: #17281f;
+    --warn: #e0a542;
+    --warn-soft: #2c2313;
+    --bad: #e2685f;
+    --bad-soft: #2c1917;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161c;
+      --surface: #1b1e27;
+      --surface-sunken: #12141a;
+      --ink: #e9eaef;
+      --ink-muted: #a4aab8;
+      --ink-faint: #6c7280;
+      --rule: #2b2f3b;
+      --accent: #7c8cf0;
+      --accent-soft: #232a4d;
+      --good: #4fbf87;
+      --good-soft: #17281f;
+      --warn: #e0a542;
+      --warn-soft: #2c2313;
+      --bad: #e2685f;
+      --bad-soft: #2c1917;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15.5px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 56px 28px 120px;
+  }
+
+  /* ---------- Header ---------- */
+
+  header.masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .eyebrow::before {
+    content: "$";
+    color: var(--ink-faint);
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: clamp(26px, 4vw, 34px);
+    letter-spacing: -0.01em;
+    margin: 4px 0 6px;
+    text-wrap: balance;
+  }
+
+  .dek {
+    color: var(--ink-muted);
+    font-size: 15.5px;
+    max-width: 62ch;
+    margin: 0 0 28px;
+  }
+
+  /* ---------- Stat strip ---------- */
+
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 36px;
+  }
+
+  .stat {
+    background: var(--surface);
+    padding: 16px 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .stat-label {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-faint);
+  }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 21px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .stat-value .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--good);
+    display: inline-block;
+    margin-right: 2px;
+  }
+
+  .stat-sub {
+    font-size: 12.5px;
+    color: var(--ink-muted);
+  }
+
+  @media (max-width: 640px) {
+    .stat-strip { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ---------- TL;DR ---------- */
+
+  .tldr {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 48px;
+  }
+
+  .tldr h2 {
+    font-family: var(--mono);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+
+  .tldr ul {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tldr li {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    font-size: 14.5px;
+  }
+
+  .tldr li .tag {
+    flex-shrink: 0;
+  }
+
+  /* ---------- Section scaffolding ---------- */
+
+  section.part {
+    margin-bottom: 56px;
+  }
+
+  .part-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 10px;
+    margin-bottom: 24px;
+  }
+
+  .part-num {
+    font-family: var(--mono);
+    color: var(--ink-faint);
+    font-size: 13px;
+  }
+
+  .part-head h2 {
+    font-family: var(--mono);
+    font-size: 19px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.005em;
+  }
+
+  h3.sub {
+    font-family: var(--mono);
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 32px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  h3.sub:first-child { margin-top: 0; }
+
+  p { margin: 0 0 14px; color: var(--ink); }
+  p.muted { color: var(--ink-muted); }
+
+  /* ---------- Tags / pills ---------- */
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 2px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+    display: inline-block;
+  }
+
+  .tag-fixed { background: var(--good-soft); color: var(--good); }
+  .tag-broken { background: var(--bad-soft); color: var(--bad); }
+  .tag-dead { background: var(--warn-soft); color: var(--warn); }
+  .tag-fine { background: var(--accent-soft); color: var(--accent); }
+
+  /* ---------- Result grid (test/compile) ---------- */
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 13px 15px;
+  }
+
+  .result-card .name {
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin-bottom: 3px;
+  }
+
+  .result-card .figure {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--good);
+  }
+
+  @media (max-width: 640px) {
+    .result-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ---------- Finding cards ---------- */
+
+  .finding {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 18px;
+  }
+
+  .finding-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .finding-title {
+    font-weight: 700;
+    font-size: 15.5px;
+    color: var(--ink);
+  }
+
+  .finding p { font-size: 14.5px; margin-bottom: 10px; }
+  .finding p:last-child { margin-bottom: 0; }
+
+  code.inline {
+    font-family: var(--mono);
+    font-size: 0.88em;
+    background: var(--surface-sunken);
+    padding: 1.5px 5px;
+    border-radius: 4px;
+    color: var(--ink);
+  }
+
+  .before-after {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 12px 0;
+  }
+
+  @media (max-width: 640px) {
+    .before-after { grid-template-columns: 1fr; }
+  }
+
+  .code-block {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.55;
+    border-radius: 7px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .code-block.was { background: var(--bad-soft); color: var(--bad); border: 1px solid color-mix(in srgb, var(--bad) 25%, transparent); }
+  .code-block.now { background: var(--good-soft); color: var(--good); border: 1px solid color-mix(in srgb, var(--good) 25%, transparent); }
+  .code-block .lbl { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.75; margin-bottom: 4px; }
+
+  .verify-line {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--rule);
+  }
+
+  .verify-line::before {
+    content: "✓";
+    color: var(--good);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* ---------- Endpoint table ---------- */
+
+  .ep-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  .ep-table th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    font-weight: 600;
+    padding: 0 10px 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .ep-table td {
+    padding: 10px 10px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  .ep-table tr:last-child td { border-bottom: none; }
+
+  .ep-table .path {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+
+  .ep-table .method {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-muted);
+  }
+
+  .ep-table .why {
+    color: var(--ink-muted);
+    font-size: 13px;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 6px 14px;
+  }
+
+  /* ---------- Org check list ---------- */
+
+  .org-item {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule);
+    font-size: 14px;
+  }
+
+  .org-item:last-child { border-bottom: none; }
+
+  .org-item .verdict {
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+    font-weight: 700;
+    font-family: var(--mono);
+  }
+
+  .org-item.ok .verdict { color: var(--good); }
+  .org-item.nit .verdict { color: var(--warn); }
+
+  /* ---------- Footer / changed files ---------- */
+
+  footer {
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+  }
+
+  footer h3 {
+    font-family: var(--mono);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    margin: 0 0 12px;
+  }
+
+  .filelist {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .filelist .repo-lbl {
+    color: var(--accent);
+    margin-top: 10px;
+  }
+
+  .filelist .repo-lbl:first-child { margin-top: 0; }
+
+  ::selection { background: var(--accent-soft); color: var(--accent); }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <div class="eyebrow">techshop-armenia · pre-submission audit</div>
+    <h1>Two things were actually broken. Now they aren't.</h1>
+    <p class="dek">Full pass over both repos — 7 backend services and the Angular frontend. Every test green, both sides type-check clean, and the endpoint-by-endpoint parity check surfaced two real integration bugs (now fixed and verified against the live stack) plus a payment-flow gap worth a dedicated follow-up.</p>
+  </header>
+
+  <div class="stat-strip">
+    <div class="stat">
+      <span class="stat-label">Backend tests</span>
+      <span class="stat-value"><span class="dot"></span>447 / 447</span>
+      <span class="stat-sub">7 services, mvn test</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Frontend tests</span>
+      <span class="stat-value"><span class="dot"></span>174 / 174</span>
+      <span class="stat-sub">54 spec files, npm test</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Backend build</span>
+      <span class="stat-value"><span class="dot"></span>clean</span>
+      <span class="stat-sub">mvn clean compile</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Frontend types</span>
+      <span class="stat-value"><span class="dot"></span>clean</span>
+      <span class="stat-sub">tsc --noEmit, app + spec</span>
+    </div>
+  </div>
+
+  <div class="tldr">
+    <h2>Bottom line</h2>
+    <ul>
+      <li><span class="tag tag-fixed">fixed</span> Wishlist never reached the real backend for any user — wrong URL, wrong port, wrong response shape. Now it does.</li>
+      <li><span class="tag tag-fixed">fixed</span> Admin "edit stock" on the products page returned 405 on every save. Added the missing endpoint.</li>
+      <li><span class="tag tag-broken">reported</span> Two of four payment methods (ROKET_LINE, INSTALLMENT) silently skip the real checkout endpoint despite full backend support — flagged, not fixed, since it touches money flow and deserves its own pass.</li>
+      <li><span class="tag tag-dead">reported</span> Nine backend endpoints exist but nothing calls them — listed below, none removed.</li>
+    </ul>
+  </div>
+
+  <!-- PART 1 -->
+  <section class="part">
+    <div class="part-head">
+      <span class="part-num">part 1</span>
+      <h2>Code health</h2>
+    </div>
+
+    <h3 class="sub">Test suites</h3>
+    <div class="result-grid">
+      <div class="result-card"><div class="name">techshop-user</div><div class="figure">101 passed</div></div>
+      <div class="result-card"><div class="name">techshop-product</div><div class="figure">79 passed</div></div>
+      <div class="result-card"><div class="name">techshop-cart</div><div class="figure">40 passed</div></div>
+      <div class="result-card"><div class="name">techshop-order</div><div class="figure">96 passed</div></div>
+      <div class="result-card"><div class="name">techshop-notification</div><div class="figure">58 passed</div></div>
+      <div class="result-card"><div class="name">techshop-wishlist</div><div class="figure">34 passed</div></div>
+      <div class="result-card"><div class="name">techshop-chat</div><div class="figure">39 passed</div></div>
+      <div class="result-card"><div class="name">frontend (vitest)</div><div class="figure">174 passed</div></div>
+    </div>
+    <p class="muted" style="font-size: 13px; margin-top: 10px;">Backend total: 447 tests across 8 modules (techshop-common ships no tests of its own — shared DTOs/events only). +6 over the pre-audit baseline, from new stock-endpoint coverage.</p>
+
+    <h3 class="sub">Compilation</h3>
+    <p><code class="inline">mvn clean compile</code> — BUILD SUCCESS, all 8 modules. <code class="inline">tsc --noEmit</code> — clean against both <code class="inline">tsconfig.app.json</code> and <code class="inline">tsconfig.spec.json</code>.</p>
+
+    <h3 class="sub">Backend layering</h3>
+    <div class="finding" style="padding: 4px 22px;">
+      <div class="org-item ok"><span class="verdict">✓</span><span>Controllers are thin across all 11 controller classes — no direct repository access, no business logic beyond null/auth checks. Verified by grep: zero controllers import a <code class="inline">*Repository</code>.</span></div>
+      <div class="org-item ok"><span class="verdict">✓</span><span>Services carry no HTTP-layer concerns — zero imports of <code class="inline">ResponseEntity</code> or servlet types anywhere under a <code class="inline">service/</code> package.</span></div>
+      <div class="org-item nit"><span class="verdict">·</span><span><code class="inline">UserController</code> inlines its internal-API-key and admin-role checks as private methods, where the other four services extract this into a dedicated <code class="inline">*Guard</code> component (<code class="inline">CartAccessGuard</code>, <code class="inline">NotificationAccessGuard</code>, two <code class="inline">InternalApiKeyGuard</code>s). Harmless, just inconsistent with the codebase's own convention.</span></div>
+    </div>
+
+    <h3 class="sub">Frontend layering</h3>
+    <div class="finding" style="padding: 4px 22px;">
+      <div class="org-item ok"><span class="verdict">✓</span><span><code class="inline">HttpClient</code> is injected in exactly 11 places — the 10 service files plus the i18n loader in <code class="inline">app.config.ts</code>. No component calls it directly.</span></div>
+      <div class="org-item nit"><span class="verdict">·</span><span><code class="inline">chat-widget.ts</code> reads/writes <code class="inline">localStorage</code> directly for a "last seen message" marker. It's pure UI-presentation state (unread badge), not domain data, so this is defensible — but every other piece of persisted state in the app goes through a service.</span></div>
+    </div>
+  </section>
+
+  <!-- PART 2 -->
+  <section class="part">
+    <div class="part-head">
+      <span class="part-num">part 2</span>
+      <h2>Backend / frontend parity</h2>
+    </div>
+
+    <h3 class="sub">Fixed — wishlist never reached the real backend</h3>
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">Wrong path, wrong port, wrong response shape</div>
+        <span class="tag tag-fixed">fixed</span>
+      </div>
+      <p>The wishlist service called <code class="inline">{wishlistApiUrl}/api/v1/wishlist</code>. The real backend route is <code class="inline">/wishlist</code> — no <code class="inline">/api/v1</code> prefix ever existed. Confirmed live: hitting <em>any</em> wrong or nonexistent path on techshop-wishlist with a valid token returns <strong>401</strong>, not 404 — Spring Security's catch-all <code class="inline">anyRequest().authenticated()</code> rejects before routing gets a chance to 404. That's exactly why the code's own comment concluded "the backend rejects valid tokens" and built a permanent fallback around it. Dev environment also pointed <code class="inline">wishlistApiUrl</code> at port <strong>8085</strong> — the notification service, not wishlist (8086).</p>
+      <p>Once the path was fixed, a second problem surfaced: the response shape never matched either. The frontend expected a flat <code class="inline">{productId, productName, productPrice, quantity}[]</code>; the real backend returns <code class="inline">{id, userId, items: [{id, product: FullProduct, addedAt}], createdAt}</code>.</p>
+      <div class="before-after">
+        <div class="code-block was"><span class="lbl">before</span>`${wishlistApiUrl}/api/v1/wishlist`
+dev port: 8085 (notification)
+data: WishlistItemResponse[]</div>
+        <div class="code-block now"><span class="lbl">now</span>`${wishlistApiUrl}/wishlist`
+dev port: 8086 (wishlist)
+data: mapped from real shape</div>
+      </div>
+      <p>Fixed the URL and port, and added a mapping adapter inside <code class="inline">WishlistService</code> so every downstream consumer — the wishlist page, badge, and button components — kept the flat shape they already expect. Nothing outside the service changed.</p>
+      <p class="muted">This bug meant the real <code class="inline">wishlist</code> table was never populated by an actual user action — everything ran on a client-side mock. It directly blocked the price-drop-notification feature from last session, since the subscriber lookup reads from that same table.</p>
+      <div class="verify-line">Live: registered two test users, wishlisted a real product, confirmed <code class="inline">GET/POST/DELETE</code> hit the real DB. Full frontend suite green (54/54 files, both isolated and default runs) after updating the two spec files that hardcoded the old URL/shape.</div>
+    </div>
+
+    <h3 class="sub">Fixed — admin stock edit returned 405 on every save</h3>
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">No endpoint matched what the admin UI was calling</div>
+        <span class="tag tag-fixed">fixed</span>
+      </div>
+      <p>The admin products page sends <code class="inline">PUT /api/products/{id}/stock</code> with <code class="inline">{quantity}</code> — an absolute value. The only endpoint at that path was <code class="inline">PATCH /api/products/{id}/stock</code>, taking a relative <code class="inline">{quantityDelta}</code> and gated by an internal API key — that one exists for the order service to decrement stock on checkout, not for a browser admin panel.</p>
+      <div class="before-after">
+        <div class="code-block was"><span class="lbl">live before fix</span>PUT .../18/stock
+{"quantity": 42}
+→ 405 Method Not Allowed</div>
+        <div class="code-block now"><span class="lbl">live after fix</span>PUT .../18/stock
+{"quantity": 42}
+→ 200, stock: 42</div>
+        </div>
+      <p>Added a new admin-only <code class="inline">PUT /api/products/{id}/stock</code> endpoint that sets stock directly. The internal <code class="inline">PATCH</code> delta endpoint used by checkout is untouched.</p>
+      <div class="verify-line">Live: admin token → 200 and stock updated; customer token → 403; reverted the test edit. 6 new backend tests (service + controller, success/forbidden/unauthenticated/validation).</div>
+    </div>
+
+    <h3 class="sub">Reported, not fixed — two payment methods bypass the real backend</h3>
+    <div class="finding">
+      <div class="finding-head">
+        <div class="finding-title">ROKET_LINE and INSTALLMENT checkouts are entirely fake</div>
+        <span class="tag tag-broken">needs follow-up</span>
+      </div>
+      <p><code class="inline">order.ts</code>'s <code class="inline">checkout()</code> skips the real <code class="inline">POST /api/orders/checkout</code> call for <code class="inline">ROKET_LINE</code> and <code class="inline">INSTALLMENT</code>, with a comment claiming the backend doesn't support them yet. It does: <code class="inline">RoketLinePaymentService</code> and <code class="inline">InstallmentPaymentService</code> are both active <code class="inline">@Service</code> beans wired into <code class="inline">PaymentProviderFactory</code>, both fully covered by the 16-test <code class="inline">PaymentProvidersTest</code>. Only <code class="inline">CARD</code> is genuinely unsupported — it isn't even in the backend's <code class="inline">PaymentMethod</code> enum.</p>
+      <p>The frontend also names the field <code class="inline">installmentPlan</code>; the backend expects <code class="inline">installmentDetails</code>. So removing the skip alone wouldn't be enough — installment orders would submit with the detail silently dropped and get rejected.</p>
+      <p class="muted">Left this one alone. It's a real gap, but it's a checkout/money-flow change I can't fully verify without driving the actual UI (address forms, the installment modal, cart state) in a browser — worth its own focused pass rather than a same-sweep patch.</p>
+    </div>
+
+    <h3 class="sub">Dead backend endpoints</h3>
+    <p class="muted">Implemented and working, but nothing in the frontend calls them. None removed — flagging for a decision, since some (delete-account, order cancel) look like intentionally-staged backend work waiting on frontend UI.</p>
+    <div class="table-wrap">
+      <table class="ep-table">
+        <thead><tr><th>Endpoint</th><th>Why it's unused</th></tr></thead>
+        <tbody>
+          <tr><td class="path"><span class="method">GET</span> /api/users/count</td><td class="why">No user-count display anywhere in the UI</td></tr>
+          <tr><td class="path"><span class="method">DELETE</span> /api/users/me</td><td class="why">Profile page has a "Delete account" section that deliberately renders "feature not available" — staged, not wired</td></tr>
+          <tr><td class="path"><span class="method">GET</span> /api/products/batch</td><td class="why">No batch-by-id product fetch used anywhere</td></tr>
+          <tr><td class="path"><span class="method">GET</span> /api/categories</td><td class="why">Frontend does its own client-side keyword categorization instead</td></tr>
+          <tr><td class="path"><span class="method">GET</span> /api/admin/stats</td><td class="why">Looks like a duplicate of <span class="path" style="white-space:normal">/api/orders/admin/statistics</span>, which the frontend actually calls</td></tr>
+          <tr><td class="path"><span class="method">GET</span> /api/orders/{id}/tracking</td><td class="why">Order-tracking component renders from the order object it already has, not a separate call</td></tr>
+          <tr><td class="path"><span class="method">PATCH</span> /api/orders/{id}/cancel</td><td class="why">No "cancel order" UI exists yet</td></tr>
+          <tr><td class="path"><span class="method">GET</span> /api/orders/admin/{id}</td><td class="why">Admin order list never needs a separate single-order detail fetch</td></tr>
+          <tr><td class="path"><span class="method">GET</span> /wishlist/count</td><td class="why">Badge count is a client-side computed signal, not a server round-trip</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub">Everything else checked out</h3>
+    <p>Every other endpoint the frontend calls — across auth, products, cart, orders, reviews, admin stats, notifications, and chat — matches a real backend route on method and path. The five internal, key-guarded, service-to-service endpoints (price-drop preference lookup, stock delta, rating update, wishlist subscribers, the dual-use user lookup) are correctly never called from the browser, as intended.</p>
+  </section>
+
+  <footer>
+    <h3>Changed files</h3>
+    <div class="filelist">
+      <span class="repo-lbl">backend — TechShopArmenia</span>
+      <span>+ techshop-common/.../request/StockUpdateRequest.java</span>
+      <span>~ techshop-product/.../controller/ProductController.java</span>
+      <span>~ techshop-product/.../config/SecurityConfig.java</span>
+      <span>~ techshop-product/.../service/ProductService.java + impl</span>
+      <span>~ techshop-product/.../test/.../ProductControllerTest.java</span>
+      <span>~ techshop-product/.../test/.../ProductServiceImplTest.java</span>
+      <span class="repo-lbl">frontend — WebstormProjects/frontend</span>
+      <span>~ src/app/services/wishlist.ts</span>
+      <span>~ src/app/interceptors/auth-error.interceptor.ts</span>
+      <span>~ src/environments/environment.ts</span>
+      <span>~ src/app/pages/wishlist/wishlist.spec.ts</span>
+      <span>~ src/app/pages/cart/cart.spec.ts</span>
+      <span>~ angular.json (test isolation, fixes flaky cross-file test runs)</span>
+    </div>
+  </footer>
+
+</div>

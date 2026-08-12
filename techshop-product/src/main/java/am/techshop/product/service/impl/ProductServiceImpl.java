@@ -110,6 +110,14 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toResponse(productRepository.save(product));
     }
 
+    public ProductResponse updateStock(Long id, int quantity) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
+
+        product.setStock(quantity);
+        return productMapper.toResponse(productRepository.save(product));
+    }
+
     public ProductResponse updatePrice(Long id, BigDecimal price) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));

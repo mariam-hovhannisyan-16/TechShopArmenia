@@ -5,6 +5,7 @@ import am.techshop.common.dto.request.PriceUpdateRequest;
 import am.techshop.common.dto.request.ProductRequest;
 import am.techshop.common.dto.request.RatingUpdateRequest;
 import am.techshop.common.dto.request.StockAdjustmentRequest;
+import am.techshop.common.dto.request.StockUpdateRequest;
 import am.techshop.common.dto.response.ApiResponse;
 import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.dto.response.ProductResponse;
@@ -77,6 +78,13 @@ public class ProductController {
             @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey) {
         internalApiKeyGuard.verify(apiKey);
         return ResponseEntity.ok(ApiResponse.ok("Stock adjusted", productService.adjustStock(id, request.quantityDelta())));
+    }
+
+    @PutMapping("/api/products/{id}/stock")
+    public ResponseEntity<ApiResponse<ProductResponse>> updateStock(
+            @PathVariable Long id,
+            @RequestBody @Valid StockUpdateRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Stock updated", productService.updateStock(id, request.quantity())));
     }
 
     @PutMapping("/api/products/{id}/price")

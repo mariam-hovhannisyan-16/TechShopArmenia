@@ -14,6 +14,7 @@ public interface ProductService {
     List<ProductResponse> getProductsByIds(List<Long> ids);
     void deleteProduct(Long id);
     ProductResponse adjustStock(Long id, int quantityDelta);
+    ProductResponse updateStock(Long id, int quantity);
     ProductResponse updatePrice(Long id, BigDecimal price);
     ProductResponse updateDiscount(Long id, Integer discountPercentage);
     ProductResponse updateRating(Long id, BigDecimal rating, Integer reviewCount);
