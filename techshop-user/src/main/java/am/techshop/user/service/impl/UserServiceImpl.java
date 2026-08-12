@@ -8,6 +8,7 @@ import am.techshop.common.dto.request.ResetPasswordRequest;
 import am.techshop.common.dto.response.AuthResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.enums.UserRole;
+import am.techshop.common.event.AdminUserRegisteredEvent;
 import am.techshop.common.event.PasswordResetRequestedEvent;
 import am.techshop.common.event.UserDeletedEvent;
 import am.techshop.common.event.UserRegisteredEvent;
@@ -69,6 +70,7 @@ public class UserServiceImpl implements UserService {
         String token = jwtService.generateToken(savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name());
 
         notifyUserRegistered(savedUser, verificationToken);
+        notifyAdminsOfNewUser(savedUser);
 
         return new AuthResponse(token, userMapper.toResponse(savedUser));
     }
@@ -97,6 +99,23 @@ public class UserServiceImpl implements UserService {
             );
         } catch (Exception ex) {
             log.warn("Failed to publish user-registered event for user {}: {}", user.getId(), ex.getMessage());
+        }
+    }
+
+    private void notifyAdminsOfNewUser(User newUser) {
+        try {
+            List<Long> adminIds = userRepository.findByRole(UserRole.ADMIN).stream()
+                    .map(User::getId)
+                    .filter(id -> !id.equals(newUser.getId()))
+                    .toList();
+            if (adminIds.isEmpty()) {
+                return;
+            }
+            userEventProducer.sendAdminUserRegisteredEvent(
+                    new AdminUserRegisteredEvent(newUser.getName(), newUser.getEmail(), adminIds)
+            );
+        } catch (Exception ex) {
+            log.warn("Failed to publish admin-user-registered event for new user {}: {}", newUser.getId(), ex.getMessage());
         }
     }
 

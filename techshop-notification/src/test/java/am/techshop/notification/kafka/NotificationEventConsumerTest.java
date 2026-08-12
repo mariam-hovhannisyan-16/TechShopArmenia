@@ -4,6 +4,7 @@ import am.techshop.common.dto.response.InstallmentPlanResponse;
 import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
+import am.techshop.common.event.AdminUserRegisteredEvent;
 import am.techshop.common.event.ChatReplyEvent;
 import am.techshop.common.event.OrderStatusChangedEvent;
 import am.techshop.common.event.PasswordResetRequestedEvent;
@@ -95,6 +96,15 @@ class NotificationEventConsumerTest {
         consumer.handlePriceDrop(event);
 
         verify(dispatcher).dispatchPriceDrop(1L, "Phone", BigDecimal.valueOf(150));
+    }
+
+    @Test
+    void handleAdminUserRegistered_DelegatesToDispatcher() {
+        AdminUserRegisteredEvent event = new AdminUserRegisteredEvent("Mariam", "mariam@test.com", List.of(1L, 2L));
+
+        consumer.handleAdminUserRegistered(event);
+
+        verify(dispatcher).dispatchAdminNewUser(List.of(1L, 2L), "Mariam", "mariam@test.com");
     }
 
     @Test

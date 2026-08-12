@@ -8,6 +8,7 @@ import am.techshop.common.dto.request.ResetPasswordRequest;
 import am.techshop.common.dto.response.AuthResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.enums.UserRole;
+import am.techshop.common.event.AdminUserRegisteredEvent;
 import am.techshop.common.event.PasswordResetRequestedEvent;
 import am.techshop.common.event.UserDeletedEvent;
 import am.techshop.common.event.UserRegisteredEvent;
@@ -88,6 +89,62 @@ class UserServiceImplTest {
         assertNotNull(result);
         assertEquals("token", result.token());
         verify(userEventProducer).sendUserRegisteredEvent(any(UserRegisteredEvent.class));
+    }
+
+    @Test
+    void register_WhenAdminsExist_NotifiesEachAdminOfNewUser() {
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
+        User newUser = new User();
+        User savedUser = new User();
+        savedUser.setId(5L);
+        savedUser.setName("Mariam");
+        savedUser.setEmail("mariam@test.com");
+        savedUser.setRole(UserRole.CUSTOMER);
+        UserResponse userResponse = new UserResponse(5L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
+
+        User admin1 = new User();
+        admin1.setId(1L);
+        admin1.setRole(UserRole.ADMIN);
+        User admin2 = new User();
+        admin2.setId(2L);
+        admin2.setRole(UserRole.ADMIN);
+
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(passwordEncoder.encode(request.password())).thenReturn("encoded");
+        when(userMapper.toEntity(eq(request), eq("encoded"), eq(UserRole.CUSTOMER), any(), any())).thenReturn(newUser);
+        when(userRepository.save(newUser)).thenReturn(savedUser);
+        when(jwtService.generateToken(any(), any(), any())).thenReturn("token");
+        when(userMapper.toResponse(savedUser)).thenReturn(userResponse);
+        when(userRepository.findByRole(UserRole.ADMIN)).thenReturn(java.util.List.of(admin1, admin2));
+
+        userService.register(request);
+
+        verify(userEventProducer).sendAdminUserRegisteredEvent(
+                new AdminUserRegisteredEvent("Mariam", "mariam@test.com", java.util.List.of(1L, 2L)));
+    }
+
+    @Test
+    void register_WhenNoAdmins_DoesNotPublishAdminEvent() {
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
+        User newUser = new User();
+        User savedUser = new User();
+        savedUser.setId(5L);
+        savedUser.setName("Mariam");
+        savedUser.setEmail("mariam@test.com");
+        savedUser.setRole(UserRole.CUSTOMER);
+        UserResponse userResponse = new UserResponse(5L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
+
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(passwordEncoder.encode(request.password())).thenReturn("encoded");
+        when(userMapper.toEntity(eq(request), eq("encoded"), eq(UserRole.CUSTOMER), any(), any())).thenReturn(newUser);
+        when(userRepository.save(newUser)).thenReturn(savedUser);
+        when(jwtService.generateToken(any(), any(), any())).thenReturn("token");
+        when(userMapper.toResponse(savedUser)).thenReturn(userResponse);
+        when(userRepository.findByRole(UserRole.ADMIN)).thenReturn(java.util.List.of());
+
+        userService.register(request);
+
+        verify(userEventProducer, never()).sendAdminUserRegisteredEvent(any());
     }
 
     @Test

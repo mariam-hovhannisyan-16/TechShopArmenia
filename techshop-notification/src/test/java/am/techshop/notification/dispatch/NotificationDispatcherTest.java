@@ -196,6 +196,29 @@ class NotificationDispatcherTest {
     }
 
     @Test
+    void dispatchAdminNewUser_SavesTrilingualInAppNotificationPerAdmin() {
+        stubNotificationCreation();
+
+        dispatcher.dispatchAdminNewUser(List.of(1L, 2L), "Mariam", "mariam@test.com");
+
+        verify(emailService, never()).sendWelcome(any(), any());
+
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+
+        List<Notification> saved = captor.getAllValues();
+        assertEquals(List.of(1L, 2L), saved.stream().map(Notification::getUserId).toList());
+        for (Notification notification : saved) {
+            String message = notification.getMessage();
+            assertTrue(message.contains("Mariam"));
+            assertTrue(message.contains("mariam@test.com"));
+            assertTrue(message.contains("Նոր օգտատեր գրանցվել է"));
+            assertTrue(message.contains("New user registered"));
+            assertTrue(message.contains("Зарегистрировался новый пользователь"));
+        }
+    }
+
+    @Test
     void dispatchOrderStatusChanged_WhenPending_UsesCreatedMessage() {
         stubNotificationCreation();
 

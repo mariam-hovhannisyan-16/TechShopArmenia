@@ -1,5 +1,6 @@
 package am.techshop.notification.kafka;
 
+import am.techshop.common.event.AdminUserRegisteredEvent;
 import am.techshop.common.event.ChatReplyEvent;
 import am.techshop.common.event.OrderStatusChangedEvent;
 import am.techshop.common.event.PasswordResetRequestedEvent;
@@ -56,6 +57,12 @@ public class NotificationEventConsumer {
             properties = {"spring.json.value.default.type=am.techshop.common.event.PriceDropEvent"})
     public void handlePriceDrop(PriceDropEvent event) {
         dispatcher.dispatchPriceDrop(event.userId(), event.productName(), event.newPrice());
+    }
+
+    @KafkaListener(topics = "admin-user-registered", groupId = "notification-group",
+            properties = {"spring.json.value.default.type=am.techshop.common.event.AdminUserRegisteredEvent"})
+    public void handleAdminUserRegistered(AdminUserRegisteredEvent event) {
+        dispatcher.dispatchAdminNewUser(event.adminIds(), event.newUserName(), event.newUserEmail());
     }
 
     @KafkaListener(topics = "user-deleted", groupId = "notification-group",

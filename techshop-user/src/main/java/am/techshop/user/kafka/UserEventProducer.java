@@ -1,5 +1,6 @@
 package am.techshop.user.kafka;
 
+import am.techshop.common.event.AdminUserRegisteredEvent;
 import am.techshop.common.event.PasswordResetRequestedEvent;
 import am.techshop.common.event.UserDeletedEvent;
 import am.techshop.common.event.UserRegisteredEvent;
@@ -28,5 +29,9 @@ public class UserEventProducer {
 
     public void sendUserDeletedEvent(UserDeletedEvent event) {
         kafkaTemplate.send("user-deleted", event);
+    }
+
+    public void sendAdminUserRegisteredEvent(AdminUserRegisteredEvent event) {
+        kafkaTemplate.send("admin-user-registered", event);
     }
 }

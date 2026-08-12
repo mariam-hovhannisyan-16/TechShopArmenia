@@ -6,5 +6,6 @@ public enum NotificationType {
     PASSWORD_RESET,
     ORDER_STATUS_CHANGED,
     CHAT_REPLY,
-    PRICE_DROP
+    PRICE_DROP,
+    ADMIN_NEW_USER
 }

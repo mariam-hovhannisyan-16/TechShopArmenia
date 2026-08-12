@@ -28,7 +28,8 @@ public class NotificationDispatcher {
             NotificationType.PASSWORD_RESET, EnumSet.of(NotificationChannel.EMAIL),
             NotificationType.ORDER_STATUS_CHANGED, EnumSet.of(NotificationChannel.EMAIL, NotificationChannel.IN_APP),
             NotificationType.CHAT_REPLY, EnumSet.of(NotificationChannel.IN_APP),
-            NotificationType.PRICE_DROP, EnumSet.of(NotificationChannel.IN_APP)
+            NotificationType.PRICE_DROP, EnumSet.of(NotificationChannel.IN_APP),
+            NotificationType.ADMIN_NEW_USER, EnumSet.of(NotificationChannel.IN_APP)
     );
 
     private final EmailService emailService;
@@ -70,6 +71,23 @@ public class NotificationDispatcher {
     public void dispatchPriceDrop(Long userId, String productName, BigDecimal newPrice) {
         deliver(NotificationType.PRICE_DROP, userId, null,
                 () -> "%s just dropped to %s AMD — it's on your wishlist!".formatted(productName, newPrice));
+    }
+
+    public void dispatchAdminNewUser(List<Long> adminIds, String newUserName, String newUserEmail) {
+        if (adminIds == null) {
+            return;
+        }
+        String message = adminNewUserMessage(newUserName, newUserEmail);
+        for (Long adminId : adminIds) {
+            deliver(NotificationType.ADMIN_NEW_USER, adminId, null, () -> message);
+        }
+    }
+
+    private String adminNewUserMessage(String name, String email) {
+        // No per-admin language is stored, so include all three so the bell/panel
+        // reads correctly whatever UI language the admin has selected.
+        return "Նոր օգտատեր գրանցվել է՝ %1$s (%2$s) · New user registered: %1$s (%2$s) · Зарегистрировался новый пользователь: %1$s (%2$s)"
+                .formatted(name, email);
     }
 
     private String orderStatusMessage(Long orderId, OrderStatus status, String note, Language language, List<String> productNames) {
