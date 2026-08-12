@@ -5,13 +5,6 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <!-- Verified-purchase product reviews. product_id/user_id are plain BIGINTs with no FK -
-         same convention as order_items.product_id and orders.user_id already use in this
-         service - since the referenced rows live in techshop-product's and techshop-user's own
-         databases, not this one. The unique constraint enforces one review per user per product
-         at the DB level (ReviewServiceImpl also checks this up front for a clean 409 instead of
-         a constraint-violation 500, the same belt-and-suspenders approach as
-         UsersEmailUniqueConstraintMigrationTest's uk_users_email). -->
     <changeSet id="010-create-reviews-table" author="techshop">
         <preConditions onFail="MARK_RAN">
             <not>

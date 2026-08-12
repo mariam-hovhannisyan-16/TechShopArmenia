@@ -33,9 +33,6 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
-        # Fail fast instead of blocking the register/login request thread for
-        # up to the 60s default while waiting on topic metadata when Kafka is
-        # slow or unreachable.
         max.block.ms: 5000
 
 app:

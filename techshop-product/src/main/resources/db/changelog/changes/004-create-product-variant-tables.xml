@@ -5,20 +5,6 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <!-- These three tables back the Product entity's @ElementCollection fields
-         (storageOptions/simOptions/colorVariants), and each is guarded on `products`
-         already existing - unlike orders/users, `products` is Hibernate ddl-auto:update
-         owned, not Liquibase owned, so on a genuinely fresh database it does not exist
-         yet at this point (Liquibase always runs before Hibernate's schema update in
-         this service, same as 001/003 above). On a fresh install these changesets no-op
-         and Hibernate creates all three tables itself as part of creating `products`,
-         then CatalogSeeder seeds everything (including the iPhone 17 Pro/Pro Max rows
-         from 005-seed-iphone-17-products.xml) through JPA. On an existing/already-seeded
-         database `products` already exists, so these changesets run for real and 005's
-         seed-data changesets pick up from there. Each table uses the composite primary
-         key (product_id, sort_order) that Hibernate itself generates for an
-         @ElementCollection with @OrderColumn, so ddl-auto:update finds a schema that
-         already matches when these do run and makes no changes. -->
     <changeSet id="004-create-product-storage-options-table" author="mariam">
         <preConditions onFail="MARK_RAN">
             <tableExists tableName="products"/>

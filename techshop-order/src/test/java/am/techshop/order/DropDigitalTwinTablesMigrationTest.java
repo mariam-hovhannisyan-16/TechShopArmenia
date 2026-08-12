@@ -17,15 +17,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/**
- * Exercises db/changelog/db.changelog-master.xml directly (bypassing Spring/JPA), confirming
- * changeset 008 removes the Digital Twin feature's two tables cleanly in both scenarios that
- * matter for a real rollout: an already-migrated database that has the tables (with rows in
- * them, and the FK between them, exactly like current production after 006/007 ran) and a
- * genuinely fresh database that never had them. 006/007 are left untouched - editing an
- * already-run changeset would break its checksum in production - so this test builds the
- * post-006/007 schema by hand rather than relying on 006/007 to create it.
- */
 class DropDigitalTwinTablesMigrationTest {
 
     @Test
@@ -94,7 +85,6 @@ class DropDigitalTwinTablesMigrationTest {
                     connection.createStatement().executeQuery("SELECT * FROM digital_twin_repair_entry"),
                     "digital_twin_repair_entry should no longer exist");
 
-            // Unrelated tables and their data are untouched by the drop.
             try (ResultSet rs = connection.createStatement().executeQuery("SELECT COUNT(*) FROM order_items")) {
                 rs.next();
                 assertEquals(1, rs.getInt(1));

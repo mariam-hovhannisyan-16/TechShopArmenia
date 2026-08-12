@@ -15,12 +15,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- * Exercises db/changelog/db.changelog-master.xml directly (bypassing Spring/JPA)
- * against a products table seeded exactly like the live database (relative,
- * non-existent local image paths), confirming changeset 003 rewrites each of the
- * 6 seeded products to the correct real, absolute stock-photo URL.
- */
 class ProductImageUrlMigrationTest {
 
     @Test

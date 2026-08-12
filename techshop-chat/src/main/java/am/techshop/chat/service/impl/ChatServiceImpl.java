@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -50,8 +51,9 @@ public class ChatServiceImpl implements ChatService {
 
     @Transactional(readOnly = true)
     public List<ConversationResponse> getAllConversations() {
+        Set<Long> escalatedIds = Set.copyOf(messageRepository.findDistinctConversationIdBySender(MessageSender.SUPPORT));
         return conversationRepository.findAllByOrderByIdDesc().stream()
-                .map(conversationMapper::toResponse)
+                .map(conversation -> conversationMapper.toResponse(conversation, escalatedIds.contains(conversation.getId())))
                 .toList();
     }
 

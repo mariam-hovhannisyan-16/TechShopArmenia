@@ -71,7 +71,7 @@ class ChatServiceImplTest {
         existing.setId(1L);
         existing.setUserId(1L);
         existing.setStatus(ConversationStatus.OPEN);
-        ConversationResponse response = new ConversationResponse(1L, 1L, null, ConversationStatus.OPEN, LocalDateTime.now());
+        ConversationResponse response = new ConversationResponse(1L, 1L, null, ConversationStatus.OPEN, LocalDateTime.now(), false);
 
         when(conversationRepository.findFirstByUserIdAndStatusOrderByIdDesc(1L, ConversationStatus.OPEN))
                 .thenReturn(Optional.of(existing));
@@ -92,7 +92,7 @@ class ChatServiceImplTest {
         saved.setId(2L);
         saved.setGuestSessionId("guest-abc");
         saved.setStatus(ConversationStatus.OPEN);
-        ConversationResponse response = new ConversationResponse(2L, null, "guest-abc", ConversationStatus.OPEN, LocalDateTime.now());
+        ConversationResponse response = new ConversationResponse(2L, null, "guest-abc", ConversationStatus.OPEN, LocalDateTime.now(), false);
 
         when(conversationRepository.findFirstByGuestSessionIdAndStatusOrderByIdDesc("guest-abc", ConversationStatus.OPEN))
                 .thenReturn(Optional.empty());
@@ -426,13 +426,39 @@ class ChatServiceImplTest {
         conversation.setUserId(1L);
         conversation.setStatus(ConversationStatus.OPEN);
         when(conversationRepository.findAllByOrderByIdDesc()).thenReturn(List.of(conversation));
-        when(conversationMapper.toResponse(conversation)).thenReturn(
-                new ConversationResponse(1L, 1L, null, ConversationStatus.OPEN, LocalDateTime.now()));
+        when(messageRepository.findDistinctConversationIdBySender(MessageSender.SUPPORT)).thenReturn(List.of());
+        when(conversationMapper.toResponse(conversation, false)).thenReturn(
+                new ConversationResponse(1L, 1L, null, ConversationStatus.OPEN, LocalDateTime.now(), false));
 
         List<ConversationResponse> result = chatService.getAllConversations();
 
         assertNotNull(result);
         assertEquals(1, result.size());
+        assertFalse(result.get(0).escalated());
+    }
+
+    @Test
+    void getAllConversations_MarksConversationEscalatedWhenSupportHasReplied() {
+        Conversation withSupport = new Conversation();
+        withSupport.setId(1L);
+        withSupport.setUserId(1L);
+        withSupport.setStatus(ConversationStatus.OPEN);
+        Conversation withoutSupport = new Conversation();
+        withoutSupport.setId(2L);
+        withoutSupport.setUserId(2L);
+        withoutSupport.setStatus(ConversationStatus.OPEN);
+
+        when(conversationRepository.findAllByOrderByIdDesc()).thenReturn(List.of(withSupport, withoutSupport));
+        when(messageRepository.findDistinctConversationIdBySender(MessageSender.SUPPORT)).thenReturn(List.of(1L));
+        when(conversationMapper.toResponse(withSupport, true)).thenReturn(
+                new ConversationResponse(1L, 1L, null, ConversationStatus.OPEN, LocalDateTime.now(), true));
+        when(conversationMapper.toResponse(withoutSupport, false)).thenReturn(
+                new ConversationResponse(2L, 2L, null, ConversationStatus.OPEN, LocalDateTime.now(), false));
+
+        List<ConversationResponse> result = chatService.getAllConversations();
+
+        assertTrue(result.stream().filter(c -> c.id().equals(1L)).findFirst().orElseThrow().escalated());
+        assertFalse(result.stream().filter(c -> c.id().equals(2L)).findFirst().orElseThrow().escalated());
     }
 
     @Test

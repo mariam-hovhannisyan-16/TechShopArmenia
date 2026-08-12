@@ -42,11 +42,6 @@ class RegisterDuplicateEmailIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated());
-
-        // Second registration for the same email: the existsByEmail pre-check would
-        // normally catch this, but this proves the real guard - the database's unique
-        // constraint on users.email, surfaced by UserServiceImpl's exception handling
-        // as a clean 409 rather than an unhandled 500 - actually works.
         mockMvc.perform(post("/api/users/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))

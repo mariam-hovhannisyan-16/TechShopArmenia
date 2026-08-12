@@ -15,12 +15,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/**
- * Exercises db/changelog/db.changelog-master.xml directly (bypassing Spring/JPA) to
- * confirm the price_history changeset actually creates a usable table: correct
- * required-column constraints, and that it doesn't conflict with the pre-existing
- * products/categories changesets already in this changelog.
- */
 class PriceHistoryTableMigrationTest {
 
     @Test

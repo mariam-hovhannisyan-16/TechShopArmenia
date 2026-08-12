@@ -5,17 +5,6 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <!-- 005-seed-iphone-17-products.xml already ran in production, so its changesets can't be
-         edited in place (Liquibase would reject the checksum mismatch on the next deploy).
-         This is a follow-up correction, the same way 003-update-product-image-urls.xml corrected
-         003's own predecessors: the Unsplash color-variant photos it seeded didn't reliably show
-         the right product (lifestyle shots with unrelated props, inconsistent framing across the
-         three colors, one crop too tight to show the phone's body). Replaces them with a matched,
-         consistently-framed set of real product photos from an Armenian Apple retailer (ispace.am),
-         and renames the "Space Gray" option to "Cosmic Orange" - the photos are of that color, and
-         Space Gray never had a genuinely matching image to begin with. Also switches each product's
-         main image to the Deep Blue photo, matching the default-selected color already used by the
-         frontend. -->
     <changeSet id="006-fix-iphone-17-pro-images" author="mariam">
         <preConditions onFail="MARK_RAN">
             <and>

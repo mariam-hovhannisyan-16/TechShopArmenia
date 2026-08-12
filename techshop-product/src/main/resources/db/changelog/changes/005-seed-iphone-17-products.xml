@@ -5,16 +5,6 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <!-- CatalogSeeder (the ApplicationRunner) only seeds when the products table is
-         completely empty, so it never reaches an already-seeded deployment. These two
-         new catalog products - and the storage-option backfill for the existing
-         iPhone 15 - go through Liquibase instead, the same way 003-update-product-image-urls.xml
-         already fixes up existing seeded rows. Each child-row insert looks its parent's id
-         back up by name (SELECT ... FROM products WHERE name = ...) rather than capturing
-         the generated id via a PL/pgSQL DO block, deliberately - this service's migration
-         tests run against H2 in PostgreSQL-compatibility mode, which doesn't support
-         PL/pgSQL procedural blocks, and product names are unique in practice for seed data. -->
-
     <changeSet id="005-seed-iphone-17-pro" author="mariam">
         <preConditions onFail="MARK_RAN">
             <and>

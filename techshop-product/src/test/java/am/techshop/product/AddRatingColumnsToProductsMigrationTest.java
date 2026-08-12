@@ -15,13 +15,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- * Exercises db/changelog/db.changelog-master.xml directly (bypassing Spring/JPA), confirming
- * changeset 008 adds products.rating/review_count and backfills both to 0/0.00 on an
- * already-seeded database (matching current production before this migration ships), and that
- * it no-ops cleanly against a genuinely fresh database where `products` doesn't exist yet
- * (Hibernate creates the columns itself afterward, same reasoning as 004/005/006).
- */
 class AddRatingColumnsToProductsMigrationTest {
 
     @Test
@@ -61,7 +54,6 @@ class AddRatingColumnsToProductsMigrationTest {
                 assertEquals(0, rs.getInt("review_count"));
             }
 
-            // Re-running the changelog is a no-op: this row's rating/review_count are untouched.
             liquibase.update(new Contexts());
             try (ResultSet rs = connection.createStatement().executeQuery(
                     "SELECT COUNT(*) FROM products WHERE name = 'iPhone 15, 128GB'")) {

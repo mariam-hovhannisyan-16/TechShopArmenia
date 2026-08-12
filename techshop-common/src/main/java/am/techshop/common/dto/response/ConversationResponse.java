@@ -9,5 +9,6 @@ public record ConversationResponse(
         Long userId,
         String guestSessionId,
         ConversationStatus status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean escalated
 ) {}

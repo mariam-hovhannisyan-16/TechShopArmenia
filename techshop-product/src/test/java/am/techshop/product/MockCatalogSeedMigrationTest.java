@@ -16,16 +16,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Exercises db/changelog/db.changelog-master.xml directly (bypassing Spring/JPA) against an
- * already-seeded database (matching what changesets 001-006 leave behind: the original 6 seeded
- * products, plus iPhone 17 Pro/Pro Max from 005/006), confirming changeset 007 backfills the
- * other 60 products from techshop-frontend's MOCK_PRODUCTS catalog without duplicating the 5
- * mock entries that already exist by name (Samsung Galaxy S24, MacBook Air M2, Sony WH-1000XM5,
- * iPhone 17 Pro, iPhone 17 Pro Max), and without touching the iPhone 17 pair's verified images
- * from 006. Also confirms the new Tablets/Gaming/Monitors/Accessories categories are added
- * alongside the original 5, and that re-running the changelog is a no-op (no duplicate rows).
- */
 class MockCatalogSeedMigrationTest {
 
     @Test
@@ -71,13 +61,9 @@ class MockCatalogSeedMigrationTest {
                     "db/changelog/db.changelog-master.xml", new ClassLoaderResourceAccessor(), database);
             liquibase.update(new Contexts());
 
-            // 8 pre-existing + 60 backfilled from the mock catalog (65 mock entries minus the
-            // 5 that already existed by name).
             assertEquals(68, count(connection, "SELECT COUNT(*) FROM products"));
             assertEquals(9, count(connection, "SELECT COUNT(*) FROM categories"));
 
-            // No product name appears more than once, in particular the 5 that exist both in the
-            // pre-seeded data and in the mock catalog.
             try (ResultSet rs = connection.createStatement().executeQuery(
                     "SELECT name, COUNT(*) c FROM products GROUP BY name HAVING COUNT(*) > 1")) {
                 assertTrue(!rs.next(), "no product name should appear more than once");
@@ -89,7 +75,6 @@ class MockCatalogSeedMigrationTest {
                         "SELECT COUNT(*) FROM products WHERE name = '" + skippedName.replace("'", "''") + "'"));
             }
 
-            // A freshly backfilled product carries its mock data over, including storage options.
             assertEquals(1, count(connection, "SELECT COUNT(*) FROM products WHERE name = 'iPhone 15 Pro'"));
             try (ResultSet rs = connection.createStatement().executeQuery(
                     "SELECT price, category, image_url FROM products WHERE name = 'iPhone 15 Pro'")) {
@@ -102,11 +87,9 @@ class MockCatalogSeedMigrationTest {
             assertEquals(3, count(connection,
                     "SELECT COUNT(*) FROM product_storage_options WHERE product_id = " + iphone15ProId));
 
-            // A newly-introduced category (not part of the original 5) exists and is used.
             assertEquals(1, count(connection, "SELECT COUNT(*) FROM categories WHERE name = 'Tablets'"));
             assertEquals(1, count(connection, "SELECT COUNT(*) FROM products WHERE name = 'iPad Air' AND category = 'Tablets'"));
 
-            // Every backfilled product has a non-blank, absolute image URL.
             try (ResultSet rs = connection.createStatement().executeQuery("SELECT image_url FROM products")) {
                 while (rs.next()) {
                     String url = rs.getString(1);
@@ -115,7 +98,6 @@ class MockCatalogSeedMigrationTest {
                 }
             }
 
-            // Re-running the changelog against the same database is a no-op: no duplicate rows.
             liquibase.update(new Contexts());
             assertEquals(68, count(connection, "SELECT COUNT(*) FROM products"));
             assertEquals(9, count(connection, "SELECT COUNT(*) FROM categories"));

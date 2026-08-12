@@ -64,7 +64,7 @@ class ChatControllerTest {
     }
 
     private static ConversationResponse sampleConversation() {
-        return new ConversationResponse(1L, USER_ID, null, ConversationStatus.OPEN, LocalDateTime.now());
+        return new ConversationResponse(1L, USER_ID, null, ConversationStatus.OPEN, LocalDateTime.now(), false);
     }
 
     private static MessageResponse sampleMessage(MessageSender sender) {
@@ -82,7 +82,7 @@ class ChatControllerTest {
 
     @Test
     void startConversation_AsGuest_ReturnsConversation() throws Exception {
-        ConversationResponse guestConversation = new ConversationResponse(2L, null, "guest-abc", ConversationStatus.OPEN, LocalDateTime.now());
+        ConversationResponse guestConversation = new ConversationResponse(2L, null, "guest-abc", ConversationStatus.OPEN, LocalDateTime.now(), false);
         when(chatService.getOrCreateConversation(any(ChatIdentity.class))).thenReturn(guestConversation);
 
         mockMvc.perform(post("/api/chat/conversations").header("X-Guest-Session-Id", "guest-abc"))

@@ -18,15 +18,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Exercises db/changelog/db.changelog-master.xml directly (bypassing Spring/JPA) against a
- * full products table (matching the real schema, unlike the other migration tests in this
- * package which only include the handful of columns their own changeset needs), confirming
- * changesets 004/005 create the three variant tables and seed iPhone 17 Pro / Pro Max with
- * the expected storage/sim/color rows (as corrected by changeset 006 - "Cosmic Orange" instead
- * of "Space Gray", ispace.am product photos instead of the original Unsplash picks), plus
- * backfill iPhone 15's storage options.
- */
 class ProductVariantTablesMigrationTest {
 
     @Test
@@ -69,8 +60,6 @@ class ProductVariantTablesMigrationTest {
             assertEquals(List.of("Dual eSIM", "Nano-SIM & eSIM"), simValues(connection, proMaxId));
             assertEquals(List.of("Cosmic Orange", "Silver", "Deep Blue"), colorLabels(connection, proMaxId));
 
-            // Every color variant image must be a real, absolute product photo CDN URL - not a
-            // frontend-style placeholder/illustration path.
             for (Long id : List.of(proId, proMaxId)) {
                 for (String imageUrl : colorImageUrls(connection, id)) {
                     assertTrue(imageUrl.startsWith("https://prod-cdn.prod.asbis.io/"),
@@ -78,8 +67,6 @@ class ProductVariantTablesMigrationTest {
                 }
             }
 
-            // The main product image and the "Deep Blue" color variant should be the same photo -
-            // Deep Blue is the default-selected color on the frontend.
             assertEquals(mainImageUrl(connection, proId), colorImageUrl(connection, proId, "Deep Blue"));
             assertEquals(mainImageUrl(connection, proMaxId), colorImageUrl(connection, proMaxId, "Deep Blue"));
 
@@ -90,12 +77,6 @@ class ProductVariantTablesMigrationTest {
 
     @Test
     void changelog_NoOpsCleanlyWhenProductsTableDoesNotExistYet() throws Exception {
-        // On a genuinely fresh database, `products` is created by Hibernate's
-        // ddl-auto:update, which runs *after* Liquibase - so at the point changesets
-        // 004/005 run, `products` doesn't exist yet. Without the tableExists precondition
-        // on 004, addForeignKeyConstraint against a nonexistent `products` table crashes
-        // the whole changelog (and app startup with it). This asserts the changelog
-        // instead runs cleanly end-to-end against an empty database with no tables at all.
         String jdbcUrl = "jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=PostgreSQL";
 
         try (Connection connection = DriverManager.getConnection(jdbcUrl, "sa", "")) {

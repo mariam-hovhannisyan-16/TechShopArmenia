@@ -61,13 +61,6 @@ public class CatalogSeeder implements ApplicationRunner {
                     "https://prod-cdn.prod.asbis.io/s3size/el:t/f:webp/rt:fill/w:900/plain/s3://cms/product/a3/44/a34423b7b08300fde0625964a0130f66/250915140035204152.webp",
                     proMaxDeepBlueUrl);
 
-            // The rest of the catalog below (60 more products) mirrors techshop-frontend's
-            // MOCK_PRODUCTS array (product.ts), backfilled into the real backend via Liquibase
-            // changeset 007 for already-seeded databases. 5 of the 65 mock entries share an exact
-            // name with a product already seeded above (Samsung Galaxy S24, MacBook Air M2,
-            // Sony WH-1000XM5, iPhone 17 Pro, iPhone 17 Pro Max) and are deliberately omitted here
-            // too, for the same reason 007 skips them: no duplicate-by-name products, and the
-            // iPhone 17 pair keeps its verified per-color photos instead of the mock's stale ones.
             List<Product> products = new ArrayList<>(List.of(
                     iphone15,
                     seedProduct("Samsung Galaxy S24", "Samsung Galaxy S24 with 256GB storage.",

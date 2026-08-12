@@ -10,6 +10,9 @@ import org.mapstruct.Mapping;
 public interface ConversationMapper {
     ConversationResponse toResponse(Conversation conversation);
 
+    @Mapping(target = "escalated", source = "escalated")
+    ConversationResponse toResponse(Conversation conversation, boolean escalated);
+
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdAt", ignore = true)

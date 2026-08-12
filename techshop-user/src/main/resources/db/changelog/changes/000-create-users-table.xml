@@ -39,11 +39,6 @@
             </column>
             <column name="updated_at" type="TIMESTAMP"/>
         </createTable>
-        <!-- email is deliberately left non-unique here: the very next changeset
-             (002-add-unique-constraint-on-users-email) is what adds uk_users_email,
-             so on a fresh database creation and constraint stay in the same two-step
-             sequence as they'd take on an existing database that only lacked the
-             constraint. -->
     </changeSet>
 
 </databaseChangeLog>

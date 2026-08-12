@@ -17,12 +17,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/**
- * Exercises db/changelog/db.changelog-master.xml directly (bypassing Spring/JPA)
- * against a table seeded with the exact kind of dirty, pre-existing duplicate data
- * found on the live server, to confirm the migration is safe to run there: it must
- * dedupe first, then be able to add the unique constraint without failing.
- */
 class UsersEmailUniqueConstraintMigrationTest {
 
     @Test

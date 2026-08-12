@@ -15,11 +15,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/**
- * Exercises db/changelog/db.changelog-master.xml directly (bypassing Spring/JPA), confirming
- * changeset 010 creates the reviews table with its required-column constraints and the
- * one-review-per-user-per-product unique constraint.
- */
 class CreateReviewsTableMigrationTest {
 
     @Test
@@ -46,8 +41,6 @@ class CreateReviewsTableMigrationTest {
                             "INSERT INTO reviews (id, product_id, user_id, rating, comment) VALUES (2, 5, 1, 4, 'Another one')"),
                     "a second review from the same user for the same product should violate the unique constraint");
 
-            // A different user reviewing the same product, or the same user reviewing a
-            // different product, are both fine.
             connection.createStatement().execute(
                     "INSERT INTO reviews (id, product_id, user_id, rating, comment) VALUES (3, 5, 2, 4, 'Also good')");
             connection.createStatement().execute(

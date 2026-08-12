@@ -15,15 +15,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- * Exercises db/changelog/db.changelog-master.xml directly (bypassing Spring/JPA), confirming
- * changeset 009 adds orders.language and backfills it correctly in both scenarios that matter
- * for a real rollout: a fresh database (the full changelog runs end-to-end, including 001
- * creating `orders` itself) and an already-migrated database that has real order rows with no
- * `language` column yet (matching current production before this migration ships) - those rows
- * must come out of the ADD COLUMN as 'HY', the same fallback the frontend's LanguageService
- * uses, not NULL.
- */
 class AddLanguageToOrdersMigrationTest {
 
     @Test
@@ -81,7 +72,6 @@ class AddLanguageToOrdersMigrationTest {
             assertEquals("HY", languageOf(connection, 1L));
             assertEquals("HY", languageOf(connection, 2L));
 
-            // Re-running the changelog is a no-op: no error, no change to already-set values.
             connection.createStatement().execute("UPDATE orders SET language = 'EN' WHERE id = 1");
             liquibase.update(new Contexts());
             assertEquals("EN", languageOf(connection, 1L));

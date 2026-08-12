@@ -5,31 +5,6 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <!-- Backfills the rest of the catalog that previously only existed in the frontend's
-         mock/dev-fallback data (techshop-frontend's product.ts MOCK_PRODUCTS array), so
-         production serves the full 65-product assortment instead of the original 6 plus the
-         iPhone 17 Pro/Pro Max pair from 005/006. 5 of the 65 mock entries share an exact name
-         with a product already seeded here (Samsung Galaxy S24, MacBook Air M2, Sony WH-1000XM5,
-         iPhone 17 Pro, iPhone 17 Pro Max) and are deliberately skipped - the iPhone 17 pair in
-         particular already carries the verified per-color photos from 006, which are better than
-         the stale placeholder images still in the mock source at time of writing, so re-inserting
-         them would create name duplicates and regress those images. Each changeset follows the
-         same by-name idempotency pattern as 005: preConditions gate on the products/columns
-         existing and on the product not already existing by name, onFail="MARK_RAN" so this is a
-         no-op both on a genuinely fresh database (products doesn't exist yet - created later by
-         Hibernate, then CatalogSeeder seeds everything including these 60 products through JPA)
-         and against any other test/migration-path schema that doesn't have the full product
-         column set yet. Child rows are looked up by name rather than a captured generated id,
-         for the same H2 PL/pgSQL-support reason documented in 005. Mock entries have no
-         `category` field at all (the frontend never sets one); categories below are inferred
-         from product type, reusing the 5 existing category names where they fit
-         (Phones/Laptops/TVs/Audio/Cameras) and introducing Tablets/Gaming/Monitors/Accessories
-         for product types the existing taxonomy didn't cover - see the categories seed changeset
-         below, which adds only the categories that don't already exist in that table so the
-         frontend's category filter has something to match against. `is_new` mirrors the mock's
-         `badge: 'new'` flag; discount_percentage is NULL for all of them, same as every other
-         seeded product. -->
-
     <changeSet id="007-seed-additional-categories" author="mariam">
         <preConditions onFail="MARK_RAN">
             <tableExists tableName="categories"/>
