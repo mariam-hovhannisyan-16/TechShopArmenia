@@ -15,44 +15,78 @@ public final class EmailTemplates {
 
     public static String verificationEmail(String name, String verificationLink) {
         String body =
-                "<p style=\"" + textStyle() + " margin:0 0 16px;\">Բարև, " + escape(name) + ":</p>" +
-                "<p style=\"" + textStyle() + " margin:0 0 28px;\">" +
-                "Շնորհակալություն TechShop AM-ում գրանցվելու համար: Ձեր հաշիվը ակտիվացնելու համար հաստատեք ձեր էլ. հասցեն՝ սեղմելով ստորև գտնվող կոճակին:" +
-                "</p>" +
-                button(verificationLink, "Հաստատել հաշիվը") +
-                "<p style=\"" + smallTextStyle() + " margin:28px 0 0;\">Այս հղումն ուժի մեջ է 24 ժամ:</p>" +
-                "<p style=\"" + smallTextStyle() + " margin:8px 0 0;\">Եթե դուք չեք գրանցվել TechShop AM-ում, պարզապես անտեսեք այս նամակը:</p>";
+                languageBlock("Բարև, " + escape(name) + ":",
+                        "Շնորհակալություն TechShop AM-ում գրանցվելու համար: Ձեր հաշիվը ակտիվացնելու համար հաստատեք ձեր էլ. հասցեն՝ սեղմելով ստորև գտնվող կոճակին:",
+                        "Այս հղումն ուժի մեջ է 24 ժամ:",
+                        "Եթե դուք չեք գրանցվել TechShop AM-ում, պարզապես անտեսեք այս նամակը:") +
+                divider() +
+                languageBlock("Hello, " + escape(name) + ",",
+                        "Thank you for signing up at TechShop AM. Please confirm your email by clicking the button below to activate your account:",
+                        "This link is valid for 24 hours.",
+                        "If you did not sign up at TechShop AM, simply ignore this email.") +
+                divider() +
+                languageBlock("Здравствуйте, " + escape(name) + ",",
+                        "Спасибо за регистрацию в TechShop AM. Чтобы активировать аккаунт, подтвердите свой email, нажав на кнопку ниже:",
+                        "Ссылка действительна в течение 24 часов.",
+                        "Если вы не регистрировались в TechShop AM, просто проигнорируйте это письмо.") +
+                button(verificationLink, "Հաստատել հաշիվը / Verify account / Подтвердить аккаунт");
 
         return wrap(body);
     }
 
     public static String passwordResetEmail(String name, String resetLink) {
         String body =
-                "<p style=\"" + textStyle() + " margin:0 0 16px;\">Բարև, " + escape(name) + ":</p>" +
-                "<p style=\"" + textStyle() + " margin:0 0 28px;\">" +
-                "Մենք ստացել ենք ձեր հաշվի գաղտնաբառը վերականգնելու հայտը: Նոր գաղտնաբառ սահմանելու համար սեղմեք ստորև գտնվող կոճակին:" +
-                "</p>" +
-                button(resetLink, "Վերականգնել գաղտնաբառը") +
-                "<p style=\"" + smallTextStyle() + " margin:28px 0 0;\">Այս հղումն ուժի մեջ է 1 ժամ:</p>" +
-                "<p style=\"" + smallTextStyle() + " margin:8px 0 0;\">Եթե դուք չեք հայցել գաղտնաբառի վերականգնում, պարզապես անտեսեք այս նամակը:</p>";
+                languageBlock("Բարև, " + escape(name) + ":",
+                        "Մենք ստացել ենք ձեր հաշվի գաղտնաբառը վերականգնելու հայտը: Նոր գաղտնաբառ սահմանելու համար սեղմեք ստորև գտնվող կոճակին:",
+                        "Այս հղումն ուժի մեջ է 1 ժամ:",
+                        "Եթե դուք չեք հայցել գաղտնաբառի վերականգնում, պարզապես անտեսեք այս նամակը:") +
+                divider() +
+                languageBlock("Hello, " + escape(name) + ",",
+                        "We received a request to reset your account password. To set a new password, click the button below:",
+                        "This link is valid for 1 hour.",
+                        "If you did not request a password reset, simply ignore this email.") +
+                divider() +
+                languageBlock("Здравствуйте, " + escape(name) + ",",
+                        "Мы получили запрос на восстановление пароля вашего аккаунта. Чтобы задать новый пароль, нажмите на кнопку ниже:",
+                        "Ссылка действительна в течение 1 часа.",
+                        "Если вы не запрашивали восстановление пароля, просто проигнорируйте это письмо.") +
+                button(resetLink, "Վերականգնել գաղտնաբառը / Reset password / Восстановить пароль");
 
         return wrap(body);
     }
 
     public static String welcomeEmail(String name, String homeUrl) {
         String body =
-                "<p style=\"" + textStyle() + " margin:0 0 16px;\">Բարև, " + escape(name) + ":</p>" +
-                "<p style=\"" + textStyle() + " margin:0 0 28px;\">" +
-                "Ձեր հաշիվը հաստատված է, և դուք այժմ կարող եք օգտվել TechShop AM-ի բոլոր հնարավորություններից: Բարի գնումներ:" +
-                "</p>" +
-                button(homeUrl, "Սկսել գնումներ կատարել");
+                languageBlock("Բարև, " + escape(name) + ":",
+                        "Ձեր հաշիվը հաստատված է, և դուք այժմ կարող եք օգտվել TechShop AM-ի բոլոր հնարավորություններից: Բարի գնումներ:") +
+                divider() +
+                languageBlock("Hello, " + escape(name) + ",",
+                        "Your account is verified and you can now enjoy all TechShop AM features. Happy shopping!") +
+                divider() +
+                languageBlock("Здравствуйте, " + escape(name) + ",",
+                        "Ваш аккаунт подтверждён, и теперь вам доступны все возможности TechShop AM. Приятных покупок!") +
+                button(homeUrl, "Սկսել գնումներ կատարել / Start shopping / Начать покупки");
 
         return wrap(body);
     }
 
+    private static String languageBlock(String greeting, String mainText, String... smallLines) {
+        StringBuilder block = new StringBuilder()
+                .append("<p style=\"").append(textStyle()).append(" margin:0 0 16px;\">").append(greeting).append("</p>")
+                .append("<p style=\"").append(textStyle()).append(" margin:0 0 20px;\">").append(mainText).append("</p>");
+        for (String line : smallLines) {
+            block.append("<p style=\"").append(smallTextStyle()).append(" margin:4px 0 0;\">").append(line).append("</p>");
+        }
+        return block.toString();
+    }
+
+    private static String divider() {
+        return "<hr style=\"border:none; border-top:1px solid " + BORDER + "; margin:24px 0;\">";
+    }
+
     private static String wrap(String bodyHtml) {
         return "<!DOCTYPE html>" +
-                "<html lang=\"hy\">" +
+                "<html>" +
                 "<head>" +
                 "<meta charset=\"UTF-8\">" +
                 "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +

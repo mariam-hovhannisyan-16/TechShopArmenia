@@ -5,6 +5,7 @@ import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
 import am.techshop.notification.email.EmailTemplates;
+import am.techshop.notification.i18n.AccountMessages;
 import am.techshop.notification.i18n.OrderMessages;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -35,45 +36,24 @@ public class EmailService {
     public void sendVerificationEmail(String to, String userName, String verificationToken) {
         String link = frontendUrl + "/verify-email?token=" + verificationToken;
         String html = EmailTemplates.verificationEmail(userName, link);
-        String text = """
-                Բարև, %s:
+        String text = AccountMessages.emailVerificationText(userName, link);
 
-                Շնորհակալություն TechShop AM-ում գրանցվելու համար: Ձեր հաշիվը ակտիվացնելու համար խնդրում ենք հետևել այս հղմանը.
-
-                %s
-
-                Հղումն ուժի մեջ է 24 ժամ:
-
-                Եթե դուք չեք գրանցվել TechShop AM-ում, պարզապես անտեսեք այս նամակը:""".formatted(userName, link);
-
-        sendHtml(to, "Հաստատեք ձեր հաշիվը TechShop AM-ում", html, text);
+        sendHtml(to, AccountMessages.emailVerificationSubject(), html, text);
     }
 
     public void sendPasswordResetEmail(String to, String userName, String resetToken) {
         String link = frontendUrl + "/reset-password?token=" + resetToken;
         String html = EmailTemplates.passwordResetEmail(userName, link);
-        String text = """
-                Բարև, %s:
+        String text = AccountMessages.passwordResetText(userName, link);
 
-                Մենք ստացել ենք ձեր հաշվի գաղտնաբառը վերականգնելու հայտը: Նոր գաղտնաբառ սահմանելու համար հետևեք այս հղմանը.
-
-                %s
-
-                Հղումն ուժի մեջ է 1 ժամ:
-
-                Եթե դուք չեք հայցել գաղտնաբառի վերականգնում, պարզապես անտեսեք այս նամակը:""".formatted(userName, link);
-
-        sendHtml(to, "Գաղտնաբառի վերականգնում TechShop AM-ում", html, text);
+        sendHtml(to, AccountMessages.passwordResetSubject(), html, text);
     }
 
     public void sendWelcome(String to, String userName) {
         String html = EmailTemplates.welcomeEmail(userName, frontendUrl);
-        String text = """
-                Բարև, %s:
+        String text = AccountMessages.welcomeText(userName);
 
-                Ձեր հաշիվը հաստատված է, և դուք այժմ կարող եք օգտվել TechShop AM-ի բոլոր հնարավորություններից: Բարի գնումներ:""".formatted(userName);
-
-        sendHtml(to, "Բարի գալուստ TechShop AM", html, text);
+        sendHtml(to, AccountMessages.welcomeSubject(), html, text);
     }
 
     public void sendOrderStatusChanged(String to, String userName, Long orderId, OrderStatus status, BigDecimal totalPrice,

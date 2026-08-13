@@ -4,6 +4,7 @@ import am.techshop.common.dto.response.InstallmentPlanResponse;
 import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
+import am.techshop.notification.i18n.AccountMessages;
 import am.techshop.notification.i18n.OrderMessages;
 import am.techshop.notification.mapper.NotificationMapper;
 import am.techshop.notification.repository.NotificationRepository;
@@ -39,7 +40,7 @@ public class NotificationDispatcher {
     public void dispatchEmailVerification(Long userId, String email, String name, String verificationToken) {
         deliver(NotificationType.EMAIL_VERIFICATION, userId,
                 () -> emailService.sendVerificationEmail(email, name, verificationToken),
-                () -> "Բարի գալուստ TechShop AM, %s! Խնդրում ենք հաստատել ձեր էլ. հասցեն".formatted(name));
+                () -> AccountMessages.emailVerificationInApp(name));
     }
 
     public void dispatchWelcome(Long userId, String email, String name) {
@@ -65,12 +66,12 @@ public class NotificationDispatcher {
 
     public void dispatchChatReply(Long userId, String messagePreview) {
         deliver(NotificationType.CHAT_REPLY, userId, null,
-                () -> "New reply in your support conversation: %s".formatted(messagePreview));
+                () -> AccountMessages.chatReplyMessage(messagePreview));
     }
 
     public void dispatchPriceDrop(Long userId, String productName, BigDecimal oldPrice, BigDecimal newPrice) {
         deliver(NotificationType.PRICE_DROP, userId, null,
-                () -> "%s-ի գինը իջել է. %s → %s".formatted(productName, oldPrice.toPlainString(), newPrice.toPlainString()));
+                () -> AccountMessages.priceDropMessage(productName, oldPrice, newPrice));
     }
 
     public void dispatchAdminNewUser(List<Long> adminIds, String newUserName, String newUserEmail) {
@@ -84,8 +85,6 @@ public class NotificationDispatcher {
     }
 
     private String adminNewUserMessage(String name, String email) {
-        // No per-admin language is stored, so include all three so the bell/panel
-        // reads correctly whatever UI language the admin has selected.
         return "Նոր օգտատեր գրանցվել է՝ %1$s (%2$s) · New user registered: %1$s (%2$s) · Зарегистрировался новый пользователь: %1$s (%2$s)"
                 .formatted(name, email);
     }

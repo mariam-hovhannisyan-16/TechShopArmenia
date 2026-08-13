@@ -24,9 +24,6 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
 
-  # No backup strategy exists beyond this container's volume - if postgres_data is ever lost or
-  # corrupted, all data goes with it. Run scripts/backup-db.sh periodically (see the "Database
-  # backups" section in README.md for a cron suggestion) to pg_dump each per-service database.
   postgres:
     image: postgres:16
     container_name: techshop-postgres
@@ -54,12 +51,6 @@ services:
       DB_PASSWORD: postgres
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
-      # Must match wherever the frontend is actually served - CORS is locked to this
-      # origin, so a mismatch here silently breaks every browser request to this API.
-      # The localhost:4200 default below is for local dev only; production deployments
-      # must set FRONTEND_URL explicitly (e.g. in the server's own .env file) rather than
-      # relying on any hardcoded fallback here, since a fixed IP/domain will inevitably
-      # go stale as the deployment changes.
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
     depends_on:
       - postgres

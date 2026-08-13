@@ -177,7 +177,10 @@ class NotificationDispatcherTest {
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
-        assertTrue(captor.getValue().getMessage().contains("We can help with that!"));
+        String message = captor.getValue().getMessage();
+        assertTrue(message.contains("Ձեր աջակցության չաթում նոր պատասխան կա՝ We can help with that!"));
+        assertTrue(message.contains("New reply in your support conversation: We can help with that!"));
+        assertTrue(message.contains("Новый ответ в вашем чате поддержки: We can help with that!"));
         assertEquals(1L, captor.getValue().getUserId());
     }
 
@@ -191,7 +194,10 @@ class NotificationDispatcherTest {
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
-        assertEquals("iPhone 15-ի գինը իջել է. 450000 → 400000", captor.getValue().getMessage());
+        String message = captor.getValue().getMessage();
+        assertTrue(message.contains("iPhone 15-ի գինը իջել է. 450000 → 400000"));
+        assertTrue(message.contains("Price drop for iPhone 15: 450000 → 400000"));
+        assertTrue(message.contains("Цена на iPhone 15 снизилась: 450000 → 400000"));
         assertEquals(1L, captor.getValue().getUserId());
     }
 
