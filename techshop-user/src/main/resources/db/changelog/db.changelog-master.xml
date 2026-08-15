@@ -9,5 +9,6 @@
     <include file="db/changelog/changes/001-dedupe-users-by-email.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/002-add-unique-constraint-on-users-email.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/003-add-notify-price-drops-to-users.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/004-add-language-to-users.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

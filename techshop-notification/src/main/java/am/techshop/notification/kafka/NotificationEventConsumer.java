@@ -32,31 +32,31 @@ public class NotificationEventConsumer {
     @KafkaListener(topics = "user-registered", groupId = "notification-group",
             properties = {"spring.json.value.default.type=am.techshop.common.event.UserRegisteredEvent"})
     public void handleUserRegistered(UserRegisteredEvent event) {
-        dispatcher.dispatchEmailVerification(event.userId(), event.email(), event.name(), event.verificationToken());
+        dispatcher.dispatchEmailVerification(event.userId(), event.email(), event.name(), event.verificationToken(), event.language());
     }
 
     @KafkaListener(topics = "user-verified", groupId = "notification-group",
             properties = {"spring.json.value.default.type=am.techshop.common.event.UserVerifiedEvent"})
     public void handleUserVerified(UserVerifiedEvent event) {
-        dispatcher.dispatchWelcome(event.userId(), event.email(), event.name());
+        dispatcher.dispatchWelcome(event.userId(), event.email(), event.name(), event.language());
     }
 
     @KafkaListener(topics = "password-reset-requested", groupId = "notification-group",
             properties = {"spring.json.value.default.type=am.techshop.common.event.PasswordResetRequestedEvent"})
     public void handlePasswordResetRequested(PasswordResetRequestedEvent event) {
-        dispatcher.dispatchPasswordReset(event.userId(), event.email(), event.name(), event.resetToken());
+        dispatcher.dispatchPasswordReset(event.userId(), event.email(), event.name(), event.resetToken(), event.language());
     }
 
     @KafkaListener(topics = "chat-reply", groupId = "notification-group",
             properties = {"spring.json.value.default.type=am.techshop.common.event.ChatReplyEvent"})
     public void handleChatReply(ChatReplyEvent event) {
-        dispatcher.dispatchChatReply(event.userId(), event.messagePreview());
+        dispatcher.dispatchChatReply(event.userId(), event.messagePreview(), event.language());
     }
 
     @KafkaListener(topics = "price-drop", groupId = "notification-group",
             properties = {"spring.json.value.default.type=am.techshop.common.event.PriceDropEvent"})
     public void handlePriceDrop(PriceDropEvent event) {
-        dispatcher.dispatchPriceDrop(event.userId(), event.productName(), event.oldPrice(), event.newPrice());
+        dispatcher.dispatchPriceDrop(event.userId(), event.productName(), event.oldPrice(), event.newPrice(), event.language());
     }
 
     @KafkaListener(topics = "admin-user-registered", groupId = "notification-group",

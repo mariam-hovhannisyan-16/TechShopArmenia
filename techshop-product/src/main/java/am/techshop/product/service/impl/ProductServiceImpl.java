@@ -3,6 +3,8 @@ package am.techshop.product.service.impl;
 import am.techshop.common.dto.request.ProductRequest;
 import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.dto.response.ProductResponse;
+import am.techshop.common.dto.response.UserLanguageResponse;
+import am.techshop.common.enums.Language;
 import am.techshop.common.event.PriceDropEvent;
 import am.techshop.common.exception.ProductNotFoundException;
 import am.techshop.common.exception.TechShopException;
@@ -31,6 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -179,8 +183,11 @@ public class ProductServiceImpl implements ProductService {
             if (optedInIds == null || optedInIds.isEmpty()) {
                 return;
             }
+            Map<Long, Language> languagesByUserId = userClient.getUserLanguages(optedInIds, internalApiKey).data().stream()
+                    .collect(Collectors.toMap(UserLanguageResponse::userId, UserLanguageResponse::language));
             optedInIds.forEach(userId -> productEventProducer.sendPriceDropEvent(
-                    new PriceDropEvent(userId, product.getId(), product.getName(), oldPrice, newPrice)));
+                    new PriceDropEvent(userId, product.getId(), product.getName(), oldPrice, newPrice,
+                            languagesByUserId.getOrDefault(userId, Language.HY))));
         } catch (Exception ex) {
             log.warn("Failed to notify wishlist subscribers of price drop for product {}: {}", product.getId(), ex.getMessage());
         }

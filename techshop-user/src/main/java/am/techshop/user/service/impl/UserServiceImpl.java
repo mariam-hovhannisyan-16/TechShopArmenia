@@ -7,6 +7,7 @@ import am.techshop.common.dto.request.RegisterRequest;
 import am.techshop.common.dto.request.ResetPasswordRequest;
 import am.techshop.common.dto.response.AuthResponse;
 import am.techshop.common.dto.response.NotificationPreferencesResponse;
+import am.techshop.common.dto.response.UserLanguageResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.enums.UserRole;
 import am.techshop.common.event.AdminUserRegisteredEvent;
@@ -96,7 +97,7 @@ public class UserServiceImpl implements UserService {
     private void notifyUserRegistered(User user, String verificationToken) {
         try {
             userEventProducer.sendUserRegisteredEvent(
-                    new UserRegisteredEvent(user.getId(), user.getEmail(), user.getName(), verificationToken)
+                    new UserRegisteredEvent(user.getId(), user.getEmail(), user.getName(), verificationToken, user.getLanguage())
             );
         } catch (Exception ex) {
             log.warn("Failed to publish user-registered event for user {}: {}", user.getId(), ex.getMessage());
@@ -155,7 +156,7 @@ public class UserServiceImpl implements UserService {
         User savedUser = userRepository.save(user);
 
         userEventProducer.sendUserVerifiedEvent(
-                new UserVerifiedEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getName())
+                new UserVerifiedEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getName(), savedUser.getLanguage())
         );
 
         return userMapper.toResponse(savedUser);
@@ -174,7 +175,7 @@ public class UserServiceImpl implements UserService {
             userRepository.save(user);
 
             userEventProducer.sendUserRegisteredEvent(
-                    new UserRegisteredEvent(user.getId(), user.getEmail(), user.getName(), verificationToken)
+                    new UserRegisteredEvent(user.getId(), user.getEmail(), user.getName(), verificationToken, user.getLanguage())
             );
         });
     }
@@ -188,7 +189,7 @@ public class UserServiceImpl implements UserService {
             userRepository.save(user);
 
             userEventProducer.sendPasswordResetRequestedEvent(
-                    new PasswordResetRequestedEvent(user.getId(), user.getEmail(), user.getName(), resetToken)
+                    new PasswordResetRequestedEvent(user.getId(), user.getEmail(), user.getName(), resetToken, user.getLanguage())
             );
         });
     }
@@ -270,6 +271,12 @@ public class UserServiceImpl implements UserService {
     public List<Long> filterPriceDropEnabledUserIds(List<Long> userIds) {
         return userRepository.findByIdInAndNotifyPriceDropsTrue(userIds).stream()
                 .map(User::getId)
+                .toList();
+    }
+
+    public List<UserLanguageResponse> getUserLanguages(List<Long> userIds) {
+        return userRepository.findByIdIn(userIds).stream()
+                .map(user -> new UserLanguageResponse(user.getId(), user.getLanguage()))
                 .toList();
     }
 }

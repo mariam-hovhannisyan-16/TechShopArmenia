@@ -64,7 +64,7 @@ class UserServiceImplTest {
 
     @Test
     void register_WhenEmailNotTaken_RegistersUser() {
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null, null);
         User newUser = new User();
         newUser.setName("Mariam");
         newUser.setEmail("mariam@test.com");
@@ -94,7 +94,7 @@ class UserServiceImplTest {
 
     @Test
     void register_WhenAdminsExist_NotifiesEachAdminOfNewUser() {
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null, null);
         User newUser = new User();
         User savedUser = new User();
         savedUser.setId(5L);
@@ -126,7 +126,7 @@ class UserServiceImplTest {
 
     @Test
     void register_WhenNoAdmins_DoesNotPublishAdminEvent() {
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null, null);
         User newUser = new User();
         User savedUser = new User();
         savedUser.setId(5L);
@@ -150,7 +150,7 @@ class UserServiceImplTest {
 
     @Test
     void register_WhenRoleNotProvided_DefaultsToCustomer() {
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null, null);
         User newUser = new User();
         User savedUser = new User();
         savedUser.setId(1L);
@@ -173,7 +173,7 @@ class UserServiceImplTest {
 
     @Test
     void register_WhenRoleProvided_IgnoresRequestedRoleAndUsesCustomer() {
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", UserRole.ADMIN);
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", UserRole.ADMIN, null);
         User newUser = new User();
         User savedUser = new User();
         savedUser.setId(1L);
@@ -196,7 +196,7 @@ class UserServiceImplTest {
 
     @Test
     void register_WhenEventPublishFails_StillReturnsAuthResponse() {
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null, null);
         User newUser = new User();
         User savedUser = new User();
         savedUser.setId(1L);
@@ -223,7 +223,7 @@ class UserServiceImplTest {
 
     @Test
     void register_WhenEmailAlreadyTaken_ThrowsException() {
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null, null);
         when(userRepository.existsByEmail(request.email())).thenReturn(true);
 
         TechShopException ex = assertThrows(TechShopException.class,
@@ -669,7 +669,7 @@ class UserServiceImplTest {
 
     @Test
     void register_WhenSaveViolatesUniqueEmailConstraint_ThrowsConflict() {
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null, null);
         User newUser = new User();
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);

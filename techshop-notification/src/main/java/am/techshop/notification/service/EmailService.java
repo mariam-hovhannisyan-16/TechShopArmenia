@@ -33,27 +33,27 @@ public class EmailService {
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
-    public void sendVerificationEmail(String to, String userName, String verificationToken) {
+    public void sendVerificationEmail(String to, String userName, String verificationToken, Language language) {
         String link = frontendUrl + "/verify-email?token=" + verificationToken;
-        String html = EmailTemplates.verificationEmail(userName, link);
-        String text = AccountMessages.emailVerificationText(userName, link);
+        String html = EmailTemplates.verificationEmail(userName, link, language);
+        String text = AccountMessages.emailVerificationText(userName, link, language);
 
-        sendHtml(to, AccountMessages.emailVerificationSubject(), html, text);
+        sendHtml(to, AccountMessages.emailVerificationSubject(language), html, text);
     }
 
-    public void sendPasswordResetEmail(String to, String userName, String resetToken) {
+    public void sendPasswordResetEmail(String to, String userName, String resetToken, Language language) {
         String link = frontendUrl + "/reset-password?token=" + resetToken;
-        String html = EmailTemplates.passwordResetEmail(userName, link);
-        String text = AccountMessages.passwordResetText(userName, link);
+        String html = EmailTemplates.passwordResetEmail(userName, link, language);
+        String text = AccountMessages.passwordResetText(userName, link, language);
 
-        sendHtml(to, AccountMessages.passwordResetSubject(), html, text);
+        sendHtml(to, AccountMessages.passwordResetSubject(language), html, text);
     }
 
-    public void sendWelcome(String to, String userName) {
-        String html = EmailTemplates.welcomeEmail(userName, frontendUrl);
-        String text = AccountMessages.welcomeText(userName);
+    public void sendWelcome(String to, String userName, Language language) {
+        String html = EmailTemplates.welcomeEmail(userName, frontendUrl, language);
+        String text = AccountMessages.welcomeText(userName, language);
 
-        sendHtml(to, AccountMessages.welcomeSubject(), html, text);
+        sendHtml(to, AccountMessages.welcomeSubject(language), html, text);
     }
 
     public void sendOrderStatusChanged(String to, String userName, Long orderId, OrderStatus status, BigDecimal totalPrice,

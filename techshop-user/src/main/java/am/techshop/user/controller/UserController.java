@@ -12,6 +12,7 @@ import am.techshop.common.dto.request.RoleUpdateRequest;
 import am.techshop.common.dto.response.ApiResponse;
 import am.techshop.common.dto.response.AuthResponse;
 import am.techshop.common.dto.response.NotificationPreferencesResponse;
+import am.techshop.common.dto.response.UserLanguageResponse;
 import am.techshop.common.dto.response.UserResponse;
 import am.techshop.common.exception.TechShopException;
 import am.techshop.common.security.CurrentUser;
@@ -167,5 +168,15 @@ public class UserController {
             throw new TechShopException("Forbidden", 403);
         }
         return ResponseEntity.ok(ApiResponse.ok(userService.filterPriceDropEnabledUserIds(ids)));
+    }
+
+    @GetMapping("/api/users/internal/languages")
+    public ResponseEntity<ApiResponse<List<UserLanguageResponse>>> getUserLanguages(
+            @RequestParam List<Long> ids,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey) {
+        if (!isValidInternalKey(apiKey)) {
+            throw new TechShopException("Forbidden", 403);
+        }
+        return ResponseEntity.ok(ApiResponse.ok(userService.getUserLanguages(ids)));
     }
 }

@@ -228,7 +228,7 @@ class EmailServiceTest {
     void sendVerificationEmail_WhenDevMode_NeverCallsMailSender() {
         setDevMode(true);
 
-        emailService.sendVerificationEmail("mariam@test.com", "Mariam", "token123");
+        emailService.sendVerificationEmail("mariam@test.com", "Mariam", "token123", Language.HY);
 
         verify(mailSender, never()).createMimeMessage();
     }
@@ -239,7 +239,7 @@ class EmailServiceTest {
         MimeMessage mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 
-        emailService.sendVerificationEmail("mariam@test.com", "Mariam", "token123");
+        emailService.sendVerificationEmail("mariam@test.com", "Mariam", "token123", Language.HY);
 
         verify(mailSender).send(mimeMessage);
     }
@@ -249,7 +249,7 @@ class EmailServiceTest {
         setDevMode(false);
         when(mailSender.createMimeMessage()).thenReturn(null);
 
-        emailService.sendVerificationEmail("mariam@test.com", "Mariam", "token123");
+        emailService.sendVerificationEmail("mariam@test.com", "Mariam", "token123", Language.HY);
 
         verify(mailSender, never()).send(any(MimeMessage.class));
     }
@@ -260,7 +260,7 @@ class EmailServiceTest {
         MimeMessage mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 
-        emailService.sendPasswordResetEmail("mariam@test.com", "Mariam", "reset-token");
+        emailService.sendPasswordResetEmail("mariam@test.com", "Mariam", "reset-token", Language.HY);
 
         verify(mailSender).send(mimeMessage);
     }
@@ -271,7 +271,7 @@ class EmailServiceTest {
         MimeMessage mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 
-        emailService.sendWelcome("mariam@test.com", "Mariam");
+        emailService.sendWelcome("mariam@test.com", "Mariam", Language.HY);
 
         verify(mailSender).send(mimeMessage);
     }

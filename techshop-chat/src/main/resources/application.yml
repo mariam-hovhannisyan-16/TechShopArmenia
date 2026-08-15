@@ -35,10 +35,17 @@ spring:
       properties:
         spring.json.trusted.packages: "am.techshop.common.event"
 
+internal:
+  api-key: ${INTERNAL_API_KEY:local-dev-internal-key-change-in-production}
+
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:4200}
   jwt:
     secret: ${JWT_SECRET:local-dev-secret-change-in-production}
+
+services:
+  user:
+    url: ${USER_SERVICE_URL:http://localhost:8081}
 
 anthropic:
   api-key: ${ANTHROPIC_API_KEY:}

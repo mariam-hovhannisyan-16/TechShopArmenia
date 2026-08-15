@@ -53,9 +53,9 @@ class NotificationDispatcherTest {
     void dispatchEmailVerification_SendsBothEmailAndInAppReminder() {
         stubNotificationCreation();
 
-        dispatcher.dispatchEmailVerification(1L, "mariam@test.com", "Mariam", "token-123");
+        dispatcher.dispatchEmailVerification(1L, "mariam@test.com", "Mariam", "token-123", Language.HY);
 
-        verify(emailService).sendVerificationEmail("mariam@test.com", "Mariam", "token-123");
+        verify(emailService).sendVerificationEmail("mariam@test.com", "Mariam", "token-123", Language.HY);
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
@@ -66,17 +66,17 @@ class NotificationDispatcherTest {
 
     @Test
     void dispatchWelcome_SendsEmailOnly() {
-        dispatcher.dispatchWelcome(1L, "mariam@test.com", "Mariam");
+        dispatcher.dispatchWelcome(1L, "mariam@test.com", "Mariam", Language.HY);
 
-        verify(emailService).sendWelcome("mariam@test.com", "Mariam");
+        verify(emailService).sendWelcome("mariam@test.com", "Mariam", Language.HY);
         verify(notificationRepository, never()).save(any());
     }
 
     @Test
     void dispatchPasswordReset_SendsEmailOnly() {
-        dispatcher.dispatchPasswordReset(1L, "mariam@test.com", "Mariam", "reset-token");
+        dispatcher.dispatchPasswordReset(1L, "mariam@test.com", "Mariam", "reset-token", Language.HY);
 
-        verify(emailService).sendPasswordResetEmail("mariam@test.com", "Mariam", "reset-token");
+        verify(emailService).sendPasswordResetEmail("mariam@test.com", "Mariam", "reset-token", Language.HY);
         verify(notificationRepository, never()).save(any());
     }
 
@@ -168,19 +168,17 @@ class NotificationDispatcherTest {
     void dispatchChatReply_SavesInAppNotificationOnly() {
         stubNotificationCreation();
 
-        dispatcher.dispatchChatReply(1L, "We can help with that!");
+        dispatcher.dispatchChatReply(1L, "We can help with that!", Language.RU);
 
-        verify(emailService, never()).sendVerificationEmail(any(), any(), any());
-        verify(emailService, never()).sendWelcome(any(), any());
-        verify(emailService, never()).sendPasswordResetEmail(any(), any(), any());
+        verify(emailService, never()).sendVerificationEmail(any(), any(), any(), any());
+        verify(emailService, never()).sendWelcome(any(), any(), any());
+        verify(emailService, never()).sendPasswordResetEmail(any(), any(), any(), any());
         verify(emailService, never()).sendOrderStatusChanged(any(), any(), any(), any(), any(), any(), any(), any(), any());
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
         String message = captor.getValue().getMessage();
-        assertTrue(message.contains("Ձեր աջակցության չաթում նոր պատասխան կա՝ We can help with that!"));
-        assertTrue(message.contains("New reply in your support conversation: We can help with that!"));
-        assertTrue(message.contains("Новый ответ в вашем чате поддержки: We can help with that!"));
+        assertEquals("Новый ответ в вашем чате поддержки: We can help with that!", message);
         assertEquals(1L, captor.getValue().getUserId());
     }
 
@@ -188,16 +186,14 @@ class NotificationDispatcherTest {
     void dispatchPriceDrop_SavesInAppNotificationOnly() {
         stubNotificationCreation();
 
-        dispatcher.dispatchPriceDrop(1L, "iPhone 15", BigDecimal.valueOf(450000), BigDecimal.valueOf(400000));
+        dispatcher.dispatchPriceDrop(1L, "iPhone 15", BigDecimal.valueOf(450000), BigDecimal.valueOf(400000), Language.HY);
 
         verify(emailService, never()).sendOrderStatusChanged(any(), any(), any(), any(), any(), any(), any(), any(), any());
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
         String message = captor.getValue().getMessage();
-        assertTrue(message.contains("iPhone 15-ի գինը իջել է. 450000 → 400000"));
-        assertTrue(message.contains("Price drop for iPhone 15: 450000 → 400000"));
-        assertTrue(message.contains("Цена на iPhone 15 снизилась: 450000 → 400000"));
+        assertEquals("iPhone 15-ի գինը իջել է. 450000 → 400000", message);
         assertEquals(1L, captor.getValue().getUserId());
     }
 
@@ -207,7 +203,7 @@ class NotificationDispatcherTest {
 
         dispatcher.dispatchAdminNewUser(List.of(1L, 2L), "Mariam", "mariam@test.com");
 
-        verify(emailService, never()).sendWelcome(any(), any());
+        verify(emailService, never()).sendWelcome(any(), any(), any());
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository, org.mockito.Mockito.times(2)).save(captor.capture());

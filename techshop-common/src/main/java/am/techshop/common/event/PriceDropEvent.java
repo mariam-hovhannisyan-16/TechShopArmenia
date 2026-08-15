@@ -1,5 +1,7 @@
 package am.techshop.common.event;
 
+import am.techshop.common.enums.Language;
+
 import java.math.BigDecimal;
 
 public record PriceDropEvent(
@@ -7,5 +9,6 @@ public record PriceDropEvent(
         Long productId,
         String productName,
         BigDecimal oldPrice,
-        BigDecimal newPrice
+        BigDecimal newPrice,
+        Language language
 ) {}

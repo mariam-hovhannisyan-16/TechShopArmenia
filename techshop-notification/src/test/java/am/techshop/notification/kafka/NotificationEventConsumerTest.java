@@ -55,47 +55,47 @@ class NotificationEventConsumerTest {
 
     @Test
     void handleUserRegistered_DelegatesToDispatcher() {
-        UserRegisteredEvent event = new UserRegisteredEvent(1L, "mariam@test.com", "Mariam", "verify-token");
+        UserRegisteredEvent event = new UserRegisteredEvent(1L, "mariam@test.com", "Mariam", "verify-token", Language.RU);
 
         consumer.handleUserRegistered(event);
 
-        verify(dispatcher).dispatchEmailVerification(1L, "mariam@test.com", "Mariam", "verify-token");
+        verify(dispatcher).dispatchEmailVerification(1L, "mariam@test.com", "Mariam", "verify-token", Language.RU);
     }
 
     @Test
     void handleUserVerified_DelegatesToDispatcher() {
-        UserVerifiedEvent event = new UserVerifiedEvent(1L, "mariam@test.com", "Mariam");
+        UserVerifiedEvent event = new UserVerifiedEvent(1L, "mariam@test.com", "Mariam", Language.RU);
 
         consumer.handleUserVerified(event);
 
-        verify(dispatcher).dispatchWelcome(1L, "mariam@test.com", "Mariam");
+        verify(dispatcher).dispatchWelcome(1L, "mariam@test.com", "Mariam", Language.RU);
     }
 
     @Test
     void handlePasswordResetRequested_DelegatesToDispatcher() {
-        PasswordResetRequestedEvent event = new PasswordResetRequestedEvent(1L, "mariam@test.com", "Mariam", "reset-token");
+        PasswordResetRequestedEvent event = new PasswordResetRequestedEvent(1L, "mariam@test.com", "Mariam", "reset-token", Language.RU);
 
         consumer.handlePasswordResetRequested(event);
 
-        verify(dispatcher).dispatchPasswordReset(1L, "mariam@test.com", "Mariam", "reset-token");
+        verify(dispatcher).dispatchPasswordReset(1L, "mariam@test.com", "Mariam", "reset-token", Language.RU);
     }
 
     @Test
     void handleChatReply_DelegatesToDispatcher() {
-        ChatReplyEvent event = new ChatReplyEvent(1L, 42L, "It shipped yesterday!");
+        ChatReplyEvent event = new ChatReplyEvent(1L, 42L, "It shipped yesterday!", Language.RU);
 
         consumer.handleChatReply(event);
 
-        verify(dispatcher).dispatchChatReply(1L, "It shipped yesterday!");
+        verify(dispatcher).dispatchChatReply(1L, "It shipped yesterday!", Language.RU);
     }
 
     @Test
     void handlePriceDrop_DelegatesToDispatcher() {
-        PriceDropEvent event = new PriceDropEvent(1L, 7L, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(150));
+        PriceDropEvent event = new PriceDropEvent(1L, 7L, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(150), Language.RU);
 
         consumer.handlePriceDrop(event);
 
-        verify(dispatcher).dispatchPriceDrop(1L, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(150));
+        verify(dispatcher).dispatchPriceDrop(1L, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(150), Language.RU);
     }
 
     @Test

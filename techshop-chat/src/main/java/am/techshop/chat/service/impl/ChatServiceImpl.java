@@ -1,5 +1,6 @@
 package am.techshop.chat.service.impl;
 
+import am.techshop.chat.client.UserClient;
 import am.techshop.chat.dto.SendMessageResult;
 import am.techshop.chat.entity.Conversation;
 import am.techshop.chat.entity.Message;
@@ -14,12 +15,15 @@ import am.techshop.chat.service.ChatService;
 import am.techshop.common.dto.request.SendMessageRequest;
 import am.techshop.common.dto.response.ConversationResponse;
 import am.techshop.common.dto.response.MessageResponse;
+import am.techshop.common.dto.response.UserLanguageResponse;
 import am.techshop.common.enums.ConversationStatus;
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.MessageSender;
 import am.techshop.common.event.ChatReplyEvent;
 import am.techshop.common.exception.TechShopException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +43,10 @@ public class ChatServiceImpl implements ChatService {
     private final MessageMapper messageMapper;
     private final ChatEventProducer chatEventProducer;
     private final AiReplyService aiReplyService;
+    private final UserClient userClient;
+
+    @Value("${internal.api-key}")
+    private String internalApiKey;
 
     public ConversationResponse getOrCreateConversation(ChatIdentity identity) {
         Conversation conversation = identity.isGuest()
@@ -111,9 +119,19 @@ public class ChatServiceImpl implements ChatService {
 
     private void notifyCustomerOfReply(Long userId, Long conversationId, String messagePreview) {
         try {
-            chatEventProducer.sendChatReplyEvent(new ChatReplyEvent(userId, conversationId, messagePreview));
+            chatEventProducer.sendChatReplyEvent(new ChatReplyEvent(userId, conversationId, messagePreview, resolveLanguage(userId)));
         } catch (Exception ex) {
             log.warn("Failed to publish chat-reply notification for conversation {}: {}", conversationId, ex.getMessage());
+        }
+    }
+
+    private Language resolveLanguage(Long userId) {
+        try {
+            List<UserLanguageResponse> languages = userClient.getUserLanguages(List.of(userId), internalApiKey).data();
+            return languages == null || languages.isEmpty() ? Language.HY : languages.get(0).language();
+        } catch (Exception ex) {
+            log.warn("Failed to resolve language for user {}: {}", userId, ex.getMessage());
+            return Language.HY;
         }
     }
 

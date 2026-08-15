@@ -1,5 +1,6 @@
 package am.techshop.chat.service;
 
+import am.techshop.chat.client.UserClient;
 import am.techshop.chat.dto.SendMessageResult;
 import am.techshop.chat.entity.Conversation;
 import am.techshop.chat.entity.Message;
@@ -11,9 +12,12 @@ import am.techshop.chat.repository.MessageRepository;
 import am.techshop.chat.security.ChatIdentity;
 import am.techshop.chat.service.impl.ChatServiceImpl;
 import am.techshop.common.dto.request.SendMessageRequest;
+import am.techshop.common.dto.response.ApiResponse;
 import am.techshop.common.dto.response.ConversationResponse;
 import am.techshop.common.dto.response.MessageResponse;
+import am.techshop.common.dto.response.UserLanguageResponse;
 import am.techshop.common.enums.ConversationStatus;
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.MessageSender;
 import am.techshop.common.event.ChatReplyEvent;
 import am.techshop.common.exception.TechShopException;
@@ -35,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -60,6 +65,9 @@ class ChatServiceImplTest {
 
     @Mock
     private AiReplyService aiReplyService;
+
+    @Mock
+    private UserClient userClient;
 
     @InjectMocks
     private ChatServiceImpl chatService;
@@ -346,11 +354,13 @@ class ChatServiceImplTest {
         when(messageRepository.save(newMessage)).thenReturn(newMessage);
         when(messageMapper.toResponse(newMessage)).thenReturn(
                 new MessageResponse(1L, 1L, MessageSender.SUPPORT, "It shipped yesterday!", false, LocalDateTime.now()));
+        when(userClient.getUserLanguages(eq(List.of(99L)), any()))
+                .thenReturn(new ApiResponse<>(true, "Success", List.of(new UserLanguageResponse(99L, Language.RU))));
 
         ChatIdentity admin = new ChatIdentity(5L, null, true);
         chatService.sendMessage(admin, 1L, request);
 
-        verify(chatEventProducer).sendChatReplyEvent(new ChatReplyEvent(99L, 1L, "It shipped yesterday!"));
+        verify(chatEventProducer).sendChatReplyEvent(new ChatReplyEvent(99L, 1L, "It shipped yesterday!", Language.RU));
     }
 
     @Test
@@ -393,6 +403,8 @@ class ChatServiceImplTest {
         when(messageRepository.save(newMessage)).thenReturn(newMessage);
         when(messageMapper.toResponse(newMessage)).thenReturn(
                 new MessageResponse(1L, 1L, MessageSender.SUPPORT, "We can help", false, LocalDateTime.now()));
+        when(userClient.getUserLanguages(eq(List.of(99L)), any()))
+                .thenReturn(new ApiResponse<>(true, "Success", List.of(new UserLanguageResponse(99L, Language.HY))));
         doThrow(new RuntimeException("kafka unavailable"))
                 .when(chatEventProducer).sendChatReplyEvent(any());
 

@@ -1,5 +1,7 @@
 package am.techshop.notification.email;
 
+import am.techshop.common.enums.Language;
+
 import java.time.Year;
 
 public final class EmailTemplates {
@@ -13,61 +15,70 @@ public final class EmailTemplates {
 
     private EmailTemplates() {}
 
-    public static String verificationEmail(String name, String verificationLink) {
-        String body =
-                languageBlock("Բարև, " + escape(name) + ":",
-                        "Շնորհակալություն TechShop AM-ում գրանցվելու համար: Ձեր հաշիվը ակտիվացնելու համար հաստատեք ձեր էլ. հասցեն՝ սեղմելով ստորև գտնվող կոճակին:",
-                        "Այս հղումն ուժի մեջ է 24 ժամ:",
-                        "Եթե դուք չեք գրանցվել TechShop AM-ում, պարզապես անտեսեք այս նամակը:") +
-                divider() +
-                languageBlock("Hello, " + escape(name) + ",",
-                        "Thank you for signing up at TechShop AM. Please confirm your email by clicking the button below to activate your account:",
-                        "This link is valid for 24 hours.",
-                        "If you did not sign up at TechShop AM, simply ignore this email.") +
-                divider() +
-                languageBlock("Здравствуйте, " + escape(name) + ",",
-                        "Спасибо за регистрацию в TechShop AM. Чтобы активировать аккаунт, подтвердите свой email, нажав на кнопку ниже:",
-                        "Ссылка действительна в течение 24 часов.",
-                        "Если вы не регистрировались в TechShop AM, просто проигнорируйте это письмо.") +
-                button(verificationLink, "Հաստատել հաշիվը / Verify account / Подтвердить аккаунт");
+    public static String verificationEmail(String name, String verificationLink, Language language) {
+        String body = switch (language) {
+            case HY -> languageBlock("Բարև, " + escape(name) + ":",
+                    "Շնորհակալություն TechShop AM-ում գրանցվելու համար: Ձեր հաշիվը ակտիվացնելու համար հաստատեք ձեր էլ. հասցեն՝ սեղմելով ստորև գտնվող կոճակին:",
+                    "Այս հղումն ուժի մեջ է 24 ժամ:",
+                    "Եթե դուք չեք գրանցվել TechShop AM-ում, պարզապես անտեսեք այս նամակը:");
+            case EN -> languageBlock("Hello, " + escape(name) + ",",
+                    "Thank you for signing up at TechShop AM. Please confirm your email by clicking the button below to activate your account:",
+                    "This link is valid for 24 hours.",
+                    "If you did not sign up at TechShop AM, simply ignore this email.");
+            case RU -> languageBlock("Здравствуйте, " + escape(name) + ",",
+                    "Спасибо за регистрацию в TechShop AM. Чтобы активировать аккаунт, подтвердите свой email, нажав на кнопку ниже:",
+                    "Ссылка действительна в течение 24 часов.",
+                    "Если вы не регистрировались в TechShop AM, просто проигнорируйте это письмо.");
+        };
+        String buttonLabel = switch (language) {
+            case HY -> "Հաստատել հաշիվը";
+            case EN -> "Verify account";
+            case RU -> "Подтвердить аккаунт";
+        };
 
-        return wrap(body);
+        return wrap(body + button(verificationLink, buttonLabel));
     }
 
-    public static String passwordResetEmail(String name, String resetLink) {
-        String body =
-                languageBlock("Բարև, " + escape(name) + ":",
-                        "Մենք ստացել ենք ձեր հաշվի գաղտնաբառը վերականգնելու հայտը: Նոր գաղտնաբառ սահմանելու համար սեղմեք ստորև գտնվող կոճակին:",
-                        "Այս հղումն ուժի մեջ է 1 ժամ:",
-                        "Եթե դուք չեք հայցել գաղտնաբառի վերականգնում, պարզապես անտեսեք այս նամակը:") +
-                divider() +
-                languageBlock("Hello, " + escape(name) + ",",
-                        "We received a request to reset your account password. To set a new password, click the button below:",
-                        "This link is valid for 1 hour.",
-                        "If you did not request a password reset, simply ignore this email.") +
-                divider() +
-                languageBlock("Здравствуйте, " + escape(name) + ",",
-                        "Мы получили запрос на восстановление пароля вашего аккаунта. Чтобы задать новый пароль, нажмите на кнопку ниже:",
-                        "Ссылка действительна в течение 1 часа.",
-                        "Если вы не запрашивали восстановление пароля, просто проигнорируйте это письмо.") +
-                button(resetLink, "Վերականգնել գաղտնաբառը / Reset password / Восстановить пароль");
+    public static String passwordResetEmail(String name, String resetLink, Language language) {
+        String body = switch (language) {
+            case HY -> languageBlock("Բարև, " + escape(name) + ":",
+                    "Մենք ստացել ենք ձեր հաշվի գաղտնաբառը վերականգնելու հայտը: Նոր գաղտնաբառ սահմանելու համար սեղմեք ստորև գտնվող կոճակին:",
+                    "Այս հղումն ուժի մեջ է 1 ժամ:",
+                    "Եթե դուք չեք հայցել գաղտնաբառի վերականգնում, պարզապես անտեսեք այս նամակը:");
+            case EN -> languageBlock("Hello, " + escape(name) + ",",
+                    "We received a request to reset your account password. To set a new password, click the button below:",
+                    "This link is valid for 1 hour.",
+                    "If you did not request a password reset, simply ignore this email.");
+            case RU -> languageBlock("Здравствуйте, " + escape(name) + ",",
+                    "Мы получили запрос на восстановление пароля вашего аккаунта. Чтобы задать новый пароль, нажмите на кнопку ниже:",
+                    "Ссылка действительна в течение 1 часа.",
+                    "Если вы не запрашивали восстановление пароля, просто проигнорируйте это письмо.");
+        };
+        String buttonLabel = switch (language) {
+            case HY -> "Վերականգնել գաղտնաբառը";
+            case EN -> "Reset password";
+            case RU -> "Восстановить пароль";
+        };
 
-        return wrap(body);
+        return wrap(body + button(resetLink, buttonLabel));
     }
 
-    public static String welcomeEmail(String name, String homeUrl) {
-        String body =
-                languageBlock("Բարև, " + escape(name) + ":",
-                        "Ձեր հաշիվը հաստատված է, և դուք այժմ կարող եք օգտվել TechShop AM-ի բոլոր հնարավորություններից: Բարի գնումներ:") +
-                divider() +
-                languageBlock("Hello, " + escape(name) + ",",
-                        "Your account is verified and you can now enjoy all TechShop AM features. Happy shopping!") +
-                divider() +
-                languageBlock("Здравствуйте, " + escape(name) + ",",
-                        "Ваш аккаунт подтверждён, и теперь вам доступны все возможности TechShop AM. Приятных покупок!") +
-                button(homeUrl, "Սկսել գնումներ կատարել / Start shopping / Начать покупки");
+    public static String welcomeEmail(String name, String homeUrl, Language language) {
+        String body = switch (language) {
+            case HY -> languageBlock("Բարև, " + escape(name) + ":",
+                    "Ձեր հաշիվը հաստատված է, և դուք այժմ կարող եք օգտվել TechShop AM-ի բոլոր հնարավորություններից: Բարի գնումներ:");
+            case EN -> languageBlock("Hello, " + escape(name) + ",",
+                    "Your account is verified and you can now enjoy all TechShop AM features. Happy shopping!");
+            case RU -> languageBlock("Здравствуйте, " + escape(name) + ",",
+                    "Ваш аккаунт подтверждён, и теперь вам доступны все возможности TechShop AM. Приятных покупок!");
+        };
+        String buttonLabel = switch (language) {
+            case HY -> "Սկսել գնումներ կատարել";
+            case EN -> "Start shopping";
+            case RU -> "Начать покупки";
+        };
 
-        return wrap(body);
+        return wrap(body + button(homeUrl, buttonLabel));
     }
 
     private static String languageBlock(String greeting, String mainText, String... smallLines) {
@@ -78,10 +89,6 @@ public final class EmailTemplates {
             block.append("<p style=\"").append(smallTextStyle()).append(" margin:4px 0 0;\">").append(line).append("</p>");
         }
         return block.toString();
-    }
-
-    private static String divider() {
-        return "<hr style=\"border:none; border-top:1px solid " + BORDER + "; margin:24px 0;\">";
     }
 
     private static String wrap(String bodyHtml) {

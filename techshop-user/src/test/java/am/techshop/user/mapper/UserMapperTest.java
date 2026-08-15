@@ -17,7 +17,7 @@ class UserMapperTest {
     @Test
     void toEntity_UsesResolvedRoleNotRequestRole() {
 
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null, null);
 
         User user = mapper.toEntity(request, "encoded", UserRole.CUSTOMER, "token-123", LocalDateTime.now().plusHours(24));
 
@@ -32,7 +32,7 @@ class UserMapperTest {
     @Test
     void toEntity_WhenRequestSpecifiesAdmin_ResolvedRoleStillWins() {
 
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", UserRole.ADMIN);
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", UserRole.ADMIN, null);
 
         User user = mapper.toEntity(request, "encoded", UserRole.CUSTOMER, "token-123", LocalDateTime.now().plusHours(24));
 

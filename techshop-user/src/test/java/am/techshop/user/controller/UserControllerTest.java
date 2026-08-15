@@ -85,7 +85,7 @@ class UserControllerTest {
 
     @Test
     void register_FromConfiguredFrontendOrigin_IsAllowedByCors() throws Exception {
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null, null);
         UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
         AuthResponse authResponse = new AuthResponse("token", userResponse);
         when(userService.register(any(RegisterRequest.class))).thenReturn(authResponse);
@@ -100,7 +100,7 @@ class UserControllerTest {
 
     @Test
     void register_ReturnsCreatedUser() throws Exception {
-        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null);
+        RegisterRequest request = new RegisterRequest("Mariam", "mariam@test.com", "password", null, null);
         UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
         AuthResponse authResponse = new AuthResponse("token", userResponse);
         when(userService.register(any(RegisterRequest.class))).thenReturn(authResponse);

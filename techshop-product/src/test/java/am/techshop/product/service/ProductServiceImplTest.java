@@ -4,6 +4,8 @@ import am.techshop.common.dto.request.ProductRequest;
 import am.techshop.common.dto.response.ApiResponse;
 import am.techshop.common.dto.response.PageResponse;
 import am.techshop.common.dto.response.ProductResponse;
+import am.techshop.common.dto.response.UserLanguageResponse;
+import am.techshop.common.enums.Language;
 import am.techshop.common.event.PriceDropEvent;
 import am.techshop.common.exception.ProductNotFoundException;
 import am.techshop.common.exception.TechShopException;
@@ -300,11 +302,14 @@ class ProductServiceImplTest {
                 .thenReturn(new ApiResponse<>(true, "Success", List.of(10L, 20L)));
         when(userClient.getPriceDropEnabledUserIds(eq(List.of(10L, 20L)), any()))
                 .thenReturn(new ApiResponse<>(true, "Success", List.of(10L, 20L)));
+        when(userClient.getUserLanguages(eq(List.of(10L, 20L)), any()))
+                .thenReturn(new ApiResponse<>(true, "Success",
+                        List.of(new UserLanguageResponse(10L, Language.EN), new UserLanguageResponse(20L, Language.RU))));
 
         productService.updatePrice(id, BigDecimal.valueOf(150));
 
-        verify(productEventProducer).sendPriceDropEvent(new PriceDropEvent(10L, id, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(150)));
-        verify(productEventProducer).sendPriceDropEvent(new PriceDropEvent(20L, id, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(150)));
+        verify(productEventProducer).sendPriceDropEvent(new PriceDropEvent(10L, id, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(150), Language.EN));
+        verify(productEventProducer).sendPriceDropEvent(new PriceDropEvent(20L, id, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(150), Language.RU));
     }
 
     @Test
@@ -323,10 +328,12 @@ class ProductServiceImplTest {
                 .thenReturn(new ApiResponse<>(true, "Success", List.of(10L, 20L)));
         when(userClient.getPriceDropEnabledUserIds(eq(List.of(10L, 20L)), any()))
                 .thenReturn(new ApiResponse<>(true, "Success", List.of(10L)));
+        when(userClient.getUserLanguages(eq(List.of(10L)), any()))
+                .thenReturn(new ApiResponse<>(true, "Success", List.of(new UserLanguageResponse(10L, Language.HY))));
 
         productService.updatePrice(id, BigDecimal.valueOf(150));
 
-        verify(productEventProducer).sendPriceDropEvent(new PriceDropEvent(10L, id, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(150)));
+        verify(productEventProducer).sendPriceDropEvent(new PriceDropEvent(10L, id, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(150), Language.HY));
         verify(productEventProducer, never()).sendPriceDropEvent(argThat(event -> event.userId().equals(20L)));
     }
 
@@ -491,11 +498,13 @@ class ProductServiceImplTest {
                 .thenReturn(new ApiResponse<>(true, "Success", List.of(10L)));
         when(userClient.getPriceDropEnabledUserIds(eq(List.of(10L)), any()))
                 .thenReturn(new ApiResponse<>(true, "Success", List.of(10L)));
+        when(userClient.getUserLanguages(eq(List.of(10L)), any()))
+                .thenReturn(new ApiResponse<>(true, "Success", List.of(new UserLanguageResponse(10L, Language.HY))));
 
         productService.updateDiscount(id, 20);
 
         verify(productEventProducer).sendPriceDropEvent(
-                new PriceDropEvent(10L, id, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(160)));
+                new PriceDropEvent(10L, id, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(160), Language.HY));
     }
 
     @Test

@@ -37,21 +37,21 @@ public class NotificationDispatcher {
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
 
-    public void dispatchEmailVerification(Long userId, String email, String name, String verificationToken) {
+    public void dispatchEmailVerification(Long userId, String email, String name, String verificationToken, Language language) {
         deliver(NotificationType.EMAIL_VERIFICATION, userId,
-                () -> emailService.sendVerificationEmail(email, name, verificationToken),
-                () -> AccountMessages.emailVerificationInApp(name));
+                () -> emailService.sendVerificationEmail(email, name, verificationToken, language),
+                () -> AccountMessages.emailVerificationInApp(name, language));
     }
 
-    public void dispatchWelcome(Long userId, String email, String name) {
+    public void dispatchWelcome(Long userId, String email, String name, Language language) {
         deliver(NotificationType.WELCOME, userId,
-                () -> emailService.sendWelcome(email, name),
+                () -> emailService.sendWelcome(email, name, language),
                 null);
     }
 
-    public void dispatchPasswordReset(Long userId, String email, String name, String resetToken) {
+    public void dispatchPasswordReset(Long userId, String email, String name, String resetToken, Language language) {
         deliver(NotificationType.PASSWORD_RESET, userId,
-                () -> emailService.sendPasswordResetEmail(email, name, resetToken),
+                () -> emailService.sendPasswordResetEmail(email, name, resetToken, language),
                 null);
     }
 
@@ -64,14 +64,14 @@ public class NotificationDispatcher {
                 () -> orderStatusMessage(orderId, status, note, language, productNames));
     }
 
-    public void dispatchChatReply(Long userId, String messagePreview) {
+    public void dispatchChatReply(Long userId, String messagePreview, Language language) {
         deliver(NotificationType.CHAT_REPLY, userId, null,
-                () -> AccountMessages.chatReplyMessage(messagePreview));
+                () -> AccountMessages.chatReplyMessage(messagePreview, language));
     }
 
-    public void dispatchPriceDrop(Long userId, String productName, BigDecimal oldPrice, BigDecimal newPrice) {
+    public void dispatchPriceDrop(Long userId, String productName, BigDecimal oldPrice, BigDecimal newPrice, Language language) {
         deliver(NotificationType.PRICE_DROP, userId, null,
-                () -> AccountMessages.priceDropMessage(productName, oldPrice, newPrice));
+                () -> AccountMessages.priceDropMessage(productName, oldPrice, newPrice, language));
     }
 
     public void dispatchAdminNewUser(List<Long> adminIds, String newUserName, String newUserEmail) {

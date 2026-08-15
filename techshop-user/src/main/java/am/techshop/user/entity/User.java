@@ -1,7 +1,9 @@
 package am.techshop.user.entity;
 
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.UserRole;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
@@ -40,6 +42,10 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private UserRole role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "language", length = 2)
+    private Language language = Language.HY;
 
     private boolean emailVerified = false;
 
