@@ -38,21 +38,28 @@ public class NotificationDispatcher {
     private final NotificationMapper notificationMapper;
 
     public void dispatchEmailVerification(Long userId, String email, String name, String verificationToken, Language language) {
+        Language resolvedLanguage = orDefault(language);
         deliver(NotificationType.EMAIL_VERIFICATION, userId,
-                () -> emailService.sendVerificationEmail(email, name, verificationToken, language),
-                () -> AccountMessages.emailVerificationInApp(name, language));
+                () -> emailService.sendVerificationEmail(email, name, verificationToken, resolvedLanguage),
+                () -> AccountMessages.emailVerificationInApp(name, resolvedLanguage));
     }
 
     public void dispatchWelcome(Long userId, String email, String name, Language language) {
+        Language resolvedLanguage = orDefault(language);
         deliver(NotificationType.WELCOME, userId,
-                () -> emailService.sendWelcome(email, name, language),
+                () -> emailService.sendWelcome(email, name, resolvedLanguage),
                 null);
     }
 
     public void dispatchPasswordReset(Long userId, String email, String name, String resetToken, Language language) {
+        Language resolvedLanguage = orDefault(language);
         deliver(NotificationType.PASSWORD_RESET, userId,
-                () -> emailService.sendPasswordResetEmail(email, name, resetToken, language),
+                () -> emailService.sendPasswordResetEmail(email, name, resetToken, resolvedLanguage),
                 null);
+    }
+
+    private Language orDefault(Language language) {
+        return language != null ? language : Language.HY;
     }
 
     public void dispatchOrderStatusChanged(Long userId, String email, String name, Long orderId,

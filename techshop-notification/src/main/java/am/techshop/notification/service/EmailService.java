@@ -6,6 +6,7 @@ import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
 import am.techshop.notification.email.EmailTemplates;
 import am.techshop.notification.i18n.AccountMessages;
+import am.techshop.notification.i18n.AuthMessages;
 import am.techshop.notification.i18n.OrderMessages;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -36,17 +37,45 @@ public class EmailService {
     public void sendVerificationEmail(String to, String userName, String verificationToken, Language language) {
         String link = frontendUrl + "/verify-email?token=" + verificationToken;
         String html = EmailTemplates.verificationEmail(userName, link, language);
-        String text = AccountMessages.emailVerificationText(userName, link, language);
+        String text = """
+                %s
 
-        sendHtml(to, AccountMessages.emailVerificationSubject(language), html, text);
+                %s
+
+                %s
+
+                %s
+
+                %s""".formatted(
+                        AuthMessages.greeting(userName, language),
+                        AuthMessages.verificationIntro(language),
+                        link,
+                        AuthMessages.verificationExpiryNote(language),
+                        AuthMessages.verificationIgnoreNote(language));
+
+        sendHtml(to, AuthMessages.verificationSubject(language), html, text);
     }
 
     public void sendPasswordResetEmail(String to, String userName, String resetToken, Language language) {
         String link = frontendUrl + "/reset-password?token=" + resetToken;
         String html = EmailTemplates.passwordResetEmail(userName, link, language);
-        String text = AccountMessages.passwordResetText(userName, link, language);
+        String text = """
+                %s
 
-        sendHtml(to, AccountMessages.passwordResetSubject(language), html, text);
+                %s
+
+                %s
+
+                %s
+
+                %s""".formatted(
+                        AuthMessages.greeting(userName, language),
+                        AuthMessages.passwordResetIntro(language),
+                        link,
+                        AuthMessages.passwordResetExpiryNote(language),
+                        AuthMessages.passwordResetIgnoreNote(language));
+
+        sendHtml(to, AuthMessages.passwordResetSubject(language), html, text);
     }
 
     public void sendWelcome(String to, String userName, Language language) {

@@ -9,6 +9,7 @@ import am.techshop.common.dto.response.AuthResponse;
 import am.techshop.common.dto.response.NotificationPreferencesResponse;
 import am.techshop.common.dto.response.UserLanguageResponse;
 import am.techshop.common.dto.response.UserResponse;
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.UserRole;
 import am.techshop.common.event.AdminUserRegisteredEvent;
 import am.techshop.common.event.PasswordResetRequestedEvent;
@@ -71,7 +72,7 @@ public class UserServiceImpl implements UserService {
         }
         String token = jwtService.generateToken(savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name());
 
-        notifyUserRegistered(savedUser, verificationToken);
+        notifyUserRegistered(savedUser, verificationToken, orDefault(request.language()));
         notifyAdminsOfNewUser(savedUser);
 
         return new AuthResponse(token, userMapper.toResponse(savedUser));
@@ -94,14 +95,18 @@ public class UserServiceImpl implements UserService {
         return new AuthResponse(token, userMapper.toResponse(user));
     }
 
-    private void notifyUserRegistered(User user, String verificationToken) {
+    private void notifyUserRegistered(User user, String verificationToken, Language language) {
         try {
             userEventProducer.sendUserRegisteredEvent(
-                    new UserRegisteredEvent(user.getId(), user.getEmail(), user.getName(), verificationToken, user.getLanguage())
+                    new UserRegisteredEvent(user.getId(), user.getEmail(), user.getName(), verificationToken, language)
             );
         } catch (Exception ex) {
             log.warn("Failed to publish user-registered event for user {}: {}", user.getId(), ex.getMessage());
         }
+    }
+
+    private Language orDefault(Language language) {
+        return language != null ? language : Language.HY;
     }
 
     private void notifyAdminsOfNewUser(User newUser) {
@@ -138,7 +143,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Transactional
-    public UserResponse verifyEmail(String token) {
+    public UserResponse verifyEmail(String token, Language language) {
         User user = userRepository.findByVerificationToken(token)
                 .orElseThrow(() -> new TechShopException("Invalid or already-used verification link", 400));
 
@@ -156,14 +161,14 @@ public class UserServiceImpl implements UserService {
         User savedUser = userRepository.save(user);
 
         userEventProducer.sendUserVerifiedEvent(
-                new UserVerifiedEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getName(), savedUser.getLanguage())
+                new UserVerifiedEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getName(), orDefault(language))
         );
 
         return userMapper.toResponse(savedUser);
     }
 
     @Transactional
-    public void resendVerification(String email) {
+    public void resendVerification(String email, Language language) {
         userRepository.findByEmail(email).ifPresent(user -> {
             if (user.isEmailVerified()) {
                 return;
@@ -175,13 +180,13 @@ public class UserServiceImpl implements UserService {
             userRepository.save(user);
 
             userEventProducer.sendUserRegisteredEvent(
-                    new UserRegisteredEvent(user.getId(), user.getEmail(), user.getName(), verificationToken, user.getLanguage())
+                    new UserRegisteredEvent(user.getId(), user.getEmail(), user.getName(), verificationToken, orDefault(language))
             );
         });
     }
 
     @Transactional
-    public void forgotPassword(String email) {
+    public void forgotPassword(String email, Language language) {
         userRepository.findByEmail(email).ifPresent(user -> {
             String resetToken = UUID.randomUUID().toString();
             user.setResetToken(resetToken);
@@ -189,7 +194,7 @@ public class UserServiceImpl implements UserService {
             userRepository.save(user);
 
             userEventProducer.sendPasswordResetRequestedEvent(
-                    new PasswordResetRequestedEvent(user.getId(), user.getEmail(), user.getName(), resetToken, user.getLanguage())
+                    new PasswordResetRequestedEvent(user.getId(), user.getEmail(), user.getName(), resetToken, orDefault(language))
             );
         });
     }

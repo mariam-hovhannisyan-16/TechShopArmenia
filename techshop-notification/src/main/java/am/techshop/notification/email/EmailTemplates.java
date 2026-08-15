@@ -1,6 +1,7 @@
 package am.techshop.notification.email;
 
 import am.techshop.common.enums.Language;
+import am.techshop.notification.i18n.AuthMessages;
 
 import java.time.Year;
 
@@ -16,51 +17,29 @@ public final class EmailTemplates {
     private EmailTemplates() {}
 
     public static String verificationEmail(String name, String verificationLink, Language language) {
-        String body = switch (language) {
-            case HY -> languageBlock("Բարև, " + escape(name) + ":",
-                    "Շնորհակալություն TechShop AM-ում գրանցվելու համար: Ձեր հաշիվը ակտիվացնելու համար հաստատեք ձեր էլ. հասցեն՝ սեղմելով ստորև գտնվող կոճակին:",
-                    "Այս հղումն ուժի մեջ է 24 ժամ:",
-                    "Եթե դուք չեք գրանցվել TechShop AM-ում, պարզապես անտեսեք այս նամակը:");
-            case EN -> languageBlock("Hello, " + escape(name) + ",",
-                    "Thank you for signing up at TechShop AM. Please confirm your email by clicking the button below to activate your account:",
-                    "This link is valid for 24 hours.",
-                    "If you did not sign up at TechShop AM, simply ignore this email.");
-            case RU -> languageBlock("Здравствуйте, " + escape(name) + ",",
-                    "Спасибо за регистрацию в TechShop AM. Чтобы активировать аккаунт, подтвердите свой email, нажав на кнопку ниже:",
-                    "Ссылка действительна в течение 24 часов.",
-                    "Если вы не регистрировались в TechShop AM, просто проигнорируйте это письмо.");
-        };
-        String buttonLabel = switch (language) {
-            case HY -> "Հաստատել հաշիվը";
-            case EN -> "Verify account";
-            case RU -> "Подтвердить аккаунт";
-        };
+        String body =
+                "<p style=\"" + textStyle() + " margin:0 0 16px;\">" + escape(AuthMessages.greeting(name, language)) + "</p>" +
+                "<p style=\"" + textStyle() + " margin:0 0 28px;\">" +
+                escape(AuthMessages.verificationIntro(language)) +
+                "</p>" +
+                button(verificationLink, AuthMessages.verificationButton(language)) +
+                "<p style=\"" + smallTextStyle() + " margin:28px 0 0;\">" + escape(AuthMessages.verificationExpiryNote(language)) + "</p>" +
+                "<p style=\"" + smallTextStyle() + " margin:8px 0 0;\">" + escape(AuthMessages.verificationIgnoreNote(language)) + "</p>";
 
-        return wrap(body + button(verificationLink, buttonLabel));
+        return wrap(body, language);
     }
 
     public static String passwordResetEmail(String name, String resetLink, Language language) {
-        String body = switch (language) {
-            case HY -> languageBlock("Բարև, " + escape(name) + ":",
-                    "Մենք ստացել ենք ձեր հաշվի գաղտնաբառը վերականգնելու հայտը: Նոր գաղտնաբառ սահմանելու համար սեղմեք ստորև գտնվող կոճակին:",
-                    "Այս հղումն ուժի մեջ է 1 ժամ:",
-                    "Եթե դուք չեք հայցել գաղտնաբառի վերականգնում, պարզապես անտեսեք այս նամակը:");
-            case EN -> languageBlock("Hello, " + escape(name) + ",",
-                    "We received a request to reset your account password. To set a new password, click the button below:",
-                    "This link is valid for 1 hour.",
-                    "If you did not request a password reset, simply ignore this email.");
-            case RU -> languageBlock("Здравствуйте, " + escape(name) + ",",
-                    "Мы получили запрос на восстановление пароля вашего аккаунта. Чтобы задать новый пароль, нажмите на кнопку ниже:",
-                    "Ссылка действительна в течение 1 часа.",
-                    "Если вы не запрашивали восстановление пароля, просто проигнорируйте это письмо.");
-        };
-        String buttonLabel = switch (language) {
-            case HY -> "Վերականգնել գաղտնաբառը";
-            case EN -> "Reset password";
-            case RU -> "Восстановить пароль";
-        };
+        String body =
+                "<p style=\"" + textStyle() + " margin:0 0 16px;\">" + escape(AuthMessages.greeting(name, language)) + "</p>" +
+                "<p style=\"" + textStyle() + " margin:0 0 28px;\">" +
+                escape(AuthMessages.passwordResetIntro(language)) +
+                "</p>" +
+                button(resetLink, AuthMessages.passwordResetButton(language)) +
+                "<p style=\"" + smallTextStyle() + " margin:28px 0 0;\">" + escape(AuthMessages.passwordResetExpiryNote(language)) + "</p>" +
+                "<p style=\"" + smallTextStyle() + " margin:8px 0 0;\">" + escape(AuthMessages.passwordResetIgnoreNote(language)) + "</p>";
 
-        return wrap(body + button(resetLink, buttonLabel));
+        return wrap(body, language);
     }
 
     public static String welcomeEmail(String name, String homeUrl, Language language) {
@@ -78,7 +57,7 @@ public final class EmailTemplates {
             case RU -> "Начать покупки";
         };
 
-        return wrap(body + button(homeUrl, buttonLabel));
+        return wrap(body + button(homeUrl, buttonLabel), language);
     }
 
     private static String languageBlock(String greeting, String mainText, String... smallLines) {
@@ -91,9 +70,9 @@ public final class EmailTemplates {
         return block.toString();
     }
 
-    private static String wrap(String bodyHtml) {
+    private static String wrap(String bodyHtml, Language language) {
         return "<!DOCTYPE html>" +
-                "<html>" +
+                "<html lang=\"" + language.name().toLowerCase() + "\">" +
                 "<head>" +
                 "<meta charset=\"UTF-8\">" +
                 "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +

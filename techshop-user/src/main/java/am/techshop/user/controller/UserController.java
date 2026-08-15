@@ -14,6 +14,7 @@ import am.techshop.common.dto.response.AuthResponse;
 import am.techshop.common.dto.response.NotificationPreferencesResponse;
 import am.techshop.common.dto.response.UserLanguageResponse;
 import am.techshop.common.dto.response.UserResponse;
+import am.techshop.common.enums.Language;
 import am.techshop.common.exception.TechShopException;
 import am.techshop.common.security.CurrentUser;
 import am.techshop.user.service.UserService;
@@ -95,14 +96,16 @@ public class UserController {
     }
 
     @GetMapping("/api/users/verify-email")
-    public ResponseEntity<ApiResponse<UserResponse>> verifyEmail(@RequestParam String token) {
-        return ResponseEntity.ok(ApiResponse.ok("Email verified", userService.verifyEmail(token)));
+    public ResponseEntity<ApiResponse<UserResponse>> verifyEmail(
+            @RequestParam String token,
+            @RequestParam(required = false) Language lang) {
+        return ResponseEntity.ok(ApiResponse.ok("Email verified", userService.verifyEmail(token, lang)));
     }
 
     @PostMapping("/api/users/resend-verification")
     public ResponseEntity<ApiResponse<Void>> resendVerification(
             @RequestBody @Valid ResendVerificationRequest request) {
-        userService.resendVerification(request.email());
+        userService.resendVerification(request.email(), request.language());
         return ResponseEntity.ok(ApiResponse.ok(
                 "If that account exists and isn't verified yet, a new verification email has been sent", null));
     }
@@ -110,7 +113,7 @@ public class UserController {
     @PostMapping("/api/users/forgot-password")
     public ResponseEntity<ApiResponse<Void>> forgotPassword(
             @RequestBody @Valid ForgotPasswordRequest request) {
-        userService.forgotPassword(request.email());
+        userService.forgotPassword(request.email(), request.language());
         return ResponseEntity.ok(ApiResponse.ok(
                 "If that account exists, a password reset email has been sent", null));
     }

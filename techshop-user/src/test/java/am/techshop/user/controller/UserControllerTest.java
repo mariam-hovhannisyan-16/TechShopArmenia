@@ -189,7 +189,7 @@ class UserControllerTest {
     @Test
     void verifyEmail_WhenTokenValid_ReturnsVerifiedUser() throws Exception {
         UserResponse userResponse = new UserResponse(1L, "Mariam", "mariam@test.com", UserRole.CUSTOMER, LocalDateTime.now(), true);
-        when(userService.verifyEmail("valid-token")).thenReturn(userResponse);
+        when(userService.verifyEmail(eq("valid-token"), any())).thenReturn(userResponse);
 
         mockMvc.perform(get("/api/users/verify-email").param("token", "valid-token"))
                 .andExpect(status().isOk())
@@ -198,7 +198,7 @@ class UserControllerTest {
 
     @Test
     void verifyEmail_WhenTokenInvalid_ReturnsBadRequest() throws Exception {
-        when(userService.verifyEmail("bad-token"))
+        when(userService.verifyEmail(eq("bad-token"), any()))
                 .thenThrow(new TechShopException("Invalid or already-used verification link", 400));
 
         mockMvc.perform(get("/api/users/verify-email").param("token", "bad-token"))
@@ -207,8 +207,8 @@ class UserControllerTest {
 
     @Test
     void resendVerification_ReturnsOk() throws Exception {
-        ResendVerificationRequest request = new ResendVerificationRequest("mariam@test.com");
-        doNothing().when(userService).resendVerification(eq("mariam@test.com"));
+        ResendVerificationRequest request = new ResendVerificationRequest("mariam@test.com", null);
+        doNothing().when(userService).resendVerification(eq("mariam@test.com"), any());
 
         mockMvc.perform(post("/api/users/resend-verification")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -218,8 +218,8 @@ class UserControllerTest {
 
     @Test
     void forgotPassword_ReturnsOk() throws Exception {
-        ForgotPasswordRequest request = new ForgotPasswordRequest("mariam@test.com");
-        doNothing().when(userService).forgotPassword(eq("mariam@test.com"));
+        ForgotPasswordRequest request = new ForgotPasswordRequest("mariam@test.com", null);
+        doNothing().when(userService).forgotPassword(eq("mariam@test.com"), any());
 
         mockMvc.perform(post("/api/users/forgot-password")
                         .contentType(MediaType.APPLICATION_JSON)

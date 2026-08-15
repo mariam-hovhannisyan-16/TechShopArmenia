@@ -391,7 +391,7 @@ class UserServiceImplTest {
         when(userRepository.save(any(User.class))).thenReturn(user);
         when(userMapper.toResponse(user)).thenReturn(userResponse);
 
-        UserResponse result = userService.verifyEmail("valid-token");
+        UserResponse result = userService.verifyEmail("valid-token", null);
 
         assertTrue(result.emailVerified());
         assertTrue(user.isEmailVerified());
@@ -404,7 +404,7 @@ class UserServiceImplTest {
         when(userRepository.findByVerificationToken("missing")).thenReturn(Optional.empty());
 
         TechShopException ex = assertThrows(TechShopException.class,
-                () -> userService.verifyEmail("missing"));
+                () -> userService.verifyEmail("missing", null));
 
         assertEquals(400, ex.getStatusCode());
     }
@@ -418,7 +418,7 @@ class UserServiceImplTest {
         when(userRepository.findByVerificationToken("valid-token")).thenReturn(Optional.of(user));
 
         TechShopException ex = assertThrows(TechShopException.class,
-                () -> userService.verifyEmail("valid-token"));
+                () -> userService.verifyEmail("valid-token", null));
 
         assertEquals(409, ex.getStatusCode());
     }
@@ -433,7 +433,7 @@ class UserServiceImplTest {
         when(userRepository.findByVerificationToken("expired-token")).thenReturn(Optional.of(user));
 
         TechShopException ex = assertThrows(TechShopException.class,
-                () -> userService.verifyEmail("expired-token"));
+                () -> userService.verifyEmail("expired-token", null));
 
         assertEquals(400, ex.getStatusCode());
     }
@@ -448,7 +448,7 @@ class UserServiceImplTest {
         when(userRepository.findByEmail("mariam@test.com")).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
 
-        userService.resendVerification("mariam@test.com");
+        userService.resendVerification("mariam@test.com", null);
 
         assertNotNull(user.getVerificationToken());
         verify(userEventProducer).sendUserRegisteredEvent(any(UserRegisteredEvent.class));
@@ -462,7 +462,7 @@ class UserServiceImplTest {
         user.setEmailVerified(true);
         when(userRepository.findByEmail("mariam@test.com")).thenReturn(Optional.of(user));
 
-        userService.resendVerification("mariam@test.com");
+        userService.resendVerification("mariam@test.com", null);
 
         verify(userRepository, never()).save(any(User.class));
         verify(userEventProducer, never()).sendUserRegisteredEvent(any(UserRegisteredEvent.class));
@@ -472,7 +472,7 @@ class UserServiceImplTest {
     void resendVerification_WhenUserNotFound_DoesNothing() {
         when(userRepository.findByEmail("missing@test.com")).thenReturn(Optional.empty());
 
-        userService.resendVerification("missing@test.com");
+        userService.resendVerification("missing@test.com", null);
 
         verify(userRepository, never()).save(any(User.class));
         verify(userEventProducer, never()).sendUserRegisteredEvent(any(UserRegisteredEvent.class));
@@ -487,7 +487,7 @@ class UserServiceImplTest {
         when(userRepository.findByEmail("mariam@test.com")).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
 
-        userService.forgotPassword("mariam@test.com");
+        userService.forgotPassword("mariam@test.com", null);
 
         assertNotNull(user.getResetToken());
         assertNotNull(user.getResetTokenExpiresAt());
@@ -498,7 +498,7 @@ class UserServiceImplTest {
     void forgotPassword_WhenUserNotFound_DoesNothing() {
         when(userRepository.findByEmail("missing@test.com")).thenReturn(Optional.empty());
 
-        userService.forgotPassword("missing@test.com");
+        userService.forgotPassword("missing@test.com", null);
 
         verify(userRepository, never()).save(any(User.class));
         verify(userEventProducer, never()).sendPasswordResetRequestedEvent(any(PasswordResetRequestedEvent.class));

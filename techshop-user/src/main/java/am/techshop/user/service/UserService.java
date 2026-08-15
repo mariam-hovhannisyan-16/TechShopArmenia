@@ -9,6 +9,7 @@ import am.techshop.common.dto.response.AuthResponse;
 import am.techshop.common.dto.response.NotificationPreferencesResponse;
 import am.techshop.common.dto.response.UserLanguageResponse;
 import am.techshop.common.dto.response.UserResponse;
+import am.techshop.common.enums.Language;
 import am.techshop.common.enums.UserRole;
 
 import java.util.List;
@@ -19,9 +20,9 @@ public interface UserService {
     List<UserResponse> getAllUsers();
     long getUserCount();
     UserResponse getUserById(Long id);
-    UserResponse verifyEmail(String token);
-    void resendVerification(String email);
-    void forgotPassword(String email);
+    UserResponse verifyEmail(String token, Language language);
+    void resendVerification(String email, Language language);
+    void forgotPassword(String email, Language language);
     void resetPassword(ResetPasswordRequest request);
     UserResponse updateUserRole(Long id, UserRole role);
     void deleteAccount(Long userId, DeleteAccountRequest request);
