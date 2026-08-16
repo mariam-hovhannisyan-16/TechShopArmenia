@@ -8,6 +8,9 @@ import am.techshop.common.dto.request.SendMessageRequest;
 import am.techshop.common.dto.response.ApiResponse;
 import am.techshop.common.dto.response.ConversationResponse;
 import am.techshop.common.dto.response.MessageResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +32,7 @@ import java.util.List;
 @RequestMapping("/api/chat/conversations")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Chat", description = "Customer support conversations for logged-in users and guests")
 public class ChatController {
 
     private static final String GUEST_SESSION_HEADER = "X-Guest-Session-Id";
@@ -37,6 +41,10 @@ public class ChatController {
     private final ChatIdentityResolver chatIdentityResolver;
 
     @PostMapping
+    @Operation(
+            summary = "Start or resume a support conversation",
+            description = "Works for both authenticated users (via JWT) and guests (via a guest session ID header)."
+    )
     public ResponseEntity<ApiResponse<ConversationResponse>> startConversation(
             Authentication authentication,
             @RequestHeader(value = GUEST_SESSION_HEADER, required = false) String guestSessionId) {
@@ -46,7 +54,9 @@ public class ChatController {
     }
 
     @GetMapping("/{id}/messages")
+    @Operation(summary = "List the messages in a conversation")
     public ResponseEntity<ApiResponse<List<MessageResponse>>> getMessages(
+            @Parameter(description = "ID of the conversation", required = true)
             @PathVariable @Positive Long id,
             Authentication authentication,
             @RequestHeader(value = GUEST_SESSION_HEADER, required = false) String guestSessionId) {
@@ -55,7 +65,9 @@ public class ChatController {
     }
 
     @PostMapping("/{id}/messages")
+    @Operation(summary = "Send a message in a conversation")
     public ResponseEntity<ApiResponse<SendMessageResult>> sendMessage(
+            @Parameter(description = "ID of the conversation", required = true)
             @PathVariable @Positive Long id,
             @RequestBody @Valid SendMessageRequest request,
             Authentication authentication,
