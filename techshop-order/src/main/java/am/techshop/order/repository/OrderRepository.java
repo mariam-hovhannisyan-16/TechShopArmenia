@@ -32,4 +32,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT o.status, COUNT(o) FROM Order o GROUP BY o.status")
     List<Object[]> countGroupedByStatus();
+
+    @Query("SELECT DISTINCT o FROM Order o JOIN FETCH o.items WHERE o.id IN :ids")
+    List<Order> findAllWithItemsByIdIn(@Param("ids") Collection<Long> ids);
+
+    @Query("SELECT DISTINCT o FROM Order o JOIN FETCH o.statusHistory WHERE o.id IN :ids")
+    List<Order> findAllWithStatusHistoryByIdIn(@Param("ids") Collection<Long> ids);
 }

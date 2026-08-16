@@ -102,7 +102,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional(readOnly = true)
     public List<OrderResponse> getUserOrders(Long userId) {
-        return orderRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+        List<Order> orders = orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        hydrateAssociations(orders);
+        return orders.stream()
                 .map(orderMapper::toResponse)
                 .toList();
     }
@@ -159,6 +161,8 @@ public class OrderServiceImpl implements OrderService {
             result = orderRepository.findAll(pageable);
         }
 
+        hydrateAssociations(result.getContent());
+
         return new PageResponse<>(
                 result.getContent().stream().map(orderMapper::toResponse).toList(),
                 result.getNumber(),
@@ -166,6 +170,15 @@ public class OrderServiceImpl implements OrderService {
                 result.getTotalElements(),
                 result.getTotalPages()
         );
+    }
+
+    private void hydrateAssociations(List<Order> orders) {
+        if (orders.isEmpty()) {
+            return;
+        }
+        List<Long> ids = orders.stream().map(Order::getId).toList();
+        orderRepository.findAllWithItemsByIdIn(ids);
+        orderRepository.findAllWithStatusHistoryByIdIn(ids);
     }
 
     @Transactional(readOnly = true)
