@@ -1,6 +1,6 @@
 package am.techshop.cart.config;
 
-import am.techshop.cart.security.JwtAuthFilter;
+import am.techshop.common.security.JwtAuthFilter;
 import am.techshop.common.dto.response.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;

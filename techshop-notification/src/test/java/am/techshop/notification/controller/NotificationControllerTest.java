@@ -2,8 +2,8 @@ package am.techshop.notification.controller;
 
 import am.techshop.common.dto.response.NotificationResponse;
 import am.techshop.notification.config.SecurityConfig;
-import am.techshop.notification.security.JwtAuthFilter;
-import am.techshop.notification.security.JwtService;
+import am.techshop.common.security.JwtAuthFilter;
+import am.techshop.common.security.JwtService;
 import am.techshop.notification.security.NotificationAccessGuard;
 import am.techshop.notification.service.NotificationService;
 import org.junit.jupiter.api.Test;

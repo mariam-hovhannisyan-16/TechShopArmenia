@@ -1,7 +1,7 @@
 package am.techshop.product.controller;
 
 import am.techshop.common.dto.response.CategoryResponse;
-import am.techshop.product.security.JwtService;
+import am.techshop.common.security.JwtService;
 import am.techshop.product.service.CategoryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

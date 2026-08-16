@@ -1,7 +1,7 @@
 package am.techshop.notification.config;
 
 import am.techshop.common.dto.response.ErrorResponse;
-import am.techshop.notification.security.JwtAuthFilter;
+import am.techshop.common.security.JwtAuthFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

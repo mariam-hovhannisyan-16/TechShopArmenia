@@ -1,4 +1,4 @@
-package am.techshop.product.security;
+package am.techshop.common.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
@@ -49,6 +49,17 @@ class JwtAuthFilterTest {
     }
 
     @Test
+    void doFilterInternal_WithNonBearerHeader_SkipsAuthentication() throws Exception {
+        JwtAuthFilter filter = new JwtAuthFilter(jwtService);
+        when(request.getHeader("Authorization")).thenReturn("Basic dXNlcjpwYXNz");
+
+        filter.doFilter(request, response, filterChain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
     void doFilterInternal_WithInvalidToken_SkipsAuthentication() throws Exception {
         JwtAuthFilter filter = new JwtAuthFilter(jwtService);
         when(request.getHeader("Authorization")).thenReturn("Bearer bad-token");
@@ -74,6 +85,22 @@ class JwtAuthFilterTest {
         assertEquals(1L, authentication.getPrincipal());
         assertTrue(authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")));
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilterInternal_WithValidTokenAndNoRoleClaim_SetsAuthenticationWithNoAuthorities() throws Exception {
+        JwtAuthFilter filter = new JwtAuthFilter(jwtService);
+        when(request.getHeader("Authorization")).thenReturn("Bearer good-token");
+        when(jwtService.isTokenValid("good-token")).thenReturn(true);
+        when(jwtService.extractUserId("good-token")).thenReturn(1L);
+        when(jwtService.extractRole("good-token")).thenReturn(null);
+
+        filter.doFilter(request, response, filterChain);
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        assertEquals(1L, authentication.getPrincipal());
+        assertTrue(authentication.getAuthorities().isEmpty());
         verify(filterChain).doFilter(request, response);
     }
 }

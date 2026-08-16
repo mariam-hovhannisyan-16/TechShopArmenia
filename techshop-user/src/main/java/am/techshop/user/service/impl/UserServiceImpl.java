@@ -23,7 +23,7 @@ import am.techshop.user.entity.User;
 import am.techshop.user.kafka.UserEventProducer;
 import am.techshop.user.mapper.UserMapper;
 import am.techshop.user.repository.UserRepository;
-import am.techshop.user.security.JwtService;
+import am.techshop.common.security.JwtService;
 import am.techshop.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

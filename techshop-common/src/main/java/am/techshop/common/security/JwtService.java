@@ -1,4 +1,4 @@
-package am.techshop.user.security;
+package am.techshop.common.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -10,13 +10,21 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
+/**
+ * Shared JWT issuance/validation logic used by every service.
+ * <p>
+ * Only techshop-user actually issues tokens (via {@link #generateToken}); the other
+ * services only validate tokens issued by techshop-user against the same shared
+ * {@code app.jwt.secret}. {@code app.jwt.expiration-ms} is only configured by
+ * techshop-user, so it defaults here to keep this bean startable in every service.
+ */
 @Service
 public class JwtService {
 
     @Value("${app.jwt.secret}")
     private String secret;
 
-    @Value("${app.jwt.expiration-ms}")
+    @Value("${app.jwt.expiration-ms:86400000}")
     private long expirationMs;
 
     public String generateToken(Long userId, String email, String role) {
@@ -38,6 +46,10 @@ public class JwtService {
         return parseClaims(token).get("userId", Long.class);
     }
 
+    public String extractRole(String token) {
+        return parseClaims(token).get("role", String.class);
+    }
+
     public boolean isTokenValid(String token) {
         try {
             parseClaims(token);
@@ -45,10 +57,6 @@ public class JwtService {
         } catch (Exception e) {
             return false;
         }
-    }
-
-    public String extractRole(String token) {
-        return parseClaims(token).get("role", String.class);
     }
 
     private Claims parseClaims(String token) {

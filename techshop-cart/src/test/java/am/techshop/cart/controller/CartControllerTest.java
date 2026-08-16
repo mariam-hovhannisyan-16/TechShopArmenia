@@ -2,8 +2,8 @@ package am.techshop.cart.controller;
 
 import am.techshop.cart.config.SecurityConfig;
 import am.techshop.cart.security.CartAccessGuard;
-import am.techshop.cart.security.JwtAuthFilter;
-import am.techshop.cart.security.JwtService;
+import am.techshop.common.security.JwtAuthFilter;
+import am.techshop.common.security.JwtService;
 import am.techshop.cart.service.CartService;
 import am.techshop.common.dto.request.AddItemRequest;
 import am.techshop.common.dto.response.CartResponse;

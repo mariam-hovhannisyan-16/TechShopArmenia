@@ -1,4 +1,4 @@
-package am.techshop.wishlist.security;
+package am.techshop.common.security;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -23,29 +23,39 @@ class JwtServiceTest {
     @BeforeEach
     void configureService() {
         ReflectionTestUtils.setField(jwtService, "secret", SECRET);
+        ReflectionTestUtils.setField(jwtService, "expirationMs", 86_400_000L);
     }
 
     private SecretKey key() {
         return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
     }
 
-    private String tokenFor(Long userId, long expiresInMs) {
-        return Jwts.builder()
-                .claim("userId", userId)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expiresInMs))
-                .signWith(key())
-                .compact();
+    @Test
+    void generateToken_ProducesTokenThatIsValid() {
+        String token = jwtService.generateToken(1L, "mariam@test.com", "CUSTOMER");
+
+        assertTrue(jwtService.isTokenValid(token));
     }
 
     @Test
-    void isTokenValid_WhenTokenWellFormedAndUnexpired_ReturnsTrue() {
-        assertTrue(jwtService.isTokenValid(tokenFor(1L, 60_000)));
+    void extractEmail_ReturnsEmailUsedToGenerateToken() {
+        String token = jwtService.generateToken(1L, "mariam@test.com", "CUSTOMER");
+
+        assertEquals("mariam@test.com", jwtService.extractEmail(token));
     }
 
     @Test
-    void extractUserId_ReturnsUserIdClaim() {
-        assertEquals(42L, jwtService.extractUserId(tokenFor(42L, 60_000)));
+    void extractUserId_ReturnsUserIdUsedToGenerateToken() {
+        String token = jwtService.generateToken(1L, "mariam@test.com", "CUSTOMER");
+
+        assertEquals(1L, jwtService.extractUserId(token));
+    }
+
+    @Test
+    void extractRole_ReturnsRoleUsedToGenerateToken() {
+        String token = jwtService.generateToken(1L, "mariam@test.com", "ADMIN");
+
+        assertEquals("ADMIN", jwtService.extractRole(token));
     }
 
     @Test
@@ -57,7 +67,9 @@ class JwtServiceTest {
     void isTokenValid_WhenSignedWithDifferentSecret_ReturnsFalse() {
         SecretKey otherKey = Keys.hmacShaKeyFor("a-completely-different-secret-value-used-only-here-12345".getBytes(StandardCharsets.UTF_8));
         String token = Jwts.builder()
+                .subject("mariam@test.com")
                 .claim("userId", 1L)
+                .claim("role", "CUSTOMER")
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + 60_000))
                 .signWith(otherKey)
@@ -68,6 +80,15 @@ class JwtServiceTest {
 
     @Test
     void isTokenValid_WhenTokenExpired_ReturnsFalse() {
-        assertFalse(jwtService.isTokenValid(tokenFor(1L, -60_000)));
+        String expiredToken = Jwts.builder()
+                .subject("mariam@test.com")
+                .claim("userId", 1L)
+                .claim("role", "CUSTOMER")
+                .issuedAt(new Date(System.currentTimeMillis() - 120_000))
+                .expiration(new Date(System.currentTimeMillis() - 60_000))
+                .signWith(key())
+                .compact();
+
+        assertFalse(jwtService.isTokenValid(expiredToken));
     }
 }

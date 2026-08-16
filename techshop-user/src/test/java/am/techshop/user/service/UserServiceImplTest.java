@@ -20,7 +20,7 @@ import am.techshop.user.entity.User;
 import am.techshop.user.kafka.UserEventProducer;
 import am.techshop.user.mapper.UserMapper;
 import am.techshop.user.repository.UserRepository;
-import am.techshop.user.security.JwtService;
+import am.techshop.common.security.JwtService;
 import am.techshop.user.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
