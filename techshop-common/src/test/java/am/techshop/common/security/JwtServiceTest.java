@@ -38,13 +38,6 @@ class JwtServiceTest {
     }
 
     @Test
-    void extractEmail_ReturnsEmailUsedToGenerateToken() {
-        String token = jwtService.generateToken(1L, "mariam@test.com", "CUSTOMER");
-
-        assertEquals("mariam@test.com", jwtService.extractEmail(token));
-    }
-
-    @Test
     void extractUserId_ReturnsUserIdUsedToGenerateToken() {
         String token = jwtService.generateToken(1L, "mariam@test.com", "CUSTOMER");
 

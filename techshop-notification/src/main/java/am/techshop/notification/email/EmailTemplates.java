@@ -43,31 +43,14 @@ public final class EmailTemplates {
     }
 
     public static String welcomeEmail(String name, String homeUrl, Language language) {
-        String body = switch (language) {
-            case HY -> languageBlock("Բարև, " + escape(name) + ":",
-                    "Ձեր հաշիվը հաստատված է, և դուք այժմ կարող եք օգտվել TechShop AM-ի բոլոր հնարավորություններից: Բարի գնումներ:");
-            case EN -> languageBlock("Hello, " + escape(name) + ",",
-                    "Your account is verified and you can now enjoy all TechShop AM features. Happy shopping!");
-            case RU -> languageBlock("Здравствуйте, " + escape(name) + ",",
-                    "Ваш аккаунт подтверждён, и теперь вам доступны все возможности TechShop AM. Приятных покупок!");
-        };
-        String buttonLabel = switch (language) {
-            case HY -> "Սկսել գնումներ կատարել";
-            case EN -> "Start shopping";
-            case RU -> "Начать покупки";
-        };
+        String body =
+                "<p style=\"" + textStyle() + " margin:0 0 16px;\">" + escape(AuthMessages.greeting(name, language)) + "</p>" +
+                "<p style=\"" + textStyle() + " margin:0 0 28px;\">" +
+                escape(AuthMessages.welcomeIntro(language)) +
+                "</p>" +
+                button(homeUrl, AuthMessages.welcomeButton(language));
 
-        return wrap(body + button(homeUrl, buttonLabel), language);
-    }
-
-    private static String languageBlock(String greeting, String mainText, String... smallLines) {
-        StringBuilder block = new StringBuilder()
-                .append("<p style=\"").append(textStyle()).append(" margin:0 0 16px;\">").append(greeting).append("</p>")
-                .append("<p style=\"").append(textStyle()).append(" margin:0 0 20px;\">").append(mainText).append("</p>");
-        for (String line : smallLines) {
-            block.append("<p style=\"").append(smallTextStyle()).append(" margin:4px 0 0;\">").append(line).append("</p>");
-        }
-        return block.toString();
+        return wrap(body, language);
     }
 
     private static String wrap(String bodyHtml, Language language) {

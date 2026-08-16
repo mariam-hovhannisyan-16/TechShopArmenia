@@ -5,6 +5,7 @@ import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
 import am.techshop.notification.i18n.AccountMessages;
+import am.techshop.notification.i18n.AuthMessages;
 import am.techshop.notification.i18n.OrderMessages;
 import am.techshop.notification.mapper.NotificationMapper;
 import am.techshop.notification.repository.NotificationRepository;
@@ -41,7 +42,7 @@ public class NotificationDispatcher {
         Language resolvedLanguage = orDefault(language);
         deliver(NotificationType.EMAIL_VERIFICATION, userId,
                 () -> emailService.sendVerificationEmail(email, name, verificationToken, resolvedLanguage),
-                () -> AccountMessages.emailVerificationInApp(name, resolvedLanguage));
+                () -> AuthMessages.inAppEmailVerification(name, resolvedLanguage));
     }
 
     public void dispatchWelcome(Long userId, String email, String name, Language language) {

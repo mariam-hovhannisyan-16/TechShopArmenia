@@ -5,7 +5,6 @@ import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
 import am.techshop.notification.email.EmailTemplates;
-import am.techshop.notification.i18n.AccountMessages;
 import am.techshop.notification.i18n.AuthMessages;
 import am.techshop.notification.i18n.OrderMessages;
 import jakarta.mail.internet.MimeMessage;
@@ -80,9 +79,11 @@ public class EmailService {
 
     public void sendWelcome(String to, String userName, Language language) {
         String html = EmailTemplates.welcomeEmail(userName, frontendUrl, language);
-        String text = AccountMessages.welcomeText(userName, language);
+        String text = "%s\n\n%s".formatted(
+                AuthMessages.greeting(userName, language),
+                AuthMessages.welcomeIntro(language));
 
-        sendHtml(to, AccountMessages.welcomeSubject(language), html, text);
+        sendHtml(to, AuthMessages.welcomeSubject(language), html, text);
     }
 
     public void sendOrderStatusChanged(String to, String userName, Long orderId, OrderStatus status, BigDecimal totalPrice,
