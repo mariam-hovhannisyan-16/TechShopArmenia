@@ -124,10 +124,6 @@ public class Order {
 
     public void transitionTo(OrderStatus newStatus, String note) {
         this.status = newStatus;
-        OrderStatusHistory history = new OrderStatusHistory();
-        history.setStatus(newStatus);
-        history.setNote(note);
-        history.setOrder(this);
-        this.statusHistory.add(history);
+        this.statusHistory.add(new OrderStatusHistory(null, this, newStatus, note, LocalDateTime.now()));
     }
 }
