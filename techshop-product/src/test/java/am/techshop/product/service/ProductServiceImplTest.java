@@ -504,7 +504,7 @@ class ProductServiceImplTest {
         productService.updateDiscount(id, 20);
 
         verify(productEventProducer).sendPriceDropEvent(
-                new PriceDropEvent(10L, id, "Phone", BigDecimal.valueOf(200), BigDecimal.valueOf(160), Language.HY));
+                new PriceDropEvent(10L, id, "Phone", BigDecimal.valueOf(200), new BigDecimal("160.00"), Language.HY));
     }
 
     @Test

@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -64,9 +65,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Transactional(readOnly = true)
     public PageResponse<ProductResponse> getAllProducts(String category, String search, int page, int size) {
-        Specification<Product> spec = Specification
-                .where(ProductSpecifications.hasCategory(category))
-                .and(ProductSpecifications.matchesSearch(search));
+        Specification<Product> spec = Specification.allOf(
+                ProductSpecifications.hasCategory(category),
+                ProductSpecifications.matchesSearch(search));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<Product> result = productRepository.findAll(spec, pageable);
@@ -170,7 +171,7 @@ public class ProductServiceImpl implements ProductService {
         if (discountPercentage == null || discountPercentage == 0) {
             return price;
         }
-        return price.multiply(BigDecimal.valueOf(100 - discountPercentage)).divide(BigDecimal.valueOf(100));
+        return price.multiply(BigDecimal.valueOf(100 - discountPercentage)).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
     }
 
     private void notifyPriceDropSubscribers(Product product, BigDecimal oldPrice, BigDecimal newPrice) {
