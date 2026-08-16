@@ -78,18 +78,18 @@ class AdminChatIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[?(@.id == " + conversationId + ")]").exists());
 
-        mockMvc.perform(get("/api/admin/chat/conversations/{id}/messages", conversationId).with(authentication(asAdmin())))
+        mockMvc.perform(get("/api/chat/conversations/{id}/messages", conversationId).with(authentication(asAdmin())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].sender").value("CUSTOMER"))
                 .andExpect(jsonPath("$.data[0].text").value("Where is my order?"));
 
-        mockMvc.perform(post("/api/admin/chat/conversations/{id}/messages", conversationId)
+        mockMvc.perform(post("/api/chat/conversations/{id}/messages", conversationId)
                         .with(authentication(asAdmin()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new SendMessageRequest("It shipped yesterday!"))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.sender").value("SUPPORT"));
+                .andExpect(jsonPath("$.data.message.sender").value("SUPPORT"));
 
         MvcResult customerViewResult = mockMvc.perform(get("/api/chat/conversations/{id}/messages", conversationId)
                         .with(authentication(asCustomer())))
