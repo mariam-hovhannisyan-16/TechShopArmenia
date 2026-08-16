@@ -16,16 +16,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Shared JWT authentication filter used by every service.
- * <p>
- * It never rejects a request itself — public vs. protected paths are decided by each
- * service's own {@code SecurityConfig} via {@code authorizeHttpRequests}. This filter
- * only populates the {@link org.springframework.security.core.context.SecurityContext}
- * when a valid bearer token is present, always granting a {@code ROLE_<role>} authority
- * when the token carries a role claim (some services don't currently use role-based
- * authorization, but granting the authority is harmless and keeps behavior uniform).
- */
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {

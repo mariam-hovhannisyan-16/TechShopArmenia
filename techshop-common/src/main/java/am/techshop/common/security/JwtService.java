@@ -10,14 +10,6 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
-/**
- * Shared JWT issuance/validation logic used by every service.
- * <p>
- * Only techshop-user actually issues tokens (via {@link #generateToken}); the other
- * services only validate tokens issued by techshop-user against the same shared
- * {@code app.jwt.secret}. {@code app.jwt.expiration-ms} is only configured by
- * techshop-user, so it defaults here to keep this bean startable in every service.
- */
 @Service
 public class JwtService {
 
