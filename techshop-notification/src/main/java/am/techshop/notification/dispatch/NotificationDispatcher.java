@@ -1,9 +1,11 @@
 package am.techshop.notification.dispatch;
 
 import am.techshop.common.dto.response.InstallmentPlanResponse;
+import am.techshop.common.dto.response.UserLanguageResponse;
 import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
+import am.techshop.notification.client.UserClient;
 import am.techshop.notification.i18n.AccountMessages;
 import am.techshop.notification.i18n.AuthMessages;
 import am.techshop.notification.i18n.OrderMessages;
@@ -11,6 +13,8 @@ import am.techshop.notification.mapper.NotificationMapper;
 import am.techshop.notification.repository.NotificationRepository;
 import am.techshop.notification.service.EmailService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -19,7 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class NotificationDispatcher {
@@ -37,6 +43,10 @@ public class NotificationDispatcher {
     private final EmailService emailService;
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
+    private final UserClient userClient;
+
+    @Value("${internal.api-key}")
+    private String internalApiKey;
 
     public void dispatchEmailVerification(Long userId, String email, String name, String verificationToken, Language language) {
         Language resolvedLanguage = orDefault(language);
@@ -83,18 +93,28 @@ public class NotificationDispatcher {
     }
 
     public void dispatchAdminNewUser(List<Long> adminIds, String newUserName, String newUserEmail) {
-        if (adminIds == null) {
+        if (adminIds == null || adminIds.isEmpty()) {
             return;
         }
-        String message = adminNewUserMessage(newUserName, newUserEmail);
+        Map<Long, Language> languagesByAdminId = resolveLanguages(adminIds);
         for (Long adminId : adminIds) {
+            Language language = languagesByAdminId.getOrDefault(adminId, Language.HY);
+            String message = AccountMessages.adminNewUserMessage(newUserName, newUserEmail, language);
             deliver(NotificationType.ADMIN_NEW_USER, adminId, null, () -> message);
         }
     }
 
-    private String adminNewUserMessage(String name, String email) {
-        return "Նոր օգտատեր գրանցվել է՝ %1$s (%2$s) · New user registered: %1$s (%2$s) · Зарегистрировался новый пользователь: %1$s (%2$s)"
-                .formatted(name, email);
+    private Map<Long, Language> resolveLanguages(List<Long> userIds) {
+        try {
+            List<UserLanguageResponse> languages = userClient.getUserLanguages(userIds, internalApiKey).data();
+            if (languages == null) {
+                return Map.of();
+            }
+            return languages.stream().collect(Collectors.toMap(UserLanguageResponse::userId, UserLanguageResponse::language));
+        } catch (Exception ex) {
+            log.warn("Failed to resolve languages for admin new-user notification: {}", ex.getMessage());
+            return Map.of();
+        }
     }
 
     private String orderStatusMessage(Long orderId, OrderStatus status, String note, Language language, List<String> productNames) {

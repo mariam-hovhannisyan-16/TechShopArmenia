@@ -46,6 +46,13 @@ app:
   jwt:
     secret: ${JWT_SECRET:local-dev-secret-change-in-production}
 
+services:
+  user:
+    url: ${USER_SERVICE_URL:http://localhost:8081}
+
+internal:
+  api-key: ${INTERNAL_API_KEY:local-dev-internal-key-change-in-production}
+
 server:
   port: ${SERVER_PORT:8085}
 

@@ -144,6 +144,8 @@ services:
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
+      USER_SERVICE_URL: http://techshop-user:8081
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-local-dev-internal-key-change-in-production}
     depends_on:
       - postgres
       - kafka

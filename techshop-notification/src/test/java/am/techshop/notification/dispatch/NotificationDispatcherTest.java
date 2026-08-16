@@ -1,8 +1,11 @@
 package am.techshop.notification.dispatch;
 
+import am.techshop.common.dto.response.ApiResponse;
+import am.techshop.common.dto.response.UserLanguageResponse;
 import am.techshop.common.enums.Language;
 import am.techshop.common.enums.OrderStatus;
 import am.techshop.common.enums.PaymentMethod;
+import am.techshop.notification.client.UserClient;
 import am.techshop.notification.entity.Notification;
 import am.techshop.notification.mapper.NotificationMapper;
 import am.techshop.notification.repository.NotificationRepository;
@@ -21,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,6 +40,9 @@ class NotificationDispatcherTest {
 
     @Mock
     private NotificationMapper notificationMapper;
+
+    @Mock
+    private UserClient userClient;
 
     @InjectMocks
     private NotificationDispatcher dispatcher;
@@ -198,8 +205,11 @@ class NotificationDispatcherTest {
     }
 
     @Test
-    void dispatchAdminNewUser_SavesTrilingualInAppNotificationPerAdmin() {
+    void dispatchAdminNewUser_ResolvesEachAdminsOwnLanguage_SavesLocalizedMessagePerAdmin() {
         stubNotificationCreation();
+        when(userClient.getUserLanguages(eq(List.of(1L, 2L)), any()))
+                .thenReturn(new ApiResponse<>(true, "Success",
+                        List.of(new UserLanguageResponse(1L, Language.EN), new UserLanguageResponse(2L, Language.RU))));
 
         dispatcher.dispatchAdminNewUser(List.of(1L, 2L), "Mariam", "mariam@test.com");
 
@@ -210,13 +220,49 @@ class NotificationDispatcherTest {
 
         List<Notification> saved = captor.getAllValues();
         assertEquals(List.of(1L, 2L), saved.stream().map(Notification::getUserId).toList());
-        for (Notification notification : saved) {
-            String message = notification.getMessage();
-            assertTrue(message.contains("Mariam"));
-            assertTrue(message.contains("mariam@test.com"));
-            assertTrue(message.contains("Նոր օգտատեր գրանցվել է"));
-            assertTrue(message.contains("New user registered"));
-            assertTrue(message.contains("Зарегистрировался новый пользователь"));
+
+        String adminOneMessage = saved.get(0).getMessage();
+        assertTrue(adminOneMessage.contains("Mariam"));
+        assertTrue(adminOneMessage.contains("mariam@test.com"));
+        assertTrue(adminOneMessage.contains("New user registered"));
+        assertFalse(adminOneMessage.contains("Նոր օգտատեր"));
+        assertFalse(adminOneMessage.contains("Зарегистрировался"));
+
+        String adminTwoMessage = saved.get(1).getMessage();
+        assertTrue(adminTwoMessage.contains("Зарегистрировался новый пользователь"));
+        assertFalse(adminTwoMessage.contains("Նոր օգտատեր"));
+        assertFalse(adminTwoMessage.contains("New user registered"));
+    }
+
+    @Test
+    void dispatchAdminNewUser_WhenAdminHasNoResolvableLanguage_DefaultsToArmenian() {
+        stubNotificationCreation();
+        when(userClient.getUserLanguages(eq(List.of(1L, 2L)), any()))
+                .thenReturn(new ApiResponse<>(true, "Success", List.of(new UserLanguageResponse(1L, Language.EN))));
+
+        dispatcher.dispatchAdminNewUser(List.of(1L, 2L), "Mariam", "mariam@test.com");
+
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+
+        List<Notification> saved = captor.getAllValues();
+        assertTrue(saved.get(0).getMessage().contains("New user registered"));
+        assertTrue(saved.get(1).getMessage().contains("Նոր օգտատեր գրանցվել է"));
+    }
+
+    @Test
+    void dispatchAdminNewUser_WhenLanguageLookupFails_DefaultsAllAdminsToArmenian() {
+        stubNotificationCreation();
+        when(userClient.getUserLanguages(eq(List.of(1L, 2L)), any()))
+                .thenThrow(new RuntimeException("user service unreachable"));
+
+        dispatcher.dispatchAdminNewUser(List.of(1L, 2L), "Mariam", "mariam@test.com");
+
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+
+        for (Notification notification : captor.getAllValues()) {
+            assertTrue(notification.getMessage().contains("Նոր օգտատեր գրանցվել է"));
         }
     }
 

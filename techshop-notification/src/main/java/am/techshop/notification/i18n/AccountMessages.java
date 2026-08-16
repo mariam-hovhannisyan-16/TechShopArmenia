@@ -26,4 +26,12 @@ public final class AccountMessages {
                     .formatted(productName, oldPrice.toPlainString(), newPrice.toPlainString());
         };
     }
+
+    public static String adminNewUserMessage(String name, String email, Language language) {
+        return switch (language) {
+            case HY -> "Նոր օգտատեր գրանցվել է՝ %1$s (%2$s)".formatted(name, email);
+            case EN -> "New user registered: %1$s (%2$s)".formatted(name, email);
+            case RU -> "Зарегистрировался новый пользователь: %1$s (%2$s)".formatted(name, email);
+        };
+    }
 }
